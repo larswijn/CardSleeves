@@ -9,6 +9,8 @@
 ----------------------------------------------
 ------------MOD CODE -------------------------
 
+-- DEBUG FUNCS (can remove on release?)
+
 local function print_trace(...)
     return sendTraceMessage(table.concat({ ... }, "\t"), "CardSleeves")
 end
@@ -59,11 +61,13 @@ local function tprint(tbl, indent)
     return toprint
 end
 
+-- LOCALIZATION
+
 function SMODS.current_mod.process_loc_text()
     G.localization.descriptions.Sleeve = G.localization.descriptions.Sleeve or {}
-    G.localization.descriptions.Sleeve["v_crystal_ball"] = { text = { "v_crystal_ball" } }
-    G.localization.descriptions.Sleeve["c_fool"] = { text = { "c_fool" } }
 end
+
+-- ATLAS
 
 SMODS.Atlas {
     key = "sleeve_atlas",
@@ -71,6 +75,8 @@ SMODS.Atlas {
     px = 71,
     py = 95
 }
+
+-- SLEEVE BASE CLASS & METHODS
 
 SMODS.Sleeves = {}
 SMODS.Sleeve = SMODS.GameObject:extend {
@@ -82,7 +88,7 @@ SMODS.Sleeve = SMODS.GameObject:extend {
     set = "Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 0 }, -- within `atlas`
-    required_params = { "key", "pos" },
+    required_params = { "key", "pos"},
     inject_class = function(self)
         G.P_CENTER_POOLS[self.set] = {}
         G.P_SLEEVES = {}
@@ -92,8 +98,115 @@ SMODS.Sleeve = SMODS.GameObject:extend {
         G.P_SLEEVES[self.key] = self
         SMODS.insert_pool(G.P_CENTER_POOLS[self.set], self)
     end,
-    loc_vars = function() return { vars = {} } end
+    loc_vars = function() return { vars = {} } end,
 }
+
+function SMODS.Sleeve:apply_to_run()
+    print_trace("Sleeve.apply_to_run")
+
+    if self.config.voucher then
+        G.GAME.used_vouchers[self.config.voucher] = true
+        G.GAME.starting_voucher_count = (G.GAME.starting_voucher_count or 0) + 1
+        Card.apply_to_run(nil, G.P_CENTERS[self.config.voucher])
+    end
+    if self.config.hands then
+        G.GAME.starting_params.hands = G.GAME.starting_params.hands + self.config.hands
+    end
+    if self.config.consumables then
+        delay(0.4)
+        G.E_MANAGER:add_event(Event({
+            func = function()
+                for k, v in ipairs(self.config.consumables) do
+                    local card = create_card('Tarot', G.consumeables, nil, nil, nil, nil, v, 'deck')
+                    card:add_to_deck()
+                    G.consumeables:emplace(card)
+                end
+                return true
+            end
+        }))
+    end
+
+    if self.config.dollars then
+        G.GAME.starting_params.dollars = G.GAME.starting_params.dollars + self.config.dollars
+    end
+    if self.config.remove_faces then
+        G.GAME.starting_params.no_faces = true
+    end
+
+    if self.config.spectral_rate then
+        G.GAME.spectral_rate = self.config.spectral_rate
+    end
+    if self.config.discards then
+        G.GAME.starting_params.discards = G.GAME.starting_params.discards + self.config.discards
+    end
+    if self.config.reroll_discount then
+        G.GAME.starting_params.reroll_cost = G.GAME.starting_params.reroll_cost - self.config.reroll_discount
+    end
+
+    if self.config.edition then
+        G.E_MANAGER:add_event(Event({
+            func = function()
+                local i = 0
+                while i < self.config.edition_count do
+                    local card = pseudorandom_element(G.playing_cards, pseudoseed('edition_deck'))
+                    if not card.edition then
+                        i = i + 1
+                        card:set_edition({ [self.config.edition] = true }, nil, true)
+                    end
+                end
+                return true
+            end
+        }))
+    end
+    if self.config.vouchers then
+        for k, v in pairs(self.config.vouchers) do
+            G.GAME.used_vouchers[v] = true
+            G.GAME.starting_voucher_count = (G.GAME.starting_voucher_count or 0) + 1
+            Card.apply_to_run(nil, G.P_CENTERS[v])
+        end
+    end
+    if self.name == 'Checkered Sleeve' then
+        G.E_MANAGER:add_event(Event({
+            func = function()
+                for k, v in pairs(G.playing_cards) do
+                    if v.base.suit == 'Clubs' then
+                        v:change_suit('Spades')
+                    end
+                    if v.base.suit == 'Diamonds' then
+                        v:change_suit('Hearts')
+                    end
+                end
+                return true
+            end
+        }))
+    end
+    if self.config.randomize_rank_suit then
+        G.GAME.starting_params.erratic_suits_and_ranks = true
+    end
+    if self.config.joker_slot then
+        G.GAME.starting_params.joker_slots = G.GAME.starting_params.joker_slots + self.config.joker_slot
+    end
+    if self.config.hand_size then
+        G.GAME.starting_params.hand_size = G.GAME.starting_params.hand_size + self.config.hand_size
+    end
+    if self.config.ante_scaling then
+        G.GAME.starting_params.ante_scaling = self.config.ante_scaling
+    end
+    if self.config.consumable_slot then
+        G.GAME.starting_params.consumable_slots = G.GAME.starting_params.consumable_slots + self.config.consumable_slot
+    end
+    if self.config.no_interest then
+        G.GAME.modifiers.no_interest = true
+    end
+    if self.config.extra_hand_bonus then
+        G.GAME.modifiers.money_per_hand = self.config.extra_hand_bonus
+    end
+    if self.config.extra_discard_bonus then
+        G.GAME.modifiers.money_per_discard = self.config.extra_discard_bonus
+    end
+end
+
+-- SLEEVE INSTANCES
 
 SMODS.Sleeve {
     key = "none",
@@ -101,7 +214,7 @@ SMODS.Sleeve {
     config = {},
     loc_txt = {
         name = "No Sleeve",
-        text = { "No extra deck modifiers" }
+        text = { "No sleeve modifiers" }
     },
     atlas = "jokers",
     pos = { x = 9, y = 0 }
@@ -175,7 +288,7 @@ SMODS.Sleeve {
         text = G.localization.descriptions.Back["b_black"].text
     },
     loc_vars = function(self)
-        return { vars = { self.config.joker_slot, self.config.hands } }
+        return { vars = { self.config.joker_slot, -self.config.hands } }
     end,
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 4 }
@@ -190,7 +303,10 @@ SMODS.Sleeve {
         text = G.localization.descriptions.Back["b_magic"].text
     },
     loc_vars = function(self)
-        return { vars = { self.config.voucher, self.config.consumables } }
+        return {
+            vars = { localize { type = 'name_text', key = self.config.voucher, set = 'Voucher' },
+                localize { type = 'name_text', key = self.config.consumables[1], set = 'Tarot' } }
+        }
     end,
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 0 }
@@ -205,7 +321,10 @@ SMODS.Sleeve {
         text = G.localization.descriptions.Back["b_nebula"].text
     },
     loc_vars = function(self)
-        return { vars = { self.config.voucher, self.config.consumable_slot } }
+        return {
+            vars = { localize { type = 'name_text', key = self.config.voucher, set = 'Voucher' },
+                self.config.consumable_slot }
+        }
     end,
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 1 }
@@ -256,8 +375,26 @@ SMODS.Sleeve {
     pos = { x = 1, y = 4 }
 }
 
+-- zodiac + painted sleeves
 
+SMODS.Sleeve {
+    key = "anaglyph",
+    name = "Anaglyph Sleeve",
+    config = {},
+    loc_txt = {
+        name = "Anaglyph Sleeve",
+        text = G.localization.descriptions.Back["b_anaglyph"].text
+    },
+    loc_vars = function(self)
+        return { vars = {} }
+    end,
+    atlas = "sleeve_atlas",
+    pos = { x = 2, y = 0 }
+}
 
+-- plasma + erratic sleeves
+
+-- UI FUNCS
 
 G.FUNCS.change_sleeve = function(args)
     G.viewed_sleeve = args.to_key
@@ -287,7 +424,7 @@ G.FUNCS.RUN_SETUP_check_sleeve2 = function(e)
 end
 
 function G.UIDEF.sleeve_description(_sleeve)
-    print_trace("func sleeve_description")
+    -- print_trace("func sleeve_description")
     local _sleeve_center = G.P_CENTER_POOLS.Sleeve[_sleeve]
     local ret_nodes = {}
     if _sleeve_center then
@@ -302,7 +439,7 @@ function G.UIDEF.sleeve_description(_sleeve)
     for k, v in ipairs(ret_nodes) do
         for k2, v2 in pairs(v) do
             if v2["config"] ~= nil and v2["config"]["scale"] ~= nil then
-                v[k2]["config"].scale = v[k2]["config"].scale / 1.25
+                v[k2]["config"].scale = v[k2]["config"].scale / 1.2
             end
         end
         desc_t[#desc_t + 1] = { n = G.UIT.R, config = { align = "cm", maxw = 5.3 }, nodes = v }
@@ -343,8 +480,7 @@ function G.UIDEF.sleeve_option(_type)
         n = G.UIT.ROOT,
         config = { align = "tm", colour = G.C.CLEAR, minw = 8.5 },
         nodes = { _type == 'Continue' and middle or create_option_cycle({
-            options =
-                sleeve_options,
+            options = sleeve_options,
             opt_callback = 'change_sleeve',
             current_option = G.viewed_sleeve,
             colour = G.C.RED,
@@ -356,8 +492,10 @@ end
 
 function G.UIDEF.viewed_sleeve_option()
     G.viewed_sleeve = G.viewed_sleeve or 1
-    -- where is `_type` even defined??
-    if _type ~= 'Continue' then G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve = G.viewed_sleeve end
+    -- TODO `_type` is undefined, what to do?
+    if _type ~= 'Continue' then
+        G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve = G.viewed_sleeve
+    end
 
     -- TODO: update visual sleeve around cards?
 
@@ -383,25 +521,10 @@ function G.UIDEF.viewed_sleeve_option()
     }
 end
 
-function dump(o, depth)
-    depth = depth or 0
-    if depth > 14 then
-        return "..."
-    elseif type(o) == 'table' then
-        local s = '{ '
-        for k, v in pairs(o) do
-            if type(k) ~= 'number' then k = '"' .. k .. '"' end
-            s = s .. k .. ': ' .. dump(v, depth + 1) .. ','
-        end
-        return s .. '} '
-    else
-        return tostring(o)
-    end
-end
+-- HOOKING / WRAPPING FUNCS
 
 local old_run_setup_option = G.UIDEF.run_setup_option
 function G.UIDEF.run_setup_option(_type)
-    -- wrap `run_setup_option` with our own func
     local output = old_run_setup_option(_type)
     -- print_trace("func run_setup_option")
     --[[
@@ -416,7 +539,6 @@ function G.UIDEF.run_setup_option(_type)
         [input_seed, button_play]
     ]
     --]]
-    print(dump(output))
     if _type == "Continue" then
         table.insert(output.nodes, 3,
             {
@@ -430,6 +552,7 @@ function G.UIDEF.run_setup_option(_type)
                 }
             })
     elseif _type == "New Run" then
+        G.viewed_sleeve = 1
         table.insert(output.nodes, 3,
             {
                 n = G.UIT.R,
@@ -452,6 +575,31 @@ function G.FUNCS.RUN_SETUP_check_back(e)
     end
     return old_RUN_SETUP_check_back(e)
 end
+
+local old_FUNCS_start_run = G.FUNCS.start_run
+function G.FUNCS.start_run(e, args)
+    if G.SETTINGS.current_setup == "New Run" then
+        print_trace("G.FUNCS.start_run : inserted sleeve arg")
+        args.sleeve = G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve or 1
+    end
+    return old_FUNCS_start_run(e, args)
+end
+
+local old_Back_apply_to_run = Back.apply_to_run
+function Back:apply_to_run()
+    print_trace("Back:apply_to_run")
+    local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve or 1]
+    sleeve_center:apply_to_run()
+    return old_Back_apply_to_run(self)
+end
+
+local old_Back_trigger_effect = Back.trigger_effect
+function Back:trigger_effect()
+    print_trace("Back:trigger_effect")
+    return old_Back_trigger_effect(self)
+end
+
+print_trace("CardSleeves loaded~!")
 
 ----------------------------------------------
 ------------MOD CODE END----------------------
