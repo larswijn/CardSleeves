@@ -11,6 +11,8 @@
 
 -- DEBUG FUNCS (can remove on release?)
 
+_RELEASE_MODE = false
+
 local function print_trace(...)
     return sendTraceMessage(table.concat({ ... }, "\t"), "CardSleeves")
 end
@@ -71,7 +73,7 @@ end
 
 SMODS.Atlas {
     key = "sleeve_atlas",
-    path = "sleeves.png", -- only contains blue sleeve for now
+    path = "sleeves.png", -- only contains first 5 sleeves for now
     px = 71,
     py = 95
 }
@@ -99,6 +101,13 @@ SMODS.Sleeve = SMODS.GameObject:extend {
         SMODS.insert_pool(G.P_CENTER_POOLS[self.set], self)
     end,
     loc_vars = function() return { vars = {} } end,
+	generate_UI = function(self)
+		min_dims = min_dims or 0.7
+		loc_nodes = {}
+		return {n=G.UIT.ROOT, config={align = "cm", minw = min_dims*5, minh = min_dims*2.5, id = self.name, colour = G.C.CLEAR}, nodes={
+			desc_from_rows(loc_nodes, true, min_dims*5)
+		}}
+	end
 }
 
 function SMODS.Sleeve:apply_to_run()
@@ -206,6 +215,73 @@ function SMODS.Sleeve:apply_to_run()
     end
 end
 
+function SMODS.Sleeve:trigger_effect(args)
+    print_trace("Sleeve.trigger_effect")
+    if not args then return end
+    
+    if self.name == 'Anaglyph Sleeve' and args.context == 'eval' and G.GAME.last_blind and G.GAME.last_blind.boss then
+        G.E_MANAGER:add_event(Event({
+            func = (function()
+                add_tag(Tag('tag_double'))
+                play_sound('generic1', 0.9 + math.random()*0.1, 0.8)
+                play_sound('holo1', 1.2 + math.random()*0.1, 0.4)
+                return true
+            end)
+        }))
+    end
+    if self.name == 'Plasma Sleeve' and args.context == 'blind_amount' then
+        return 
+    end
+
+    if self.name == 'Plasma Sleeve' and args.context == 'final_scoring_step' then
+        local tot = args.chips + args.mult
+        args.chips = math.floor(tot/2)
+        args.mult = math.floor(tot/2)
+        update_hand_text({delay = 0}, {mult = args.mult, chips = args.chips})
+
+        G.E_MANAGER:add_event(Event({
+            func = (function()
+                local text = localize('k_balanced')
+                play_sound('gong', 0.94, 0.3)
+                play_sound('gong', 0.94*1.5, 0.2)
+                play_sound('tarot1', 1.5)
+                ease_colour(G.C.UI_CHIPS, {0.8, 0.45, 0.85, 1})
+                ease_colour(G.C.UI_MULT, {0.8, 0.45, 0.85, 1})
+                attention_text({
+                    scale = 1.4, text = text, hold = 2, align = 'cm', offset = {x = 0,y = -2.7},major = G.play
+                })
+                G.E_MANAGER:add_event(Event({
+                    trigger = 'after',
+                    blockable = false,
+                    blocking = false,
+                    delay =  4.3,
+                    func = (function() 
+                            ease_colour(G.C.UI_CHIPS, G.C.BLUE, 2)
+                            ease_colour(G.C.UI_MULT, G.C.RED, 2)
+                        return true
+                    end)
+                }))
+                G.E_MANAGER:add_event(Event({
+                    trigger = 'after',
+                    blockable = false,
+                    blocking = false,
+                    no_delete = true,
+                    delay =  6.3,
+                    func = (function() 
+                        G.C.UI_CHIPS[1], G.C.UI_CHIPS[2], G.C.UI_CHIPS[3], G.C.UI_CHIPS[4] = G.C.BLUE[1], G.C.BLUE[2], G.C.BLUE[3], G.C.BLUE[4]
+                        G.C.UI_MULT[1], G.C.UI_MULT[2], G.C.UI_MULT[3], G.C.UI_MULT[4] = G.C.RED[1], G.C.RED[2], G.C.RED[3], G.C.RED[4]
+                        return true
+                    end)
+                }))
+                return true
+            end)
+        }))
+
+        delay(0.6)
+        return args.chips, args.mult
+    end
+end
+
 -- SLEEVE INSTANCES
 
 SMODS.Sleeve {
@@ -216,8 +292,8 @@ SMODS.Sleeve {
         name = "No Sleeve",
         text = { "No sleeve modifiers" }
     },
-    atlas = "jokers",
-    pos = { x = 9, y = 0 }
+    atlas = "sleeve_atlas",
+    pos = { x = 0, y = 3 }
 }
 
 SMODS.Sleeve {
@@ -231,6 +307,7 @@ SMODS.Sleeve {
     loc_vars = function(self)
         return { vars = { self.config.discards } }
     end,
+	atlas = "sleeve_atlas",
     pos = { x = 0, y = 0 }
 }
 
@@ -246,7 +323,7 @@ SMODS.Sleeve {
         return { vars = { self.config.hands } }
     end,
     atlas = "sleeve_atlas",
-    pos = { x = 0, y = 1 }
+    pos = { x = 1, y = 0 }
 }
 
 SMODS.Sleeve {
@@ -261,7 +338,7 @@ SMODS.Sleeve {
         return { vars = { self.config.dollars } }
     end,
     atlas = "sleeve_atlas",
-    pos = { x = 0, y = 2 }
+    pos = { x = 2, y = 0 }
 }
 
 SMODS.Sleeve {
@@ -276,7 +353,7 @@ SMODS.Sleeve {
         return { vars = { self.config.extra_hand_bonus, self.config.extra_discard_bonus, self.config.no_interest } }
     end,
     atlas = "sleeve_atlas",
-    pos = { x = 0, y = 3 }
+    pos = { x = 3, y = 0 }
 }
 
 SMODS.Sleeve {
@@ -291,7 +368,7 @@ SMODS.Sleeve {
         return { vars = { self.config.joker_slot, -self.config.hands } }
     end,
     atlas = "sleeve_atlas",
-    pos = { x = 0, y = 4 }
+    pos = { x = 4, y = 0 }
 }
 
 SMODS.Sleeve {
@@ -309,7 +386,7 @@ SMODS.Sleeve {
         }
     end,
     atlas = "sleeve_atlas",
-    pos = { x = 1, y = 0 }
+    pos = { x = 0, y = 1 }
 }
 
 SMODS.Sleeve {
@@ -342,7 +419,7 @@ SMODS.Sleeve {
         return { vars = { self.config.spectral_rate, self.config.consumables } }
     end,
     atlas = "sleeve_atlas",
-    pos = { x = 1, y = 2 }
+    pos = { x = 2, y = 1 }
 }
 
 SMODS.Sleeve {
@@ -357,7 +434,7 @@ SMODS.Sleeve {
         return { vars = { self.config.remove_faces } }
     end,
     atlas = "sleeve_atlas",
-    pos = { x = 1, y = 3 }
+    pos = { x = 3, y = 1 }
 }
 
 SMODS.Sleeve {
@@ -372,10 +449,10 @@ SMODS.Sleeve {
         return { vars = {} }
     end,
     atlas = "sleeve_atlas",
-    pos = { x = 1, y = 4 }
+    pos = { x = 4, y = 1 }
 }
 
--- zodiac + painted sleeves
+-- TODO: implement zodiac + painted sleeves
 
 SMODS.Sleeve {
     key = "anaglyph",
@@ -386,19 +463,51 @@ SMODS.Sleeve {
         text = G.localization.descriptions.Back["b_anaglyph"].text
     },
     loc_vars = function(self)
-        return { vars = {} }
+        return { vars = { localize{type = 'name_text', key = 'tag_double', set = 'Tag'} } }
     end,
     atlas = "sleeve_atlas",
-    pos = { x = 2, y = 0 }
+    pos = { x = 2, y = 2 }
 }
 
--- plasma + erratic sleeves
+SMODS.Sleeve {
+    key = "plasma",
+    name = "Plasma Sleeve",
+    config = {ante_scaling = 2},
+    loc_txt = {
+        name = "Plasma Sleeve",
+        text = G.localization.descriptions.Back["b_plasma"].text
+    },
+    loc_vars = function(self)
+        return { vars = {self.config.ante_scaling} }
+    end,
+    atlas = "sleeve_atlas",
+    pos = { x = 3, y = 2 }
+}
+
+-- TODO: implement erratic sleeve
 
 -- UI FUNCS
 
-G.FUNCS.change_sleeve = function(args)
+function G.FUNCS.change_sleeve(args)
     G.viewed_sleeve = args.to_key
     G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve = args.to_key
+end
+
+function G.FUNCS.change_viewed_sleeve()
+	print_trace("func G.FUNCS.change_viewed_sleeve")
+	local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve]
+	local card = G.sticker_card
+	if sleeve_center.name ~= "No Sleeve" then
+		card.children.back = Sprite(card.T.x - 0.05, card.T.y + 0.3, card.T.w + 0.1, card.T.h, G.ASSET_ATLAS[sleeve_center.atlas], sleeve_center.pos)
+		-- TODO: the sleeve doesn't "snap back" to the original pos, for some reason
+		card.states.collide.can = false
+		card.states.hover.can = false
+		card.states.drag.can = false
+		card.states.click.can = false
+	else
+		card.children.back = false
+		card:set_ability(card.config.center, true)
+	end
 end
 
 G.FUNCS.RUN_SETUP_check_sleeve = function(e)
@@ -491,6 +600,7 @@ function G.UIDEF.sleeve_option(_type)
 end
 
 function G.UIDEF.viewed_sleeve_option()
+	print_trace("func G.UIDEF.viewed_sleeve_option")
     G.viewed_sleeve = G.viewed_sleeve or 1
     -- TODO `_type` is undefined, what to do?
     if _type ~= 'Continue' then
@@ -498,6 +608,7 @@ function G.UIDEF.viewed_sleeve_option()
     end
 
     -- TODO: update visual sleeve around cards?
+	G.FUNCS.change_viewed_sleeve()
 
     return {
         n = G.UIT.ROOT,
@@ -526,7 +637,7 @@ end
 local old_run_setup_option = G.UIDEF.run_setup_option
 function G.UIDEF.run_setup_option(_type)
     local output = old_run_setup_option(_type)
-    -- print_trace("func run_setup_option")
+    print_trace("func run_setup_option")
     --[[
     nodes =
     [
@@ -568,14 +679,6 @@ function G.UIDEF.run_setup_option(_type)
     return output
 end
 
-local old_RUN_SETUP_check_back = G.FUNCS.RUN_SETUP_check_back
-function G.FUNCS.RUN_SETUP_check_back(e)
-    if G.GAME.viewed_back.name ~= e.config.id then
-        -- print_debug("Deck change! current deck is " .. G.GAME.viewed_back.name .. "!")
-    end
-    return old_RUN_SETUP_check_back(e)
-end
-
 local old_FUNCS_start_run = G.FUNCS.start_run
 function G.FUNCS.start_run(e, args)
     if G.SETTINGS.current_setup == "New Run" then
@@ -583,6 +686,13 @@ function G.FUNCS.start_run(e, args)
         args.sleeve = G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve or 1
     end
     return old_FUNCS_start_run(e, args)
+end
+
+local old_FUNCS_change_viewed_back = G.FUNCS.change_viewed_back
+function G.FUNCS.change_viewed_back(args)
+	print_trace("func G.FUNCS.change_viewed_back")
+	old_FUNCS_change_viewed_back(args)
+	G.FUNCS.change_viewed_sleeve(args)
 end
 
 local old_Back_apply_to_run = Back.apply_to_run
@@ -594,9 +704,17 @@ function Back:apply_to_run()
 end
 
 local old_Back_trigger_effect = Back.trigger_effect
-function Back:trigger_effect()
+function Back:trigger_effect(args)
     print_trace("Back:trigger_effect")
-    return old_Back_trigger_effect(self)
+	local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve or 1]
+    local new_chips, new_mult = sleeve_center:trigger_effect(args)
+	if new_chips then
+		args.chips = new_chips
+	end
+	if new_mult then
+		args.mult = new_mult
+	end
+    return old_Back_trigger_effect(self, args)
 end
 
 print_trace("CardSleeves loaded~!")
