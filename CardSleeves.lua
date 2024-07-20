@@ -20,6 +20,7 @@ ISSUES:
 
 -- DEBUG FUNCS (can remove on release?)
 
+G.DEBUG = true
 _RELEASE_MODE = false
 
 local function print_trace(...)
@@ -557,7 +558,6 @@ function G.FUNCS.change_sleeve(args)
 end
 
 function G.FUNCS.change_viewed_sleeve()
-    print_trace("func G.FUNCS.change_viewed_sleeve")
     local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve]
     --[[
     local card = G.sticker_card
@@ -575,7 +575,6 @@ function G.FUNCS.change_viewed_sleeve()
     --]]
     local area = G.sticker_card.area
     local sleeve_index, sleeve_card = find_sleeve_card(area)
-    print_debug("  #area.cards = " .. #area.cards)
     if sleeve_center.name ~= "No Sleeve" then
         if sleeve_card == nil then
             local new_card = Card(G.sticker_card.T.x - 0.05, G.sticker_card.T.y + 0.3, G.sticker_card.T.w + 0.1, G.sticker_card.T.h, pseudorandom_element(G.P_CARDS), G.P_CENTERS.c_base)
@@ -591,7 +590,6 @@ function G.FUNCS.change_viewed_sleeve()
         else
             sleeve_card.children.back = Sprite(sleeve_card.T.x, sleeve_card.T.y + 0.3, sleeve_card.T.w, sleeve_card.T.h, G.ASSET_ATLAS[sleeve_center.atlas], sleeve_center.pos)
         end
-        print_debug("  #area.cards = " .. #area.cards)
     elseif sleeve_center.name == "No Sleeve" and sleeve_card then
         table.remove(area.cards, sleeve_index)
     elseif sleeve_card then
@@ -622,7 +620,6 @@ G.FUNCS.RUN_SETUP_check_sleeve2 = function(e)
 end
 
 function G.UIDEF.sleeve_description(_sleeve)
-    -- print_trace("func sleeve_description")
     local _sleeve_center = G.P_CENTER_POOLS.Sleeve[_sleeve]
     local ret_nodes = {}
     if _sleeve_center then
@@ -689,7 +686,6 @@ function G.UIDEF.sleeve_option(_type)
 end
 
 function G.UIDEF.viewed_sleeve_option()
-    print_trace("func G.UIDEF.viewed_sleeve_option")
     G.viewed_sleeve = G.viewed_sleeve or 1
     -- TODO `_type` is undefined, what to do?
     if _type ~= 'Continue' then
@@ -725,7 +721,6 @@ end
 local old_run_setup_option = G.UIDEF.run_setup_option
 function G.UIDEF.run_setup_option(_type)
     local output = old_run_setup_option(_type)
-    print_trace("func run_setup_option")
     --[[
     nodes =
     [
@@ -740,19 +735,22 @@ function G.UIDEF.run_setup_option(_type)
     --]]
     if _type == "Continue" then
         -- TODO: fix this and the saving of sleeve in general
+        G.viewed_sleeve = 1
+        if G.SAVED_GAME ~= nil then
+            G.viewed_sleeve = saved_game.GAME.selected_sleeve or G.viewed_sleeve
+        end
         table.insert(output.nodes, 3,
             {
                 n = G.UIT.R,
-                config = { align = "cm" },
+                config = { align = "cm", padding = 0.05, minh = 1.65 },
                 nodes = {
-                    {
-                        n = G.UIT.T,
-                        config = { text = "Text", colour = G.C.UI.TEXT_LIGHT, scale = 0.4 }
+                    {n=G.UIT.O, 
+                     config={id = nil, func = 'RUN_SETUP_check_sleeve', insta_func = true, object = Moveable() }
                     }
                 }
             })
     elseif _type == "New Run" then
-        G.viewed_sleeve = 1
+        G.viewed_sleeve = G.viewed_sleeve or 1
         table.insert(output.nodes, 3,
             {
                 n = G.UIT.R,
@@ -768,13 +766,14 @@ function G.UIDEF.run_setup_option(_type)
     return output
 end
 
-local old_FUNCS_start_run = G.FUNCS.start_run
-function G.FUNCS.start_run(e, args)
+local old_game_start_run = Game.start_run
+function Game:start_run(args)
+    old_game_start_run(self, args)
     if G.SETTINGS.current_setup == "New Run" then
-        print_trace("G.FUNCS.start_run : inserted sleeve arg")
-        args.sleeve = G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve or 1
+        G.GAME.selected_sleeve = G.viewed_sleeve or 1
+        print_trace("Game:start_run inserted sleeve arg")
+        print_debug("  G.GAME.viewed_sleeve = " .. G.GAME.selected_sleeve)
     end
-    return old_FUNCS_start_run(e, args)
 end
 
 local old_FUNCS_change_viewed_back = G.FUNCS.change_viewed_back
@@ -790,7 +789,7 @@ end
 local old_Back_apply_to_run = Back.apply_to_run
 function Back:apply_to_run()
     print_trace("Back:apply_to_run")
-    local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve or 1]
+    local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
     sleeve_center:apply_to_run()
     return old_Back_apply_to_run(self)
 end
@@ -798,7 +797,7 @@ end
 local old_Back_trigger_effect = Back.trigger_effect
 function Back:trigger_effect(args)
     print_trace("Back:trigger_effect")
-    local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve or 1]
+    local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
     local new_chips, new_mult = sleeve_center:trigger_effect(args)
     if new_chips then
         args.chips = new_chips
