@@ -20,9 +20,6 @@ ISSUES:
 
 -- DEBUG FUNCS (can remove on release?)
 
-G.DEBUG = true
-_RELEASE_MODE = false
-
 local function print_trace(...)
     return sendTraceMessage(table.concat({ ... }, "\t"), "CardSleeves")
 end
@@ -39,13 +36,14 @@ local function print_warning(...)
     return sendWarnMessage(table.concat({ ... }, "\t"), "CardSleeves")
 end
 
-local function tprint(tbl, indent)
+local function tprint(tbl, max_indent, _indent)
     if tbl == nil then return "nil" end
-    if not indent then indent = 0 end
-    local toprint = string.rep(" ", indent) .. "{\r\n"
-    indent = indent + 2
+    if not _indent then _indent = 0 end
+    if not max_indent then max_indent = 32 end
+    local toprint = string.rep(" ", _indent) .. "{\r\n"
+    _indent = _indent + 2
     for k, v in pairs(tbl) do
-        toprint = toprint .. string.rep(" ", indent)
+        toprint = toprint .. string.rep(" ", _indent)
         if (type(k) == "number") then
             toprint = toprint .. "[" .. k .. "] = "
         elseif (type(k) == "string") then
@@ -60,16 +58,16 @@ local function tprint(tbl, indent)
                 toprint = toprint .. "\"" .. v .. "\",\r\n"
             end
         elseif (type(v) == "table") then
-            if indent >= 3 then
+            if _indent > max_indent then
                 toprint = toprint .. tostring(v) .. ",\r\n"
             else
-                toprint = toprint .. tostring(v) .. tprint(v, indent + 1) .. ",\r\n"
+                toprint = toprint .. tostring(v) .. tprint(v, max_indent, _indent + 1) .. ",\r\n"
             end
         else
             toprint = toprint .. "\"" .. tostring(v) .. "\",\r\n"
         end
     end
-    toprint = toprint .. string.rep(" ", indent - 2) .. "}"
+    toprint = toprint .. string.rep(" ", _indent - 2) .. "}"
     return toprint
 end
 
@@ -83,7 +81,7 @@ end
 
 SMODS.Atlas {
     key = "sleeve_atlas",
-    path = "sleeves.png", -- only contains first 5 sleeves for now
+    path = "sleeves.png",
     px = 71,
     py = 95
 }
@@ -114,15 +112,17 @@ SMODS.Sleeve = SMODS.GameObject:extend {
     generate_UI = function(self)
         min_dims = min_dims or 0.7
         loc_nodes = {}
-        return {n=G.UIT.ROOT, config={align = "cm", minw = min_dims*5, minh = min_dims*2.5, id = self.name, colour = G.C.CLEAR}, nodes={
-            desc_from_rows(loc_nodes, true, min_dims*5)
-        }}
+        return {n=G.UIT.ROOT, 
+                config={align = "cm", minw = min_dims*5, minh = min_dims*2.5, id = self.name, colour = G.C.CLEAR}, 
+                nodes={
+                       desc_from_rows(loc_nodes, true, min_dims*5)
+                      }
+               }
     end
 }
 
+-- TODO: fix specific sleeve+deck combinations
 function SMODS.Sleeve:apply_to_run()
-    print_trace("Sleeve.apply_to_run")
-
     if self.config.voucher then
         G.GAME.used_vouchers[self.config.voucher] = true
         G.GAME.starting_voucher_count = (G.GAME.starting_voucher_count or 0) + 1
@@ -218,15 +218,14 @@ function SMODS.Sleeve:apply_to_run()
         G.GAME.modifiers.no_interest = true
     end
     if self.config.extra_hand_bonus then
-        G.GAME.modifiers.money_per_hand = self.config.extra_hand_bonus
+        G.GAME.modifiers.money_per_hand = (G.GAME.modifiers.money_per_hand or 0) + self.config.extra_hand_bonus
     end
     if self.config.extra_discard_bonus then
-        G.GAME.modifiers.money_per_discard = self.config.extra_discard_bonus
+        G.GAME.modifiers.money_per_discard = (G.GAME.modifiers.money_per_discard or 0) + self.config.extra_discard_bonus
     end
 end
 
 function SMODS.Sleeve:trigger_effect(args)
-    print_trace("Sleeve.trigger_effect")
     if not args then return end
     
     if self.name == 'Anaglyph Sleeve' and args.context == 'eval' and G.GAME.last_blind and G.GAME.last_blind.boss then
@@ -552,49 +551,54 @@ local function find_sleeve_card(area)
     end
 end
 
+local function create_sleeve_card(area)
+    local inspiration_card = area.cards[1]
+    local new_card = Card(inspiration_card.T.x, inspiration_card.T.y, inspiration_card.T.w, inspiration_card.T.h, 
+                          pseudorandom_element(G.P_CARDS), G.P_CENTERS.c_base)
+    new_card.sprite_facing = 'back'
+    new_card.facing = 'back'
+    -- the sleeve doesn't "snap back" to the original pos, for some reason. these next 4 lines are a very hacky fix
+    new_card.states.collide.can = false
+    new_card.states.hover.can = false
+    new_card.states.drag.can = false
+    new_card.states.click.can = false
+    return new_card
+end
+
+local function replace_sleeve_sprite(card, sleeve_center)
+    if card.children.back then
+        card.children.back:remove()
+    end
+    card.children.back = Sprite(card.T.x - 0.01, card.T.y + 0.25, card.T.w + 0.07, card.T.h, 
+                                G.ASSET_ATLAS[sleeve_center.atlas], sleeve_center.pos)
+end
+
+local function insert_sleeve_card(area)
+    local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve or 1]
+    local _, sleeve_card = find_sleeve_card(area)
+    if sleeve_center.name ~= "No Sleeve" then
+        if sleeve_card == nil then
+            local new_card = create_sleeve_card(area)
+            replace_sleeve_sprite(new_card, sleeve_center)
+            area:emplace(new_card)
+        else
+            replace_sleeve_sprite(sleeve_card, sleeve_center)
+        end
+    elseif sleeve_center.name == "No Sleeve" and sleeve_card then
+        sleeve_card:remove()
+    elseif sleeve_card then
+        print_warning("Unexpected sleeve_card properties!")
+    end
+end
+
 function G.FUNCS.change_sleeve(args)
     G.viewed_sleeve = args.to_key
     G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve = args.to_key
 end
 
 function G.FUNCS.change_viewed_sleeve()
-    local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve]
-    --[[
-    local card = G.sticker_card
-    if sleeve_center.name ~= "No Sleeve" then
-        card.children.back = Sprite(card.T.x - 0.05, card.T.y + 0.3, card.T.w + 0.1, card.T.h, G.ASSET_ATLAS[sleeve_center.atlas], sleeve_center.pos)
-        print_debug("  card.children.back = " .. tprint(card.children.back))
-        card.states.collide.can = false
-        card.states.hover.can = false
-        card.states.drag.can = false
-        card.states.click.can = false
-    else
-        card.children.back = false
-        card:set_ability(card.config.center, true)
-    end
-    --]]
     local area = G.sticker_card.area
-    local sleeve_index, sleeve_card = find_sleeve_card(area)
-    if sleeve_center.name ~= "No Sleeve" then
-        if sleeve_card == nil then
-            local new_card = Card(G.sticker_card.T.x - 0.05, G.sticker_card.T.y + 0.3, G.sticker_card.T.w + 0.1, G.sticker_card.T.h, pseudorandom_element(G.P_CARDS), G.P_CENTERS.c_base)
-            new_card.sprite_facing = 'back'
-            new_card.facing = 'back'
-            -- the sleeve doesn't "snap back" to the original pos, for some reason. this is a very hacky fix
-            new_card.states.collide.can = false
-            new_card.states.hover.can = false
-            new_card.states.drag.can = false
-            new_card.states.click.can = false
-            new_card.children.back = Sprite(new_card.T.x, new_card.T.y, new_card.T.w, new_card.T.h, G.ASSET_ATLAS[sleeve_center.atlas], sleeve_center.pos)
-            area:emplace(new_card)
-        else
-            sleeve_card.children.back = Sprite(sleeve_card.T.x, sleeve_card.T.y + 0.3, sleeve_card.T.w, sleeve_card.T.h, G.ASSET_ATLAS[sleeve_center.atlas], sleeve_center.pos)
-        end
-    elseif sleeve_center.name == "No Sleeve" and sleeve_card then
-        table.remove(area.cards, sleeve_index)
-    elseif sleeve_card then
-        print_warning("Unexpected sleeve_card properties!")
-    end
+    return insert_sleeve_card(area)
 end
 
 G.FUNCS.RUN_SETUP_check_sleeve = function(e)
@@ -648,7 +652,8 @@ function G.UIDEF.sleeve_description(_sleeve)
                 n = G.UIT.R,
                 config = { align = "cm", padding = 0 },
                 nodes = {
-                    { n = G.UIT.T, config = { text = localize { type = 'name_text', key = _sleeve_center.key, set = _sleeve_center.set }, scale = 0.35, colour = G.C.WHITE } }
+                    { n = G.UIT.T, config = { text = localize { type = 'name_text', key = _sleeve_center.key, set = _sleeve_center.set }, 
+                      scale = 0.35, colour = G.C.WHITE } }
                 }
             },
             { n = G.UIT.R, config = { align = "cm", padding = 0.03, colour = G.C.WHITE, r = 0.1, minh = 1, minw = 5.5 }, nodes = desc_t }
@@ -687,10 +692,6 @@ end
 
 function G.UIDEF.viewed_sleeve_option()
     G.viewed_sleeve = G.viewed_sleeve or 1
-    -- TODO `_type` is undefined, what to do?
-    if _type ~= 'Continue' then
-        G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve = G.viewed_sleeve
-    end
 
     G.FUNCS.change_viewed_sleeve()
 
@@ -716,11 +717,39 @@ function G.UIDEF.viewed_sleeve_option()
     }
 end
 
+function G.UIDEF.current_sleeve(_scale)
+    local _scale = _scale or 1
+    local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve or 1]
+    local sleeve_sprite = Sprite(0, 0, _scale*1, _scale*1, G.ASSET_ATLAS[sleeve_center.atlas], sleeve_center.pos)
+    sleeve_sprite.states.drag.can = false
+    return {
+        n = G.UIT.ROOT,
+        config = { align = "cm", colour = G.C.BLACK, r = 0.1, padding = 0.1},
+        nodes = {
+            {
+                n = G.UIT.R,
+                config = { align = "cm", colour = G.C.BLACK, padding = 0.1, minw = 4 },
+                nodes = {
+                    { n = G.UIT.O, config = { colour = G.C.BLACK, object = sleeve_sprite, hover = true, can_collide = false } },
+                    { n = G.UIT.T, config = { text = "Sleeve", scale = 0.5, colour = G.C.WHITE } }
+                }
+            },
+            {
+                n = G.UIT.R,
+                config = { align = "cm", padding = 0.1 },
+                nodes = {
+                    G.UIDEF.sleeve_description(G.GAME.selected_sleeve)
+                }
+            }
+        }
+    }
+end
+
 -- HOOKING / WRAPPING FUNCS
 
-local old_run_setup_option = G.UIDEF.run_setup_option
+local old_uidef_run_setup_option = G.UIDEF.run_setup_option
 function G.UIDEF.run_setup_option(_type)
-    local output = old_run_setup_option(_type)
+    local output = old_uidef_run_setup_option(_type)
     --[[
     nodes =
     [
@@ -734,7 +763,6 @@ function G.UIDEF.run_setup_option(_type)
     ]
     --]]
     if _type == "Continue" then
-        -- TODO: fix this and the saving of sleeve in general
         G.viewed_sleeve = 1
         if G.SAVED_GAME ~= nil then
             G.viewed_sleeve = saved_game.GAME.selected_sleeve or G.viewed_sleeve
@@ -766,47 +794,64 @@ function G.UIDEF.run_setup_option(_type)
     return output
 end
 
-local old_game_start_run = Game.start_run
-function Game:start_run(args)
-    old_game_start_run(self, args)
-    if G.SETTINGS.current_setup == "New Run" then
-        G.GAME.selected_sleeve = G.viewed_sleeve or 1
-        print_trace("Game:start_run inserted sleeve arg")
-        print_debug("  G.GAME.viewed_sleeve = " .. G.GAME.selected_sleeve)
-    end
+local old_game_init_game_object = Game.init_game_object
+function Game:init_game_object()
+    local output = old_game_init_game_object(self)
+    output.selected_sleeve = G.viewed_sleeve or 1
+    return output
 end
 
 local old_FUNCS_change_viewed_back = G.FUNCS.change_viewed_back
 function G.FUNCS.change_viewed_back(args)
-    print_trace("func G.FUNCS.change_viewed_back")
     local area = G.sticker_card.area
-    local sleeve_index, _ = find_sleeve_card(area)
-    table.remove(area.cards, sleeve_index)
+    local _, sleeve_card = find_sleeve_card(area)
+    if sleeve_card then
+        sleeve_card:remove()
+    end
     old_FUNCS_change_viewed_back(args)
     G.FUNCS.change_viewed_sleeve(args)
 end
 
 local old_Back_apply_to_run = Back.apply_to_run
 function Back:apply_to_run()
-    print_trace("Back:apply_to_run")
     local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
+    old_Back_apply_to_run(self)
     sleeve_center:apply_to_run()
-    return old_Back_apply_to_run(self)
 end
 
 local old_Back_trigger_effect = Back.trigger_effect
 function Back:trigger_effect(args)
-    print_trace("Back:trigger_effect")
     local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
     local new_chips, new_mult = sleeve_center:trigger_effect(args)
-    if new_chips then
-        args.chips = new_chips
+    args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
+    local output = old_Back_trigger_effect(self, args)
+    if output then
+        return output
     end
-    if new_mult then
-        args.mult = new_mult
-    end
-    return old_Back_trigger_effect(self, args)
+    return args.chips, args.mult
 end
+
+local is_in_run_info_tab = false
+local old_uidef_run_info = G.UIDEF.run_info
+function G.UIDEF.run_info()
+    is_in_run_info_tab = true
+    local output = old_uidef_run_info()
+    is_in_run_info_tab = false
+    return output
+end
+
+local old_create_tabs = create_tabs
+function create_tabs(args)
+    if args["tabs"] and is_in_run_info_tab and G.GAME.selected_sleeve > 1 then
+        args.tabs[#args.tabs+1] = {
+            label = "Sleeve",
+            tab_definition_function = G.UIDEF.current_sleeve
+        }
+    end
+    return old_create_tabs(args)
+end
+
+-- TODO: show sleeve information during run                               
 
 print_trace("CardSleeves loaded~!")
 
