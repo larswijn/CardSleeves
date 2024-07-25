@@ -2,7 +2,7 @@
 --- MOD_NAME: Card Sleeves
 --- MOD_ID: CardSleeves
 --- MOD_AUTHOR: [LarsWijn]
---- MOD_DESCRIPTION: Adds sleeves as modifier to decks, similar to stakes.
+--- MOD_DESCRIPTION: Adds sleeves as modifier to decks, similar-ish to stakes.
 --- PREFIX: casl
 --- LOADER_VERSION_GEQ: 1.0.0
 
@@ -565,12 +565,15 @@ local function create_sleeve_card(area)
     return new_card
 end
 
+local function create_sleeve_sprite(x, y, w, h, sleeve_center)
+    return Sprite(x, y, w, h, G.ASSET_ATLAS[sleeve_center.atlas], sleeve_center.pos)
+end
+
 local function replace_sleeve_sprite(card, sleeve_center)
     if card.children.back then
         card.children.back:remove()
     end
-    card.children.back = Sprite(card.T.x - 0.01, card.T.y + 0.25, card.T.w + 0.07, card.T.h, 
-                                G.ASSET_ATLAS[sleeve_center.atlas], sleeve_center.pos)
+    card.children.back = create_sleeve_sprite(card.T.x - 0.05, card.T.y + 0.25, card.T.w + 0.1, card.T.h, sleeve_center)
 end
 
 local function insert_sleeve_card(area)
@@ -579,8 +582,8 @@ local function insert_sleeve_card(area)
     if sleeve_center.name ~= "No Sleeve" then
         if sleeve_card == nil then
             local new_card = create_sleeve_card(area)
-            replace_sleeve_sprite(new_card, sleeve_center)
             area:emplace(new_card)
+            replace_sleeve_sprite(new_card, sleeve_center)
         else
             replace_sleeve_sprite(sleeve_card, sleeve_center)
         end
@@ -720,7 +723,7 @@ end
 function G.UIDEF.current_sleeve(_scale)
     local _scale = _scale or 1
     local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve or 1]
-    local sleeve_sprite = Sprite(0, 0, _scale*1, _scale*1, G.ASSET_ATLAS[sleeve_center.atlas], sleeve_center.pos)
+    local sleeve_sprite = create_sleeve_sprite(0, 0, _scale*1, _scale*(95/71), sleeve_center)
     sleeve_sprite.states.drag.can = false
     return {
         n = G.UIT.ROOT,
@@ -808,6 +811,7 @@ function G.FUNCS.change_viewed_back(args)
     if sleeve_card then
         sleeve_card:remove()
     end
+    
     old_FUNCS_change_viewed_back(args)
     G.FUNCS.change_viewed_sleeve(args)
 end
@@ -824,11 +828,52 @@ function Back:trigger_effect(args)
     local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
     local new_chips, new_mult = sleeve_center:trigger_effect(args)
     args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
+    
     local output = old_Back_trigger_effect(self, args)
     if output then
         return output
     end
     return args.chips, args.mult
+end
+
+local old_CardArea_draw = CardArea.draw
+function CardArea:draw()
+    if not self.states.visible then return end 
+    if G.VIEWING_DECK and (self==G.deck or self==G.hand or self==G.play) then return end
+    
+    local draw_sleeve = self == G.deck and G.GAME.selected_sleeve and G.GAME.selected_sleeve > 1
+    
+    if draw_sleeve and self.children["view_deck"] then
+        -- prevent drawing this, we'll draw it ourselves later
+        local old_view_deck_draw = self.children.view_deck.draw
+        self.children.view_deck.draw = function() end
+    end
+    
+    old_CardArea_draw(self)
+    
+    if draw_sleeve then
+        local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve]
+        local x = self.T.x
+        local width = self.T.w
+        if self.cards[1] then
+            x = self.cards[#self.cards].T.x
+            width = self.cards[1].T.w + (self.cards[1].T.x - self.cards[#self.cards].T.x)
+        end
+        if self.sleeve_sprite == nil then
+            self.sleeve_sprite = create_sleeve_sprite(x, self.T.y, width, self.T.h, sleeve_center)
+            self.sleeve_sprite.states.drag.can = false
+        else
+            -- update x & width
+            self.sleeve_sprite.T.x = x
+            self.sleeve_sprite.T.w = width
+        end
+        self.sleeve_sprite:draw()
+        if self.children["view_deck"] and G.deck_preview or self.states.collide.is or (G.buttons and G.buttons.states.collide.is and G.CONTROLLER.HID.controller) then 
+            -- restore draw behavior of "view deck" so it can be drawn on top of sleeve sprite
+            self.children.view_deck.draw = old_view_deck_draw
+            self.children.view_deck:draw()
+        end
+    end
 end
 
 local is_in_run_info_tab = false
@@ -848,10 +893,9 @@ function create_tabs(args)
             tab_definition_function = G.UIDEF.current_sleeve
         }
     end
+    
     return old_create_tabs(args)
 end
-
--- TODO: show sleeve information during run                               
 
 print_trace("CardSleeves loaded~!")
 
