@@ -826,13 +826,12 @@ end
 local old_Back_trigger_effect = Back.trigger_effect
 function Back:trigger_effect(args)
     local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
-    local new_chips, new_mult = sleeve_center:trigger_effect(args)
+    local new_chips, new_mult
+    new_chips, new_mult = sleeve_center:trigger_effect(args)
     args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
     
-    local output = old_Back_trigger_effect(self, args)
-    if output then
-        return output
-    end
+    new_chips, new_mult = old_Back_trigger_effect(self, args)
+    args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
     return args.chips, args.mult
 end
 
