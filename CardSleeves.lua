@@ -73,6 +73,17 @@ end
 
 -- LOCALIZATION
 
+local function reinit_localization(sleeve_center)
+    -- only reparses the description text
+    local set, key = sleeve_center.set, sleeve_center.key
+    G.localization.descriptions[set][key] = sleeve_center.loc_txt
+    local center = G.localization.descriptions[set][key]
+    center.text_parsed = {}
+    for _, line in ipairs(center.text or {}) do
+        center.text_parsed[#center.text_parsed+1] = loc_parse_string(line)
+    end
+end
+
 function SMODS.current_mod.process_loc_text()
     G.localization.descriptions.Sleeve = G.localization.descriptions.Sleeve or {}
 end
@@ -98,7 +109,7 @@ SMODS.Sleeve = SMODS.GameObject:extend {
     set = "Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 0 }, -- within `atlas`
-    required_params = { "key", "pos"},
+    required_params = { "key", "loc_txt", "atlas", "pos" },
     inject_class = function(self)
         G.P_CENTER_POOLS[self.set] = {}
         G.P_SLEEVES = {}
@@ -109,20 +120,11 @@ SMODS.Sleeve = SMODS.GameObject:extend {
         SMODS.insert_pool(G.P_CENTER_POOLS[self.set], self)
     end,
     loc_vars = function() return { vars = {} } end,
-    generate_UI = function(self)
-        min_dims = min_dims or 0.7
-        loc_nodes = {}
-        return {n=G.UIT.ROOT, 
-                config={align = "cm", minw = min_dims*5, minh = min_dims*2.5, id = self.name, colour = G.C.CLEAR}, 
-                nodes={
-                       desc_from_rows(loc_nodes, true, min_dims*5)
-                      }
-               }
-    end
+    update_self = function() end,
 }
 
 -- TODO: fix specific sleeve+deck combinations
-function SMODS.Sleeve:apply_to_run()
+function SMODS.Sleeve:apply()
     if self.config.voucher then
         G.GAME.used_vouchers[self.config.voucher] = true
         G.GAME.starting_voucher_count = (G.GAME.starting_voucher_count or 0) + 1
@@ -151,7 +153,6 @@ function SMODS.Sleeve:apply_to_run()
     if self.config.remove_faces then
         G.GAME.starting_params.no_faces = true
     end
-
     if self.config.spectral_rate then
         G.GAME.spectral_rate = self.config.spectral_rate
     end
@@ -292,6 +293,7 @@ function SMODS.Sleeve:trigger_effect(args)
 end
 
 -- SLEEVE INSTANCES
+-- TODO: create unlock conditions
 
 SMODS.Sleeve {
     key = "none",
@@ -362,7 +364,14 @@ SMODS.Sleeve {
         return { vars = { self.config.extra_hand_bonus, self.config.extra_discard_bonus, self.config.no_interest } }
     end,
     atlas = "sleeve_atlas",
-    pos = { x = 3, y = 0 }
+    pos = { x = 3, y = 0 },
+    update_self = function(self, current_deck_name)
+        if current_deck_name == "Green Deck" then
+            self.config.extra_hand_bonus = 1
+        else
+            self.config.extra_hand_bonus = 2
+        end
+    end,
 }
 
 SMODS.Sleeve {
@@ -389,13 +398,26 @@ SMODS.Sleeve {
         text = G.localization.descriptions.Back["b_magic"].text
     },
     loc_vars = function(self)
-        return {
-            vars = { localize { type = 'name_text', key = self.config.voucher, set = 'Voucher' },
-                localize { type = 'name_text', key = self.config.consumables[1], set = 'Tarot' } }
-        }
+        local vars = { localize{type = 'name_text', key = self.config.voucher, set = 'Voucher'} }
+        if self.config["consumables"] then
+            vars[#vars+1] = localize{type = 'name_text', key = self.config.consumables[1], set = 'Tarot'}
+        end
+        return { vars = vars }
     end,
     atlas = "sleeve_atlas",
-    pos = { x = 0, y = 1 }
+    pos = { x = 0, y = 1 },
+    update_self = function(self, current_deck_name)
+        if current_deck_name == "Magic Deck" then
+            self.loc_txt.text = {
+                                 "Start run with the",
+                                 "{C:tarot,T:v_omen_globe}#1#{} voucher",
+                                 }
+            self.config = { voucher = "v_omen_globe" }
+        else
+            self.loc_txt.text = G.localization.descriptions.Back["b_magic"].text
+            self.config = { voucher = 'v_crystal_ball', consumables = { 'c_fool', 'c_fool' } }
+        end
+    end,
 }
 
 SMODS.Sleeve {
@@ -413,7 +435,19 @@ SMODS.Sleeve {
         }
     end,
     atlas = "sleeve_atlas",
-    pos = { x = 1, y = 1 }
+    pos = { x = 1, y = 1 },
+    update_self = function(self, current_deck_name)
+        if current_deck_name == "Nebula Deck" then
+            self.loc_txt.text = {
+                                 "Start run with the",
+                                 "{C:planet,T:v_telescope}#1#{} voucher",
+                                 }
+            self.config = { voucher = "v_observatory" }
+        else
+            self.loc_txt.text = G.localization.descriptions.Back["b_nebula"].text
+            self.config = { voucher = 'v_telescope', consumable_slot = -1 }
+        end
+    end,
 }
 
 SMODS.Sleeve {
@@ -428,7 +462,28 @@ SMODS.Sleeve {
         return { vars = { self.config.spectral_rate, self.config.consumables } }
     end,
     atlas = "sleeve_atlas",
-    pos = { x = 2, y = 1 }
+    pos = { x = 2, y = 1 },
+    update_self = function(self, current_deck_name)
+        if current_deck_name == "Ghost Deck" then
+            self.config = { spectral_rate = 4, spectral_more_options = 2 }
+            self.loc_txt.text = {
+                    "{C:spectral}Spectral{} cards appearance rate",
+                    "in the shop doubles,",
+                    "{C:spectral}Spectral Packs{} have {C:attention}2{}",
+                    "extra options to choose from",
+                }
+        else
+            self.config = { spectral_rate = 2, consumables = { 'c_hex' } }
+            self.loc_txt.text = G.localization.descriptions.Back["b_ghost"].text
+        end
+    end,
+    trigger_effect = function(self, args)
+        local is_spectral_pack = args.context["card"] and args.context.card.ability.set == "Booster" and args.context.card.ability.name:find("Spectral")
+        if args.context["create_card"] and is_spectral_pack and self.config.spectral_more_options then
+            print_trace("creating booster pack")
+            args.context.card.ability.extra = args.context.card.ability.extra + self.config.spectral_more_options
+        end
+    end,
 }
 
 SMODS.Sleeve {
@@ -471,13 +526,35 @@ SMODS.Sleeve {
     },
     loc_vars = function(self)
         local vars = {}
-        for _, voucher in pairs(self.config.vouchers) do
+        for _, voucher in pairs(self.config.vouchers or {}) do
             vars[#vars+1] = localize { type = 'name_text', key = voucher, set = 'Voucher' }
         end
         return { vars = vars }
     end,
     atlas = "sleeve_atlas",
-    pos = { x = 0, y = 2 }
+    pos = { x = 0, y = 2 },
+    update_self = function(self, current_deck_name)
+        if current_deck_name == "Zodiac Deck" then
+            self.config = { arcana_more_options = 2, celestial_more_options = 2 }
+            self.loc_txt.text = {
+                    "{C:tarot}Tarot{} and {C:planet}Celestial{} Packs both have ",
+                    "{C:attention}2{} extra options to choose from",
+                }
+        else
+            self.config = {vouchers = {'v_tarot_merchant', 'v_planet_merchant', 'v_overstock_norm'}}
+            self.loc_txt.text = G.localization.descriptions.Back["b_zodiac"].text
+        end
+    end,
+    trigger_effect = function(self, args)
+        local is_booster_pack = args.context["card"] and args.context.card.ability.set == "Booster"
+        local is_arcana_pack = is_booster_pack and args.context.card.ability.name:find("Arcana")
+        local is_celestial_pack = is_booster_pack and args.context.card.ability.name:find("Celestial")
+        if args.context["create_card"] and is_arcana_pack and self.config.arcana_more_options then
+            args.context.card.ability.extra = args.context.card.ability.extra + self.config.arcana_more_options
+        elseif args.context["create_card"] and is_celestial_pack and self.config.celestial_more_options then
+            args.context.card.ability.extra = args.context.card.ability.extra + self.config.celestial_more_options
+        end
+    end,
 }
 
 SMODS.Sleeve {
@@ -522,7 +599,58 @@ SMODS.Sleeve {
         return { vars = {self.config.ante_scaling} }
     end,
     atlas = "sleeve_atlas",
-    pos = { x = 3, y = 2 }
+    pos = { x = 3, y = 2 },
+    update_self = function(self, current_deck_name)
+        if current_deck_name == "Plasma Deck" then
+            self.loc_txt.text = {
+                    "Balance {C:money}price{} of all items",
+                    "in the {C:attention}shop{}",
+                }
+        else
+            self.loc_txt.text = G.localization.descriptions.Back["b_plasma"].text
+        end
+    end,
+    trigger_effect = function(self, args)
+        SMODS.Sleeve.trigger_effect(self, args)
+        if G.GAME.selected_back.name == "Plasma Deck" and self.name == 'Plasma Sleeve' and args.context == "shop_final_pass" then
+            local cardareas = {}
+            for _, obj in pairs(G) do
+                if type(obj) == "table" and obj["is"] and obj:is(CardArea) and obj.config.type == "shop" then
+                    cardareas[#cardareas+1] = obj
+                end
+            end
+            local total_cost, total_items_for_sale = 0, 0
+            for i, cardarea in pairs(cardareas) do
+                for j, card in pairs(cardarea.cards) do
+                    card:set_cost()
+                    total_cost = total_cost + card.cost
+                    total_items_for_sale = total_items_for_sale + 1
+                end
+            end
+            local avg_cost = math.floor(total_cost / total_items_for_sale)
+            G.E_MANAGER:add_event(Event({
+                func = (function()
+                    local text = localize('k_balanced')
+                    play_sound('gong', 0.94, 0.3)
+                    play_sound('gong', 0.94*1.5, 0.2)
+                    play_sound('tarot1', 1.5)
+                    attention_text({
+                        scale = 1.3, text = text, hold = 2, align = 'cm', offset = {x = 0,y = 0}, major = G.play
+                    })
+                    return true
+                end)
+            }))
+
+            -- delay(0.6)
+            for _, cardarea in pairs(cardareas) do
+                for _, card in pairs(cardarea.cards) do
+                    -- could maybe use `function ease_value` instead?
+                    card.cost = avg_cost
+                    -- card:set_cost()  
+                end
+            end
+        end
+    end
 }
 
 SMODS.Sleeve {
@@ -600,6 +728,11 @@ function G.FUNCS.change_sleeve(args)
 end
 
 function G.FUNCS.change_viewed_sleeve()
+    local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve or 1]
+    local current_deck_name = G.GAME.viewed_back and G.GAME.viewed_back.name or "Red Deck"
+    sleeve_center:update_self(current_deck_name)
+    reinit_localization(sleeve_center)
+    
     local area = G.sticker_card.area
     return insert_sleeve_card(area)
 end
@@ -627,13 +760,13 @@ G.FUNCS.RUN_SETUP_check_sleeve2 = function(e)
 end
 
 function G.UIDEF.sleeve_description(_sleeve)
-    local _sleeve_center = G.P_CENTER_POOLS.Sleeve[_sleeve]
+    local sleeve_center = G.P_CENTER_POOLS.Sleeve[_sleeve]
     local ret_nodes = {}
-    if _sleeve_center then
+    if sleeve_center then
         localize { type = 'descriptions',
-            key = _sleeve_center.key,
-            set = _sleeve_center.set,
-            vars = _sleeve_center:loc_vars().vars,
+            key = sleeve_center.key,
+            set = sleeve_center.set,
+            vars = sleeve_center:loc_vars().vars,
             nodes = ret_nodes }
     end
 
@@ -655,7 +788,7 @@ function G.UIDEF.sleeve_description(_sleeve)
                 n = G.UIT.R,
                 config = { align = "cm", padding = 0 },
                 nodes = {
-                    { n = G.UIT.T, config = { text = localize { type = 'name_text', key = _sleeve_center.key, set = _sleeve_center.set }, 
+                    { n = G.UIT.T, config = { text = localize { type = 'name_text', key = sleeve_center.key, set = sleeve_center.set }, 
                       scale = 0.35, colour = G.C.WHITE } }
                 }
             },
@@ -722,7 +855,10 @@ end
 
 function G.UIDEF.current_sleeve(_scale)
     local _scale = _scale or 1
-    local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve or 1]
+    local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
+    local current_deck_name = G.GAME.selected_back and G.GAME.selected_back.name or "Red Deck"
+    sleeve_center:update_self(current_deck_name)
+    reinit_localization(sleeve_center)
     local sleeve_sprite = create_sleeve_sprite(0, 0, _scale*1, _scale*(95/71), sleeve_center)
     sleeve_sprite.states.drag.can = false
     return {
@@ -797,9 +933,9 @@ function G.UIDEF.run_setup_option(_type)
     return output
 end
 
-local old_game_init_game_object = Game.init_game_object
+local old_Game_init_game_object = Game.init_game_object
 function Game:init_game_object()
-    local output = old_game_init_game_object(self)
+    local output = old_Game_init_game_object(self)
     output.selected_sleeve = G.viewed_sleeve or 1
     return output
 end
@@ -813,6 +949,7 @@ function G.FUNCS.change_viewed_back(args)
     end
     
     old_FUNCS_change_viewed_back(args)
+    
     G.FUNCS.change_viewed_sleeve(args)
 end
 
@@ -820,7 +957,7 @@ local old_Back_apply_to_run = Back.apply_to_run
 function Back:apply_to_run()
     local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
     old_Back_apply_to_run(self)
-    sleeve_center:apply_to_run()
+    sleeve_center:apply()
 end
 
 local old_Back_trigger_effect = Back.trigger_effect
@@ -894,6 +1031,33 @@ function create_tabs(args)
     end
     
     return old_create_tabs(args)
+end
+
+local old_Controller_snap_to = Controller.snap_to
+function Controller:snap_to(args)
+    -- hooking into this might not be a good idea tbh, but I don't have a controller to test it, so...
+    local in_shop_load = G["shop"] and 
+                         (args.node == G.shop:get_UIE_by_ID('next_round_button') or
+                          args.node["area"] and args.node.area["config"] and args.node.area.config.type == "shop")
+    if in_shop_load then
+        -- shop has been loaded/rerolled/etc
+        local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
+        sleeve_center:trigger_effect{context = "shop_final_pass"}
+    end
+    return old_Controller_snap_to(self, args)
+end
+
+local old_Card_set_ability = Card.set_ability
+function Card:set_ability(...)
+    local output = old_Card_set_ability(self, ...)
+    
+    if self.ability.set == "Booster" then
+        local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
+        print_trace("Card:set_ability calling Sleeve:trigger_effect")
+        sleeve_center:trigger_effect{context = {create_card = true, card = self}}
+    end
+    
+    return output
 end
 
 print_trace("CardSleeves loaded~!")
