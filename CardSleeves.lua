@@ -37,7 +37,7 @@ local function print_warning(...)
 end
 
 local function tprint(tbl, max_indent, _indent)
-    if tbl == nil then return "nil" end
+    if type(tbl) ~= "table" then return tostring(tbl) end
     if not _indent then _indent = 0 end
     if not max_indent then max_indent = 32 end
     local toprint = string.rep(" ", _indent) .. "{\r\n"
@@ -71,6 +71,14 @@ local function tprint(tbl, max_indent, _indent)
     return toprint
 end
 
+local function tablesize(tbl)
+    local count = 0
+    for _ in pairs(tbl) do
+        count = count + 1
+    end
+    return count
+end
+
 -- LOCALIZATION
 
 local function reinit_localization(sleeve_center)
@@ -98,6 +106,7 @@ SMODS.Atlas {
 }
 
 -- SLEEVE BASE CLASS & METHODS
+-- TODO: check compatibility with other mods, add compatibility for other mods
 
 SMODS.Sleeves = {}
 SMODS.Sleeve = SMODS.GameObject:extend {
@@ -123,7 +132,7 @@ SMODS.Sleeve = SMODS.GameObject:extend {
     update_self = function() end,
 }
 
--- TODO: fix specific sleeve+deck combinations
+-- TODO: fix specific sleeve+deck combinations (and fix the explainer image)
 function SMODS.Sleeve:apply()
     if self.config.voucher then
         G.GAME.used_vouchers[self.config.voucher] = true
@@ -365,8 +374,8 @@ SMODS.Sleeve {
     end,
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 0 },
-    update_self = function(self, current_deck_name)
-        if current_deck_name == "Green Deck" then
+    update_self = function(self, is_current_sleeve, current_deck_name)
+        if is_current_sleeve and current_deck_name == "Green Deck" then
             self.config.extra_hand_bonus = 1
         else
             self.config.extra_hand_bonus = 2
@@ -406,8 +415,8 @@ SMODS.Sleeve {
     end,
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 1 },
-    update_self = function(self, current_deck_name)
-        if current_deck_name == "Magic Deck" then
+    update_self = function(self, is_current_sleeve, current_deck_name)
+        if is_current_sleeve and current_deck_name == "Magic Deck" then
             self.loc_txt.text = {
                                  "Start run with the",
                                  "{C:tarot,T:v_omen_globe}#1#{} voucher",
@@ -436,8 +445,8 @@ SMODS.Sleeve {
     end,
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 1 },
-    update_self = function(self, current_deck_name)
-        if current_deck_name == "Nebula Deck" then
+    update_self = function(self, is_current_sleeve, current_deck_name)
+        if is_current_sleeve and current_deck_name == "Nebula Deck" then
             self.loc_txt.text = {
                                  "Start run with the",
                                  "{C:planet,T:v_telescope}#1#{} voucher",
@@ -463,8 +472,8 @@ SMODS.Sleeve {
     end,
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 1 },
-    update_self = function(self, current_deck_name)
-        if current_deck_name == "Ghost Deck" then
+    update_self = function(self, is_current_sleeve, current_deck_name)
+        if is_current_sleeve and current_deck_name == "Ghost Deck" then
             self.config = { spectral_rate = 4, spectral_more_options = 2 }
             self.loc_txt.text = {
                     "{C:spectral}Spectral{} cards appearance rate",
@@ -479,7 +488,7 @@ SMODS.Sleeve {
     end,
     trigger_effect = function(self, args)
         local is_spectral_pack = args.context["card"] and args.context.card.ability.set == "Booster" and args.context.card.ability.name:find("Spectral")
-        if args.context["create_card"] and is_spectral_pack and self.config.spectral_more_options then
+        if args.context["create_booster"] and is_spectral_pack and self.config.spectral_more_options then
             print_trace("creating booster pack")
             args.context.card.ability.extra = args.context.card.ability.extra + self.config.spectral_more_options
         end
@@ -498,7 +507,87 @@ SMODS.Sleeve {
         return { vars = { self.config.remove_faces } }
     end,
     atlas = "sleeve_atlas",
-    pos = { x = 3, y = 1 }
+    pos = { x = 3, y = 1 },
+    update_self = function(self, is_current_sleeve, current_deck_name)
+        if is_current_sleeve and current_deck_name == "Abandoned Deck" then
+            self.loc_txt.text = {
+                    "{C:attention}Face Cards{} will no longer",
+                    "appear during the run"
+                }
+            self.config = { prevent_faces = true }
+        else
+            self.loc_txt.text = G.localization.descriptions.Back["b_abandoned"].text
+            self.config = { remove_faces = true }
+        end
+    end,
+    apply = function(self)
+        if self.allowed_card_centers == nil then
+            self.allowed_card_centers = {}
+            self.skip_trigger_effect = true
+            for _, card_center in pairs(G.P_CARDS) do
+                local card_instance = Card(0, 0, 0, 0, card_center, G.P_CENTERS.c_base)
+                if not SMODS.Ranks[card_instance.base.value].face then
+                    self.allowed_card_centers[#self.allowed_card_centers+1] = card_center
+                end
+                card_instance:remove()
+            end
+            -- TODO: adhere to smodded API?
+            self.get_rank_after_10 = function() return "A" end
+            self.skip_trigger_effect = false
+        end
+    end,
+    trigger_effect = function(self, args)
+        if not self.config.prevent_faces then
+            return
+        end
+        if self.skip_trigger_effect then
+            return
+        end
+        if self.allowed_card_centers == nil then
+            self:apply()
+        end
+        
+        if args.context["create_consumable"] and args.context["card"] then
+            local card = args.context.card
+            if card.ability.name == 'Familiar' then
+                -- change familiar
+                card.ability.extra = 0
+            end
+        elseif args.context["before_use_consumable"] and args.context["card"] then
+            local card = args.context.card
+            if card.ability.name == 'Strength' then
+                self.in_strength = true
+            elseif card.ability.name == "Ouija" then
+                self.in_ouija = true
+            end
+            if self.in_strength and self.in_ouija then
+                print_warning("cannot be in both strength and ouija!")
+            end
+        elseif args.context["after_use_consumable"] then
+            self.in_strength = nil
+            self.in_ouija = nil
+        elseif (args.context["create_playing_card"] or args.context["modify_playing_card"]) and args.context["card"] and not is_in_run_info_tab then
+            local card = args.context.card
+            if SMODS.Ranks[card.base.value].face then
+                if self.in_strength then
+                    local base_key = SMODS.Suits[card.base.suit].card_key .. "_" .. self.get_rank_after_10()
+                    card:set_base(G.P_CARDS[base_key])
+                elseif self.in_ouija then
+                    if self.ouija_rank == nil then
+                        local random_base = pseudorandom_element(self.allowed_card_centers, pseudoseed("slv"))
+                        local card_instance = Card(0, 0, 0, 0, random_base, G.P_CENTERS.c_base)
+                        self.ouija_rank = SMODS.Ranks[card_instance.base.value]
+                        card_instance:remove()
+                    end
+                    local base_key = SMODS.Suits[card.base.suit].card_key .. "_" .. self.ouija_rank.card_key
+                    card:set_base(G.P_CARDS[base_key])
+                else
+                    local random_base = pseudorandom_element(self.allowed_card_centers, pseudoseed("slv"))
+                    card:set_base(random_base)
+                end
+            end
+        end
+    end,
 }
 
 SMODS.Sleeve {
@@ -513,7 +602,37 @@ SMODS.Sleeve {
         return { vars = {} }
     end,
     atlas = "sleeve_atlas",
-    pos = { x = 4, y = 1 }
+    pos = { x = 4, y = 1 },
+    update_self = function(self, is_current_sleeve, current_deck_name)
+        if is_current_sleeve and current_deck_name == "Checkered Deck" then
+            self.loc_txt.text = {
+                    "All {C:clubs}Club{} cards will get converted to {C:spades}Spades{} and",
+                    "all {C:diamonds}Diamond{} cards will get converted to {C:hearts}Hearts{}",
+                }
+            self.config.force_suits = {["Clubs"] = "Spades", ["Diamonds"] = "Hearts"}
+        else
+            self.loc_txt.text = G.localization.descriptions.Back["b_checkered"].text
+            self.config = {}
+        end
+    end,
+    trigger_effect = function(self, args)
+        if not self.config.force_suits then
+            return
+        end
+        
+        if (args.context["create_playing_card"] or args.context["modify_playing_card"]) and args.context["card"] and not is_in_run_info_tab then
+            local card = args.context.card
+            print_debug("card.base.suit = " .. card.base.suit)
+            for from_suit, to_suit in pairs(self.config.force_suits) do
+                if card.base.suit == from_suit then
+                    print_debug("     changing to_suit = " .. to_suit)
+                        local base = SMODS.Suits[to_suit].card_key .. "_" .. SMODS.Ranks[card.base.value].card_key
+                        local initial = G.GAME.blind == nil or args.context["create_playing_card"]
+                        card:set_base(G.P_CARDS[base], initial)
+                end
+            end
+        end
+    end,
 }
 
 SMODS.Sleeve {
@@ -533,8 +652,8 @@ SMODS.Sleeve {
     end,
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 2 },
-    update_self = function(self, current_deck_name)
-        if current_deck_name == "Zodiac Deck" then
+    update_self = function(self, is_current_sleeve, current_deck_name)
+        if is_current_sleeve and current_deck_name == "Zodiac Deck" then
             self.config = { arcana_more_options = 2, celestial_more_options = 2 }
             self.loc_txt.text = {
                     "{C:tarot}Tarot{} and {C:planet}Celestial{} Packs both have ",
@@ -546,13 +665,16 @@ SMODS.Sleeve {
         end
     end,
     trigger_effect = function(self, args)
-        local is_booster_pack = args.context["card"] and args.context.card.ability.set == "Booster"
-        local is_arcana_pack = is_booster_pack and args.context.card.ability.name:find("Arcana")
-        local is_celestial_pack = is_booster_pack and args.context.card.ability.name:find("Celestial")
-        if args.context["create_card"] and is_arcana_pack and self.config.arcana_more_options then
-            args.context.card.ability.extra = args.context.card.ability.extra + self.config.arcana_more_options
-        elseif args.context["create_card"] and is_celestial_pack and self.config.celestial_more_options then
-            args.context.card.ability.extra = args.context.card.ability.extra + self.config.celestial_more_options
+        if args.context["create_booster"] and args.context["card"] then
+            local card = args.context.card
+            local is_booster_pack = card.ability.set == "Booster"
+            local is_arcana_pack = is_booster_pack and card.ability.name:find("Arcana")
+            local is_celestial_pack = is_booster_pack and card.ability.name:find("Celestial")
+            if is_arcana_pack and self.config.arcana_more_options then
+                card.ability.extra = card.ability.extra + self.config.arcana_more_options
+            elseif is_celestial_pack and self.config.celestial_more_options then
+                card.ability.extra = card.ability.extra + self.config.celestial_more_options
+            end
         end
     end,
 }
@@ -600,8 +722,8 @@ SMODS.Sleeve {
     end,
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 2 },
-    update_self = function(self, current_deck_name)
-        if current_deck_name == "Plasma Deck" then
+    update_self = function(self, is_current_sleeve, current_deck_name)
+        if is_current_sleeve and current_deck_name == "Plasma Deck" then
             self.loc_txt.text = {
                     "Balance {C:money}price{} of all items",
                     "in the {C:attention}shop{}",
@@ -723,14 +845,19 @@ local function insert_sleeve_card(area)
 end
 
 function G.FUNCS.change_sleeve(args)
+    local current_deck_name = G.GAME.viewed_back and G.GAME.viewed_back.name or "Red Deck"
+    local prev_sleeve_center = G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve or 1]
+    prev_sleeve_center:update_self(false, current_deck_name)
+    reinit_localization(prev_sleeve_center)
+    
     G.viewed_sleeve = args.to_key
     G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve = args.to_key
 end
 
 function G.FUNCS.change_viewed_sleeve()
-    local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve or 1]
     local current_deck_name = G.GAME.viewed_back and G.GAME.viewed_back.name or "Red Deck"
-    sleeve_center:update_self(current_deck_name)
+    local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve or 1]
+    sleeve_center:update_self(true, current_deck_name)
     reinit_localization(sleeve_center)
     
     local area = G.sticker_card.area
@@ -857,7 +984,7 @@ function G.UIDEF.current_sleeve(_scale)
     local _scale = _scale or 1
     local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
     local current_deck_name = G.GAME.selected_back and G.GAME.selected_back.name or "Red Deck"
-    sleeve_center:update_self(current_deck_name)
+    sleeve_center:update_self(true, current_deck_name)
     reinit_localization(sleeve_center)
     local sleeve_sprite = create_sleeve_sprite(0, 0, _scale*1, _scale*(95/71), sleeve_center)
     sleeve_sprite.states.drag.can = false
@@ -885,6 +1012,7 @@ function G.UIDEF.current_sleeve(_scale)
 end
 
 -- HOOKING / WRAPPING FUNCS
+-- TODO: create list of function hooks
 
 local old_uidef_run_setup_option = G.UIDEF.run_setup_option
 function G.UIDEF.run_setup_option(_type)
@@ -964,11 +1092,13 @@ local old_Back_trigger_effect = Back.trigger_effect
 function Back:trigger_effect(args)
     local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
     local new_chips, new_mult
-    new_chips, new_mult = sleeve_center:trigger_effect(args)
-    args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
     
     new_chips, new_mult = old_Back_trigger_effect(self, args)
     args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
+    
+    new_chips, new_mult = sleeve_center:trigger_effect(args)
+    args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
+    
     return args.chips, args.mult
 end
 
@@ -991,9 +1121,10 @@ function CardArea:draw()
         local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve]
         local x = self.T.x
         local width = self.T.w
-        if self.cards[1] then
+        if self.cards[2] then
+            -- using 2nd card because player can move the first card anywhere
             x = self.cards[#self.cards].T.x
-            width = self.cards[1].T.w + (self.cards[1].T.x - self.cards[#self.cards].T.x)
+            width = self.cards[2].T.w + (self.cards[2].T.x - self.cards[#self.cards].T.x)
         end
         if self.sleeve_sprite == nil then
             self.sleeve_sprite = create_sleeve_sprite(x, self.T.y, width, self.T.h, sleeve_center)
@@ -1047,18 +1178,64 @@ function Controller:snap_to(args)
     return old_Controller_snap_to(self, args)
 end
 
-local old_Card_set_ability = Card.set_ability
-function Card:set_ability(...)
-    local output = old_Card_set_ability(self, ...)
+local old_Card_set_base = Card.set_base
+function Card:set_base(card, initial)
+    local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
+
+    local output = old_Card_set_base(self, card, initial)
     
-    if self.ability.set == "Booster" then
-        local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
-        print_trace("Card:set_ability calling Sleeve:trigger_effect")
-        sleeve_center:trigger_effect{context = {create_card = true, card = self}}
+    local is_playing_card = (self.ability.set == "Default" or self.ability.set == "Enhanced") and self.config.card_key
+    if initial and self.ability.set == "Booster" then
+        sleeve_center:trigger_effect{context = {create_booster = true, card = self}}
+    elseif is_playing_card then
+        if initial then
+            sleeve_center:trigger_effect{context = {create_playing_card = true, card = self}}
+        else
+            sleeve_center:trigger_effect{context = {modify_playing_card = true, card = self}}
+        end
+    elseif initial and (self.ability.set == "Tarot" or self.ability.set == "Planet" or self.ability.set == "Spectral") then
+        sleeve_center:trigger_effect{context = {create_consumable = true, card = self}}
     end
     
     return output
 end
+
+local old_Card_use_consumable = Card.use_consumeable
+function Card:use_consumeable(...)
+    local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
+    sleeve_center:trigger_effect{context = {before_use_consumable = true, card = self}}
+    
+    return old_Card_use_consumable(self, ...)
+end
+
+local old_CardArea_unhighlight_all = CardArea.unhighlight_all
+function CardArea:unhighlight_all()
+    if self == G.hand then
+        -- TODO: could use `G.FUNCS.end_consumeable()` instead?
+        local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
+        sleeve_center:trigger_effect{context = {after_use_consumable = true}}
+    end
+    
+    return old_CardArea_unhighlight_all(self)
+end
+
+local function booster_pack_size_fix_wrapper(func)
+    -- fix the cardarea for these booster packs growing way too big
+    local function wrapper(...)
+        local old_pack_size = G.GAME.pack_size
+        G.GAME.pack_size = math.min(G.GAME.pack_size, 5)  -- 6 is fine for tarot packs, but not for celestial packs
+        local output = func()
+        G.GAME.pack_size = old_pack_size
+        return output
+    end
+    return wrapper
+end
+
+create_UIBox_arcana_pack = booster_pack_size_fix_wrapper(create_UIBox_arcana_pack)
+create_UIBox_spectral_pack = booster_pack_size_fix_wrapper(create_UIBox_spectral_pack)
+create_UIBox_standard_pack = booster_pack_size_fix_wrapper(create_UIBox_standard_pack)
+create_UIBox_buffoon_pack = booster_pack_size_fix_wrapper(create_UIBox_buffoon_pack)
+create_UIBox_celestial_pack = booster_pack_size_fix_wrapper(create_UIBox_celestial_pack)
 
 print_trace("CardSleeves loaded~!")
 
