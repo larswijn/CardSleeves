@@ -11,10 +11,9 @@
 
 --[[
 
-ISSUES:
+GENERAL ISSUES:
 
-* sleeves cannot be dragged around during deck select like the current top card of the deck can
-    - this is a fix to another bug that doesn't "reset" the sleeve back to it's original position after moving it
+* sleeve sprite can show up in collection - decks
 
 --]]
 
@@ -228,7 +227,7 @@ function SMODS.Sleeve:apply()
         G.GAME.modifiers.no_interest = true
     end
     if self.config.extra_hand_bonus then
-        G.GAME.modifiers.money_per_hand = (G.GAME.modifiers.money_per_hand or 0) + self.config.extra_hand_bonus
+        G.GAME.modifiers.money_per_hand = (G.GAME.modifiers.money_per_hand or 1) + self.config.extra_hand_bonus
     end
     if self.config.extra_discard_bonus then
         G.GAME.modifiers.money_per_discard = (G.GAME.modifiers.money_per_discard or 0) + self.config.extra_discard_bonus
@@ -247,9 +246,6 @@ function SMODS.Sleeve:trigger_effect(args)
                 return true
             end)
         }))
-    end
-    if self.name == 'Plasma Sleeve' and args.context == 'blind_amount' then
-        return 
     end
 
     if self.name == 'Plasma Sleeve' and args.context == 'final_scoring_step' then
@@ -364,23 +360,21 @@ SMODS.Sleeve {
 SMODS.Sleeve {
     key = "green",
     name = "Green Sleeve",
-    config = { extra_hand_bonus = 2, extra_discard_bonus = 1, no_interest = true },
+    config = { extra_hand_bonus = 1, extra_discard_bonus = 1, no_interest = true },
     loc_txt = {
         name = "Green Sleeve",
-        text = G.localization.descriptions.Back["b_green"].text
+        text = {
+            "At end of each Round:",
+            "+{C:money}$#1#{s:0.85} per remaining {C:blue}Hand",
+            "+{C:money}$#2#{s:0.85} per remaining {C:red}Discard",
+            "Earn no {C:attention}Interest"
+            }
     },
     loc_vars = function(self)
         return { vars = { self.config.extra_hand_bonus, self.config.extra_discard_bonus, self.config.no_interest } }
     end,
     atlas = "sleeve_atlas",
-    pos = { x = 3, y = 0 },
-    update_self = function(self, is_current_sleeve, current_deck_name)
-        if is_current_sleeve and current_deck_name == "Green Deck" then
-            self.config.extra_hand_bonus = 1
-        else
-            self.config.extra_hand_bonus = 2
-        end
-    end,
+    pos = { x = 3, y = 0 }
 }
 
 SMODS.Sleeve {
@@ -706,7 +700,32 @@ SMODS.Sleeve {
         return { vars = { localize{type = 'name_text', key = 'tag_double', set = 'Tag'} } }
     end,
     atlas = "sleeve_atlas",
-    pos = { x = 2, y = 2 }
+    pos = { x = 2, y = 2 },
+    update_self = function(self, is_current_sleeve, current_deck_name)
+        if is_current_sleeve and current_deck_name == "Anaglyph Deck" then
+            self.loc_txt.text = {
+                    "After defeating each",
+                    "{C:attention}Small{} or {C:attention}Big Blind{}, gain",
+                    "a {C:attention,T:tag_double}#1#"
+                }
+        else
+            self.loc_txt.text = G.localization.descriptions.Back["b_erratic"].text
+        end
+    end,
+    trigger_effect = function(self, args)
+        SMODS.Sleeve.trigger_effect(self, args)
+        
+        if self.name == 'Anaglyph Sleeve' and args.context == 'eval' and not G.GAME.last_blind.boss then
+        G.E_MANAGER:add_event(Event({
+            func = (function()
+                add_tag(Tag('tag_double'))
+                play_sound('generic1', 0.9 + math.random()*0.1, 0.8)
+                play_sound('holo1', 1.2 + math.random()*0.1, 0.4)
+                return true
+            end)
+        }))
+    end
+    end,
 }
 
 SMODS.Sleeve {
@@ -784,10 +803,40 @@ SMODS.Sleeve {
         text = G.localization.descriptions.Back["b_erratic"].text
     },
     loc_vars = function(self)
-        return { vars = {} }
+        local vars = {}
+        if self.config.randomize_start then
+            vars[#vars+1] = self.config.random_lb
+            vars[#vars+1] = self.config.random_ub
+        end
+        return { vars = vars }
     end,
     atlas = "sleeve_atlas",
-    pos = { x = 4, y = 2 }
+    pos = { x = 4, y = 2 },
+    update_self = function(self, is_current_sleeve, current_deck_name)
+        if is_current_sleeve and current_deck_name == "Erratic Deck" then
+            self.loc_txt.text = {
+                    "Starting amount for {C:blue}hands{}, {C:red}discards{},",
+                    "{C:money}dollars{}, and {C:attention}joker slots{}",
+                    "are all randomized between {C:attention}#1#{} and {C:attention}#2#{}",
+                }
+            self.config = {randomize_rank_suit = true, randomize_start = true, random_lb = 2, random_ub = 6}
+        else
+            self.loc_txt.text = G.localization.descriptions.Back["b_erratic"].text
+            self.config = {randomize_rank_suit = true}
+        end
+    end,
+    apply = function(self)
+        if self.config.randomize_start then
+            local function get_random()
+                return pseudorandom("slv", self.config.random_lb, self.config.random_ub)
+            end
+            
+            G.GAME.starting_params.hands = get_random()
+            G.GAME.starting_params.discards = get_random()
+            G.GAME.starting_params.dollars = get_random()
+            G.GAME.starting_params.joker_slots = get_random()
+        end
+    end,
 }
 
 -- UI FUNCS
@@ -804,14 +853,9 @@ end
 local function create_sleeve_card(area)
     local inspiration_card = area.cards[1]
     local new_card = Card(inspiration_card.T.x, inspiration_card.T.y, inspiration_card.T.w, inspiration_card.T.h, 
-                          pseudorandom_element(G.P_CARDS), G.P_CENTERS.c_base)
+                          nil, G.P_CENTERS.c_base, {playing_card = 11, viewed_back = true})
     new_card.sprite_facing = 'back'
     new_card.facing = 'back'
-    -- the sleeve doesn't "snap back" to the original pos, for some reason. these next 4 lines are a very hacky fix
-    new_card.states.collide.can = false
-    new_card.states.hover.can = false
-    new_card.states.drag.can = false
-    new_card.states.click.can = false
     return new_card
 end
 
@@ -823,7 +867,8 @@ local function replace_sleeve_sprite(card, sleeve_center)
     if card.children.back then
         card.children.back:remove()
     end
-    card.children.back = create_sleeve_sprite(card.T.x - 0.05, card.T.y + 0.25, card.T.w + 0.1, card.T.h, sleeve_center)
+    card.children.back = create_sleeve_sprite(card.T.x, card.T.y, card.T.w + 0.1, card.T.h, sleeve_center)
+    card.children.back:set_role({major = card, role_type = 'Minor', draw_major = card, offset = {x=-0.05, y=0.25}})
 end
 
 local function insert_sleeve_card(area)
@@ -832,8 +877,8 @@ local function insert_sleeve_card(area)
     if sleeve_center.name ~= "No Sleeve" then
         if sleeve_card == nil then
             local new_card = create_sleeve_card(area)
-            area:emplace(new_card)
             replace_sleeve_sprite(new_card, sleeve_center)
+            area:emplace(new_card)
         else
             replace_sleeve_sprite(sleeve_card, sleeve_center)
         end
@@ -855,6 +900,7 @@ function G.FUNCS.change_sleeve(args)
 end
 
 function G.FUNCS.change_viewed_sleeve()
+    -- TODO: don't draw this shit in collection???
     local current_deck_name = G.GAME.viewed_back and G.GAME.viewed_back.name or "Red Deck"
     local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve or 1]
     sleeve_center:update_self(true, current_deck_name)
@@ -1011,7 +1057,7 @@ function G.UIDEF.current_sleeve(_scale)
     }
 end
 
--- HOOKING / WRAPPING FUNCS
+-- HOOKING / WRAPPING FUNCS (also see lovely.toml)
 -- TODO: create list of function hooks
 
 local old_uidef_run_setup_option = G.UIDEF.run_setup_option
@@ -1128,7 +1174,7 @@ function CardArea:draw()
         end
         if self.sleeve_sprite == nil then
             self.sleeve_sprite = create_sleeve_sprite(x, self.T.y, width, self.T.h, sleeve_center)
-            self.sleeve_sprite.states.drag.can = false
+            -- self.sleeve_sprite.states.drag.can = false
         else
             -- update x & width
             self.sleeve_sprite.T.x = x
@@ -1167,6 +1213,7 @@ end
 local old_Controller_snap_to = Controller.snap_to
 function Controller:snap_to(args)
     -- hooking into this might not be a good idea tbh, but I don't have a controller to test it, so...
+    -- TODO: see if there's a better way to do this
     local in_shop_load = G["shop"] and 
                          (args.node == G.shop:get_UIE_by_ID('next_round_button') or
                           args.node["area"] and args.node.area["config"] and args.node.area.config.type == "shop")
@@ -1230,7 +1277,6 @@ local function booster_pack_size_fix_wrapper(func)
     end
     return wrapper
 end
-
 create_UIBox_arcana_pack = booster_pack_size_fix_wrapper(create_UIBox_arcana_pack)
 create_UIBox_spectral_pack = booster_pack_size_fix_wrapper(create_UIBox_spectral_pack)
 create_UIBox_standard_pack = booster_pack_size_fix_wrapper(create_UIBox_standard_pack)
