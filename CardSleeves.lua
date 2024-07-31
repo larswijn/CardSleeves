@@ -4,6 +4,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks, similar-ish to stakes.
 --- PREFIX: casl
+--- VERSION: 1.0.0
 --- LOADER_VERSION_GEQ: 1.0.0
 
 ----------------------------------------------
@@ -80,19 +81,121 @@ end
 
 -- LOCALIZATION
 
-local function reinit_localization(sleeve_center)
-    -- only reparses the description text
-    local set, key = sleeve_center.set, sleeve_center.key
-    G.localization.descriptions[set][key] = sleeve_center.loc_txt
-    local center = G.localization.descriptions[set][key]
-    center.text_parsed = {}
-    for _, line in ipairs(center.text or {}) do
-        center.text_parsed[#center.text_parsed+1] = loc_parse_string(line)
-    end
-end
-
 function SMODS.current_mod.process_loc_text()
+    -- TODO: this works for localiation, but not for the actual effect
     G.localization.descriptions.Sleeve = G.localization.descriptions.Sleeve or {}
+    
+    G.localization.descriptions.Sleeve["sleeve_casl_magic"] = {
+        name = "Magic Sleeve",
+        text = G.localization.descriptions.Back["b_magic"].text
+    }
+    G.localization.descriptions.Sleeve["sleeve_casl_magic_alt"] = {
+        name = "Magic Sleeve",
+        text = {
+            "Start run with the",
+            "{C:tarot,T:v_omen_globe}#1#{} voucher",
+        }
+    }
+    
+    G.localization.descriptions.Sleeve["sleeve_casl_nebula"] = {
+        name = "Nebula Sleeve",
+        text = G.localization.descriptions.Back["b_nebula"].text
+    }
+    G.localization.descriptions.Sleeve["sleeve_casl_nebula_alt"] = {
+        name = "Nebula Sleeve",
+        text = {
+            "Start run with the",
+            "{C:planet,T:v_telescope}#1#{} voucher",
+            }
+    }
+    
+    G.localization.descriptions.Sleeve["sleeve_casl_ghost"] = {
+        name = "Ghost Sleeve",
+        text = G.localization.descriptions.Back["b_ghost"].text
+    }
+    G.localization.descriptions.Sleeve["sleeve_casl_ghost_alt"] = {
+        name = "Ghost Sleeve",
+        text = {
+            "{C:spectral}Spectral{} cards appearance rate",
+            "in the shop doubles,",
+            "{C:spectral}Spectral Packs{} have {C:attention}#1#{}",
+            "extra options to choose from",
+        }
+    }
+    
+    G.localization.descriptions.Sleeve["sleeve_casl_abandoned"] = {
+        name = "Abandoned Sleeve",
+        text = G.localization.descriptions.Back["b_abandoned"].text
+    }
+    G.localization.descriptions.Sleeve["sleeve_casl_abandoned_alt"] = {
+        name = "Abandoned Sleeve",
+        text = {
+            "{C:attention}Face Cards{} will no longer",
+            "appear during the run"
+        }
+    }
+    
+    G.localization.descriptions.Sleeve["sleeve_casl_checkered"] = {
+        name = "Checkered Sleeve",
+        text = G.localization.descriptions.Back["b_checkered"].text
+    }
+    G.localization.descriptions.Sleeve["sleeve_casl_checkered_alt"] = {
+        name = "Checkered Sleeve",
+        text = {
+            "All {C:clubs}Club{} cards will get converted to {C:spades}Spades{} and",
+            "all {C:diamonds}Diamond{} cards will get converted to {C:hearts}Hearts{}",
+        }
+    }
+    
+    G.localization.descriptions.Sleeve["sleeve_casl_zodiac"] = {
+        name = "Zodiac Sleeve",
+        text = G.localization.descriptions.Back["b_zodiac"].text
+    }
+    G.localization.descriptions.Sleeve["sleeve_casl_zodiac_alt"] = {
+        name = "Zodiac Sleeve",
+        text = {
+            "{C:tarot}Tarot{} and {C:planet}Celestial{} Packs both have ",
+            "{C:attention}#1#{} extra options to choose from",
+        }
+    }
+    
+    G.localization.descriptions.Sleeve["sleeve_casl_anaglyph"] = {
+        name = "Anaglyph Sleeve",
+        text = G.localization.descriptions.Back["b_anaglyph"].text
+    }
+    G.localization.descriptions.Sleeve["sleeve_casl_anaglyph_alt"] = {
+        name = "Anaglyph Sleeve",
+        text = {
+            "After defeating each",
+            "{C:attention}Small{} or {C:attention}Big Blind{}, gain",
+            "a {C:attention,T:tag_double}#1#"
+        }
+    }
+    
+    G.localization.descriptions.Sleeve["sleeve_casl_plasma"] = {
+        name = "Plasma Sleeve",
+        text = G.localization.descriptions.Back["b_plasma"].text
+    }
+    G.localization.descriptions.Sleeve["sleeve_casl_plasma_alt"] = {
+        name = "Plasma Sleeve",
+        text = {
+            "Balance {C:money}price{} of all items",
+            "in the {C:attention}shop{}",
+        }
+    }
+    
+    G.localization.descriptions.Sleeve["sleeve_casl_erratic"] = {
+        name = "Erratic Sleeve",
+        text = G.localization.descriptions.Back["b_erratic"].text
+    }
+    G.localization.descriptions.Sleeve["sleeve_casl_erratic_alt"] = {
+        name = "Erratic Sleeve",
+        text = {
+            "Starting amount for {C:blue}hands{}, {C:red}discards{},",
+            "{C:money}dollars{}, and {C:attention}joker slots{}",
+            "are all randomized between {C:attention}#1#{} and {C:attention}#2#{}",
+        }
+    }
 end
 
 -- ATLAS
@@ -117,7 +220,7 @@ SMODS.Sleeve = SMODS.GameObject:extend {
     set = "Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 0 }, -- within `atlas`
-    required_params = { "key", "loc_txt", "atlas", "pos" },
+    required_params = { "key", "atlas", "pos" },
     inject_class = function(self)
         G.P_CENTER_POOLS[self.set] = {}
         G.P_SLEEVES = {}
@@ -128,7 +231,9 @@ SMODS.Sleeve = SMODS.GameObject:extend {
         SMODS.insert_pool(G.P_CENTER_POOLS[self.set], self)
     end,
     loc_vars = function() return { vars = {} } end,
-    update_self = function() end,
+    generate_ui = function(self, info_queue, card, desc_nodes, specific_vars, full_UI_table)
+        return SMODS.Center.generate_ui(self, info_queue, card, desc_nodes, specific_vars, full_UI_table)
+    end,
 }
 
 -- TODO: fix specific sleeve+deck combinations (and fix the explainer image)
@@ -237,17 +342,6 @@ end
 function SMODS.Sleeve:trigger_effect(args)
     if not args then return end
     
-    if self.name == 'Anaglyph Sleeve' and args.context == 'eval' and G.GAME.last_blind and G.GAME.last_blind.boss then
-        G.E_MANAGER:add_event(Event({
-            func = (function()
-                add_tag(Tag('tag_double'))
-                play_sound('generic1', 0.9 + math.random()*0.1, 0.8)
-                play_sound('holo1', 1.2 + math.random()*0.1, 0.4)
-                return true
-            end)
-        }))
-    end
-
     if self.name == 'Plasma Sleeve' and args.context == 'final_scoring_step' then
         local tot = args.chips + args.mult
         args.chips = math.floor(tot/2)
@@ -256,14 +350,13 @@ function SMODS.Sleeve:trigger_effect(args)
 
         G.E_MANAGER:add_event(Event({
             func = (function()
-                local text = localize('k_balanced')
                 play_sound('gong', 0.94, 0.3)
                 play_sound('gong', 0.94*1.5, 0.2)
                 play_sound('tarot1', 1.5)
                 ease_colour(G.C.UI_CHIPS, {0.8, 0.45, 0.85, 1})
                 ease_colour(G.C.UI_MULT, {0.8, 0.45, 0.85, 1})
                 attention_text({
-                    scale = 1.4, text = text, hold = 2, align = 'cm', offset = {x = 0,y = -2.7},major = G.play
+                    scale = 1.4, text = localize('k_balanced'), hold = 2, align = 'cm', offset = {x = 0,y = -2.7},major = G.play
                 })
                 G.E_MANAGER:add_event(Event({
                     trigger = 'after',
@@ -295,6 +388,12 @@ function SMODS.Sleeve:trigger_effect(args)
         delay(0.6)
         return args.chips, args.mult
     end
+end
+
+function SMODS.Sleeve.get_current_deck_name()
+    return G.GAME.viewed_back and G.GAME.viewed_back.name or 
+           G.GAME.selected_back and G.GAME.selected_back.name or
+           "Red Deck"
 end
 
 -- SLEEVE INSTANCES
@@ -395,95 +494,69 @@ SMODS.Sleeve {
 SMODS.Sleeve {
     key = "magic",
     name = "Magic Sleeve",
-    config = { voucher = 'v_crystal_ball', consumables = { 'c_fool', 'c_fool' } },
-    loc_txt = {
-        name = "Magic Sleeve",
-        text = G.localization.descriptions.Back["b_magic"].text
-    },
     loc_vars = function(self)
+        local key
+        if self.get_current_deck_name() ~= "Magic Deck" then
+            key = self.key
+            self.config = { voucher = 'v_crystal_ball', consumables = { 'c_fool', 'c_fool' } }
+        else
+            key = self.key .. "_alt"
+            self.config = { voucher = "v_omen_globe" }
+        end
         local vars = { localize{type = 'name_text', key = self.config.voucher, set = 'Voucher'} }
-        if self.config["consumables"] then
+        if self.config.consumables then
             vars[#vars+1] = localize{type = 'name_text', key = self.config.consumables[1], set = 'Tarot'}
         end
-        return { vars = vars }
+        return { key = key, vars = vars }
     end,
     atlas = "sleeve_atlas",
-    pos = { x = 0, y = 1 },
-    update_self = function(self, is_current_sleeve, current_deck_name)
-        if is_current_sleeve and current_deck_name == "Magic Deck" then
-            self.loc_txt.text = {
-                                 "Start run with the",
-                                 "{C:tarot,T:v_omen_globe}#1#{} voucher",
-                                 }
-            self.config = { voucher = "v_omen_globe" }
-        else
-            self.loc_txt.text = G.localization.descriptions.Back["b_magic"].text
-            self.config = { voucher = 'v_crystal_ball', consumables = { 'c_fool', 'c_fool' } }
-        end
-    end,
+    pos = { x = 0, y = 1 }
 }
 
 SMODS.Sleeve {
     key = "nebula",
     name = "Nebula Sleeve",
-    config = { voucher = 'v_telescope', consumable_slot = -1 },
-    loc_txt = {
-        name = "Nebula Sleeve",
-        text = G.localization.descriptions.Back["b_nebula"].text
-    },
     loc_vars = function(self)
-        return {
-            vars = { localize { type = 'name_text', key = self.config.voucher, set = 'Voucher' },
-                self.config.consumable_slot }
-        }
+        local key
+        if self.get_current_deck_name() ~= "Nebula Deck" then
+            key = self.key
+            self.config = { voucher = 'v_telescope', consumable_slot = -1 }
+        else
+            key = self.key .. "_alt"
+            self.config = { voucher = 'v_observatory' }
+        end
+        local vars = { localize{type = 'name_text', key = self.config.voucher, set = 'Voucher'} }
+        if self.config.consumable_slot then
+            vars[#vars+1] = self.config.consumable_slot
+        end
+        return { key = key, vars = vars }
     end,
     atlas = "sleeve_atlas",
-    pos = { x = 1, y = 1 },
-    update_self = function(self, is_current_sleeve, current_deck_name)
-        if is_current_sleeve and current_deck_name == "Nebula Deck" then
-            self.loc_txt.text = {
-                                 "Start run with the",
-                                 "{C:planet,T:v_telescope}#1#{} voucher",
-                                 }
-            self.config = { voucher = "v_observatory" }
-        else
-            self.loc_txt.text = G.localization.descriptions.Back["b_nebula"].text
-            self.config = { voucher = 'v_telescope', consumable_slot = -1 }
-        end
-    end,
+    pos = { x = 1, y = 1 }
 }
 
 SMODS.Sleeve {
     key = "ghost",
     name = "Ghost Sleeve",
-    config = { spectral_rate = 2, consumables = { 'c_hex' } },
-    loc_txt = {
-        name = "Ghost Sleeve",
-        text = G.localization.descriptions.Back["b_ghost"].text
-    },
     loc_vars = function(self)
-        return { vars = { self.config.spectral_rate, self.config.consumables } }
+        local key
+        local vars = {}
+        if self.get_current_deck_name() ~= "Ghost Deck" then
+            key = self.key
+            self.config = { spectral_rate = 2, consumables = { 'c_hex' } }
+            vars[#vars+1] = localize{type = 'name_text', key = self.config.consumables[1], set = 'Tarot'}
+        else
+            key = self.key .. "_alt"
+            self.config = { spectral_rate = 4, spectral_more_options = 2 }
+            vars[#vars+1] = self.config.spectral_more_options
+        end
+        return { key = key, vars = vars }
     end,
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 1 },
-    update_self = function(self, is_current_sleeve, current_deck_name)
-        if is_current_sleeve and current_deck_name == "Ghost Deck" then
-            self.config = { spectral_rate = 4, spectral_more_options = 2 }
-            self.loc_txt.text = {
-                    "{C:spectral}Spectral{} cards appearance rate",
-                    "in the shop doubles,",
-                    "{C:spectral}Spectral Packs{} have {C:attention}2{}",
-                    "extra options to choose from",
-                }
-        else
-            self.config = { spectral_rate = 2, consumables = { 'c_hex' } }
-            self.loc_txt.text = G.localization.descriptions.Back["b_ghost"].text
-        end
-    end,
     trigger_effect = function(self, args)
         local is_spectral_pack = args.context["card"] and args.context.card.ability.set == "Booster" and args.context.card.ability.name:find("Spectral")
         if args.context["create_booster"] and is_spectral_pack and self.config.spectral_more_options then
-            print_trace("creating booster pack")
             args.context.card.ability.extra = args.context.card.ability.extra + self.config.spectral_more_options
         end
     end,
@@ -492,28 +565,19 @@ SMODS.Sleeve {
 SMODS.Sleeve {
     key = "abandoned",
     name = "Abandoned Sleeve",
-    config = { remove_faces = true },
-    loc_txt = {
-        name = "Abandoned Sleeve",
-        text = G.localization.descriptions.Back["b_abandoned"].text
-    },
     loc_vars = function(self)
-        return { vars = { self.config.remove_faces } }
+        local key = self.key
+        if self.get_current_deck_name() ~= "Abandoned Deck" then
+            key = self.key
+            self.config = { remove_faces = true }
+        else
+            key = key .. "_alt"
+            self.config = { prevent_faces = true }
+        end
+        return { key = key }
     end,
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 1 },
-    update_self = function(self, is_current_sleeve, current_deck_name)
-        if is_current_sleeve and current_deck_name == "Abandoned Deck" then
-            self.loc_txt.text = {
-                    "{C:attention}Face Cards{} will no longer",
-                    "appear during the run"
-                }
-            self.config = { prevent_faces = true }
-        else
-            self.loc_txt.text = G.localization.descriptions.Back["b_abandoned"].text
-            self.config = { remove_faces = true }
-        end
-    end,
     apply = function(self)
         if self.allowed_card_centers == nil then
             self.allowed_card_centers = {}
@@ -587,28 +651,19 @@ SMODS.Sleeve {
 SMODS.Sleeve {
     key = "checkered",
     name = "Checkered Sleeve",
-    config = {},
-    loc_txt = {
-        name = "Checkered Sleeve",
-        text = G.localization.descriptions.Back["b_checkered"].text
-    },
     loc_vars = function(self)
-        return { vars = {} }
+        local key
+        if self.get_current_deck_name() ~= "Checkered Deck" then
+            key = self.key
+            self.config = {}
+        else
+            key = self.key .. "_alt"
+            self.config.force_suits = {["Clubs"] = "Spades", ["Diamonds"] = "Hearts"}
+        end
+        return { key = key }
     end,
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 1 },
-    update_self = function(self, is_current_sleeve, current_deck_name)
-        if is_current_sleeve and current_deck_name == "Checkered Deck" then
-            self.loc_txt.text = {
-                    "All {C:clubs}Club{} cards will get converted to {C:spades}Spades{} and",
-                    "all {C:diamonds}Diamond{} cards will get converted to {C:hearts}Hearts{}",
-                }
-            self.config.force_suits = {["Clubs"] = "Spades", ["Diamonds"] = "Hearts"}
-        else
-            self.loc_txt.text = G.localization.descriptions.Back["b_checkered"].text
-            self.config = {}
-        end
-    end,
     trigger_effect = function(self, args)
         if not self.config.force_suits then
             return
@@ -616,10 +671,8 @@ SMODS.Sleeve {
         
         if (args.context["create_playing_card"] or args.context["modify_playing_card"]) and args.context["card"] and not is_in_run_info_tab then
             local card = args.context.card
-            print_debug("card.base.suit = " .. card.base.suit)
             for from_suit, to_suit in pairs(self.config.force_suits) do
                 if card.base.suit == from_suit then
-                    print_debug("     changing to_suit = " .. to_suit)
                         local base = SMODS.Suits[to_suit].card_key .. "_" .. SMODS.Ranks[card.base.value].card_key
                         local initial = G.GAME.blind == nil or args.context["create_playing_card"]
                         card:set_base(G.P_CARDS[base], initial)
@@ -632,32 +685,25 @@ SMODS.Sleeve {
 SMODS.Sleeve {
     key = "zodiac",
     name = "Zodiac Sleeve",
-    config = {vouchers = {'v_tarot_merchant', 'v_planet_merchant', 'v_overstock_norm'}},
-    loc_txt = {
-        name = "Zodiac Sleeve",
-        text = G.localization.descriptions.Back["b_zodiac"].text
-    },
     loc_vars = function(self)
+        local key
         local vars = {}
-        for _, voucher in pairs(self.config.vouchers or {}) do
-            vars[#vars+1] = localize { type = 'name_text', key = voucher, set = 'Voucher' }
+        if self.get_current_deck_name() ~= "Zodiac Deck" then
+            key = self.key
+            self.config = { vouchers = {'v_tarot_merchant', 'v_planet_merchant', 'v_overstock_norm'} }
+            for _, voucher in pairs(self.config.vouchers) do
+                vars[#vars+1] = localize{type = 'name_text', key = voucher, set = 'Voucher'}
+            end
+        else
+            key = self.key .. "_alt"
+            self.config = { arcana_more_options = 2, celestial_more_options = 2 }
+            vars[#vars+1] = self.config.arcana_more_options
+            vars[#vars+1] = self.config.celestial_more_options
         end
-        return { vars = vars }
+        return { key = key, vars = vars }
     end,
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 2 },
-    update_self = function(self, is_current_sleeve, current_deck_name)
-        if is_current_sleeve and current_deck_name == "Zodiac Deck" then
-            self.config = { arcana_more_options = 2, celestial_more_options = 2 }
-            self.loc_txt.text = {
-                    "{C:tarot}Tarot{} and {C:planet}Celestial{} Packs both have ",
-                    "{C:attention}2{} extra options to choose from",
-                }
-        else
-            self.config = {vouchers = {'v_tarot_merchant', 'v_planet_merchant', 'v_overstock_norm'}}
-            self.loc_txt.text = G.localization.descriptions.Back["b_zodiac"].text
-        end
-    end,
     trigger_effect = function(self, args)
         if args.context["create_booster"] and args.context["card"] then
             local card = args.context.card
@@ -692,39 +738,34 @@ SMODS.Sleeve {
     key = "anaglyph",
     name = "Anaglyph Sleeve",
     config = {},
-    loc_txt = {
-        name = "Anaglyph Sleeve",
-        text = G.localization.descriptions.Back["b_anaglyph"].text
-    },
     loc_vars = function(self)
-        return { vars = { localize{type = 'name_text', key = 'tag_double', set = 'Tag'} } }
+        local key
+        if self.get_current_deck_name() ~= "Anaglyph Deck" then
+            key = self.key
+        else
+            key = self.key .. "_alt"
+        end
+        local vars = { localize{type = 'name_text', key = 'tag_double', set = 'Tag'} }
+        return { key = key, vars = vars }
     end,
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 2 },
-    update_self = function(self, is_current_sleeve, current_deck_name)
-        if is_current_sleeve and current_deck_name == "Anaglyph Deck" then
-            self.loc_txt.text = {
-                    "After defeating each",
-                    "{C:attention}Small{} or {C:attention}Big Blind{}, gain",
-                    "a {C:attention,T:tag_double}#1#"
-                }
-        else
-            self.loc_txt.text = G.localization.descriptions.Back["b_erratic"].text
-        end
-    end,
     trigger_effect = function(self, args)
         SMODS.Sleeve.trigger_effect(self, args)
         
-        if self.name == 'Anaglyph Sleeve' and args.context == 'eval' and not G.GAME.last_blind.boss then
-        G.E_MANAGER:add_event(Event({
+        local add_double_tag_event = Event({
             func = (function()
                 add_tag(Tag('tag_double'))
                 play_sound('generic1', 0.9 + math.random()*0.1, 0.8)
                 play_sound('holo1', 1.2 + math.random()*0.1, 0.4)
                 return true
             end)
-        }))
-    end
+        })
+        if self.name == 'Anaglyph Sleeve' and self.get_current_deck_name() ~= "Anaglyph Deck" and args.context == 'eval' and G.GAME.last_blind and G.GAME.last_blind.boss then
+            G.E_MANAGER:add_event(add_double_tag_event)
+        elseif self.name == 'Anaglyph Sleeve' and self.get_current_deck_name() == "Anaglyph Deck" and args.context == 'eval' and G.GAME.last_blind and not G.GAME.last_blind.boss then
+            G.E_MANAGER:add_event(add_double_tag_event)
+        end
     end,
 }
 
@@ -737,20 +778,17 @@ SMODS.Sleeve {
         text = G.localization.descriptions.Back["b_plasma"].text
     },
     loc_vars = function(self)
-        return { vars = {self.config.ante_scaling} }
+        local key
+        if self.get_current_deck_name() ~= "Plasma Deck" then
+            key = self.key
+        else
+            key = self.key .. "_alt"
+        end
+        local vars = { self.config.ante_scaling }
+        return { key = key, vars = vars }
     end,
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 2 },
-    update_self = function(self, is_current_sleeve, current_deck_name)
-        if is_current_sleeve and current_deck_name == "Plasma Deck" then
-            self.loc_txt.text = {
-                    "Balance {C:money}price{} of all items",
-                    "in the {C:attention}shop{}",
-                }
-        else
-            self.loc_txt.text = G.localization.descriptions.Back["b_plasma"].text
-        end
-    end,
     trigger_effect = function(self, args)
         SMODS.Sleeve.trigger_effect(self, args)
         if G.GAME.selected_back.name == "Plasma Deck" and self.name == 'Plasma Sleeve' and args.context == "shop_final_pass" then
@@ -771,12 +809,11 @@ SMODS.Sleeve {
             local avg_cost = math.floor(total_cost / total_items_for_sale)
             G.E_MANAGER:add_event(Event({
                 func = (function()
-                    local text = localize('k_balanced')
                     play_sound('gong', 0.94, 0.3)
                     play_sound('gong', 0.94*1.5, 0.2)
                     play_sound('tarot1', 1.5)
                     attention_text({
-                        scale = 1.3, text = text, hold = 2, align = 'cm', offset = {x = 0,y = 0}, major = G.play
+                        scale = 1.3, text = localize('k_balanced'), hold = 2, align = 'cm', offset = {x = 0,y = 0}, major = G.play
                     })
                     return true
                 end)
@@ -803,28 +840,26 @@ SMODS.Sleeve {
         text = G.localization.descriptions.Back["b_erratic"].text
     },
     loc_vars = function(self)
+        local key
+        if self.get_current_deck_name() ~= "Erratic Deck" then
+            key = self.key
+            self.config = {randomize_rank_suit = true}
+        else
+            key = self.key .. "_alt"
+            self.config = {randomize_rank_suit = true, 
+                           randomize_start = true, 
+                           random_lb = 2, 
+                           random_ub = 6}
+        end
         local vars = {}
         if self.config.randomize_start then
             vars[#vars+1] = self.config.random_lb
             vars[#vars+1] = self.config.random_ub
         end
-        return { vars = vars }
+        return { key = key, vars = vars }
     end,
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 2 },
-    update_self = function(self, is_current_sleeve, current_deck_name)
-        if is_current_sleeve and current_deck_name == "Erratic Deck" then
-            self.loc_txt.text = {
-                    "Starting amount for {C:blue}hands{}, {C:red}discards{},",
-                    "{C:money}dollars{}, and {C:attention}joker slots{}",
-                    "are all randomized between {C:attention}#1#{} and {C:attention}#2#{}",
-                }
-            self.config = {randomize_rank_suit = true, randomize_start = true, random_lb = 2, random_ub = 6}
-        else
-            self.loc_txt.text = G.localization.descriptions.Back["b_erratic"].text
-            self.config = {randomize_rank_suit = true}
-        end
-    end,
     apply = function(self)
         if self.config.randomize_start then
             local function get_random()
@@ -890,22 +925,12 @@ local function insert_sleeve_card(area)
 end
 
 function G.FUNCS.change_sleeve(args)
-    local current_deck_name = G.GAME.viewed_back and G.GAME.viewed_back.name or "Red Deck"
-    local prev_sleeve_center = G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve or 1]
-    prev_sleeve_center:update_self(false, current_deck_name)
-    reinit_localization(prev_sleeve_center)
-    
     G.viewed_sleeve = args.to_key
     G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve = args.to_key
 end
 
 function G.FUNCS.change_viewed_sleeve()
     -- TODO: don't draw this shit in collection???
-    local current_deck_name = G.GAME.viewed_back and G.GAME.viewed_back.name or "Red Deck"
-    local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve or 1]
-    sleeve_center:update_self(true, current_deck_name)
-    reinit_localization(sleeve_center)
-    
     local area = G.sticker_card.area
     return insert_sleeve_card(area)
 end
@@ -936,11 +961,7 @@ function G.UIDEF.sleeve_description(_sleeve)
     local sleeve_center = G.P_CENTER_POOLS.Sleeve[_sleeve]
     local ret_nodes = {}
     if sleeve_center then
-        localize { type = 'descriptions',
-            key = sleeve_center.key,
-            set = sleeve_center.set,
-            vars = sleeve_center:loc_vars().vars,
-            nodes = ret_nodes }
+        sleeve_center:generate_ui({}, nil, ret_nodes, nil, {name = {}})
     end
 
     local desc_t = {}
@@ -1029,9 +1050,6 @@ end
 function G.UIDEF.current_sleeve(_scale)
     local _scale = _scale or 1
     local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
-    local current_deck_name = G.GAME.selected_back and G.GAME.selected_back.name or "Red Deck"
-    sleeve_center:update_self(true, current_deck_name)
-    reinit_localization(sleeve_center)
     local sleeve_sprite = create_sleeve_sprite(0, 0, _scale*1, _scale*(95/71), sleeve_center)
     sleeve_sprite.states.drag.can = false
     return {
@@ -1258,7 +1276,6 @@ end
 local old_CardArea_unhighlight_all = CardArea.unhighlight_all
 function CardArea:unhighlight_all()
     if self == G.hand then
-        -- TODO: could use `G.FUNCS.end_consumeable()` instead?
         local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
         sleeve_center:trigger_effect{context = {after_use_consumable = true}}
     end
