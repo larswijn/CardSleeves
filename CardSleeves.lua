@@ -15,7 +15,7 @@
 
 GENERAL ISSUES:
 
-* sleeve sprite can show up in collection - decks
+* currently no known issues
 
 --]]
 
@@ -83,7 +83,6 @@ end
 -- LOCALIZATION
 
 function SMODS.current_mod.process_loc_text()
-    -- TODO: this works for localiation, but not for the actual effect
     G.localization.descriptions.Sleeve = G.localization.descriptions.Sleeve or {}
     
     G.localization.descriptions.Sleeve["sleeve_casl_magic"] = {
@@ -209,7 +208,6 @@ SMODS.Atlas {
 }
 
 -- SLEEVE BASE CLASS & METHODS
--- TODO: check compatibility with other mods, add compatibility for other mods
 
 CardSleeves = {}
 CardSleeves.Sleeves = {}
@@ -238,7 +236,7 @@ CardSleeves.Sleeve = SMODS.GameObject:extend {
     end,
 }
 
--- TODO: fix specific sleeve+deck combinations (and fix the explainer image)
+-- TODO: fix the explainer image
 function CardSleeves.Sleeve:apply()
     if self.config.voucher then
         G.GAME.used_vouchers[self.config.voucher] = true
@@ -804,10 +802,17 @@ CardSleeves.Sleeve {
             for i, cardarea in pairs(cardareas) do
                 for j, card in pairs(cardarea.cards) do
                     card:set_cost()
+                    local has_coupon_tag = card.area and card.ability.couponed and (card.area == G.shop_jokers or card.area == G.shop_booster)
+                    if has_coupon_tag then
+                        -- tags that set price to 0 (coupon, uncommon, rare, etc)
+                        card.cost = 0
+                        card.ability.couponed = false
+                    end
                     total_cost = total_cost + card.cost
                     total_items_for_sale = total_items_for_sale + 1
                 end
             end
+            print_debug("total_cost / total_items_for_sale = " .. (total_cost) .. "/" .. total_items_for_sale)
             local avg_cost = math.floor(total_cost / total_items_for_sale)
             G.E_MANAGER:add_event(Event({
                 func = (function()
@@ -937,8 +942,11 @@ function G.FUNCS.change_sleeve(args)
     G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve = args.to_key
 end
 
+local in_collection_deck = false  -- here because lua globals/locals are being weird?
 function G.FUNCS.change_viewed_sleeve()
-    -- TODO: don't draw this shit in collection???
+    if in_collection_deck then
+        return
+    end
     local area = G.sticker_card.area
     return insert_sleeve_card(area)
 end
@@ -1083,8 +1091,27 @@ function G.UIDEF.current_sleeve(_scale)
     }
 end
 
--- HOOKING / WRAPPING FUNCS (also see lovely.toml)
--- TODO: create list of function hooks
+--[[ HOOKING / WRAPPING FUNCS
+
+*List of functions we hook into and change its output or properties:
+ (not a full list) (also see lovely.toml)
+**G.UIDEF.run_setup_option
+**Game:init_game_object
+**G.FUNCS.change_viewed_back
+**Back:apply_to_run
+**Back:trigger_effect
+**CardArea:draw
+**create_tabs
+**Controller:snap_to
+**Card:set_base
+**Card:use_consumeable
+**CardArea:unhighlight_all
+**create_UIBox_arcana_pack
+**create_UIBox_spectral_pack
+**create_UIBox_standard_pack  
+**create_UIBox_buffoon_pack
+**create_UIBox_celestial_pack
+--]]
 
 local old_uidef_run_setup_option = G.UIDEF.run_setup_option
 function G.UIDEF.run_setup_option(_type)
@@ -1239,14 +1266,22 @@ end
 local old_Controller_snap_to = Controller.snap_to
 function Controller:snap_to(args)
     -- hooking into this might not be a good idea tbh, but I don't have a controller to test it, so...
-    -- TODO: see if there's a better way to do this
+    -- TODO: see if there's a better way to do this (Game:update_shop?)
     local in_shop_load = G["shop"] and 
                          (args.node == G.shop:get_UIE_by_ID('next_round_button') or
                           args.node["area"] and args.node.area["config"] and args.node.area.config.type == "shop")
     if in_shop_load then
         -- shop has been loaded/rerolled/etc
         local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
-        sleeve_center:trigger_effect{context = "shop_final_pass"}
+        G.E_MANAGER:add_event(Event({
+            delay = 0.01,  --  because stupid fucking tags not applying immediately
+            blockable = true,
+            trigger = 'after',
+            func = function()
+                sleeve_center:trigger_effect{context = "shop_final_pass"}
+                return true
+            end
+        }))
     end
     return old_Controller_snap_to(self, args)
 end
@@ -1278,17 +1313,18 @@ function Card:use_consumeable(...)
     local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
     sleeve_center:trigger_effect{context = {before_use_consumable = true, card = self}}
     
-    return old_Card_use_consumable(self, ...)
-end
-
-local old_CardArea_unhighlight_all = CardArea.unhighlight_all
-function CardArea:unhighlight_all()
-    if self == G.hand then
-        local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
-        sleeve_center:trigger_effect{context = {after_use_consumable = true}}
-    end
+    local output = old_Card_use_consumable(self, ...)
     
-    return old_CardArea_unhighlight_all(self)
+    G.E_MANAGER:add_event(Event({
+        delay = 0.01,  --  because consumables don't apply immediately
+        blockable = true,
+        trigger = 'after',
+        func = function()
+            sleeve_center:trigger_effect{context = {after_use_consumable = true}}
+            return true
+        end
+    }))
+    return output
 end
 
 local function booster_pack_size_fix_wrapper(func)
@@ -1307,6 +1343,17 @@ create_UIBox_spectral_pack = booster_pack_size_fix_wrapper(create_UIBox_spectral
 create_UIBox_standard_pack = booster_pack_size_fix_wrapper(create_UIBox_standard_pack)
 create_UIBox_buffoon_pack = booster_pack_size_fix_wrapper(create_UIBox_buffoon_pack)
 create_UIBox_celestial_pack = booster_pack_size_fix_wrapper(create_UIBox_celestial_pack)
+
+local old_FUNCS_your_collection_decks = G.FUNCS.your_collection_decks
+function G.FUNCS.your_collection_decks(...)
+    in_collection_deck = true
+    return old_FUNCS_your_collection_decks(...)
+end
+local old_FUNCS_your_collection = G.FUNCS.your_collection
+function G.FUNCS.your_collection(...)
+    in_collection_deck = false
+    return old_FUNCS_your_collection(...)
+end
 
 print_trace("CardSleeves loaded~!")
 
