@@ -5,6 +5,7 @@
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks, similar-ish to stakes.
 --- PREFIX: casl
 --- VERSION: 1.0.0
+--- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
 ----------------------------------------------
@@ -210,9 +211,10 @@ SMODS.Atlas {
 -- SLEEVE BASE CLASS & METHODS
 -- TODO: check compatibility with other mods, add compatibility for other mods
 
-SMODS.Sleeves = {}
-SMODS.Sleeve = SMODS.GameObject:extend {
-    obj_table = SMODS.Sleeves,
+CardSleeves = {}
+CardSleeves.Sleeves = {}
+CardSleeves.Sleeve = SMODS.GameObject:extend {
+    obj_table = CardSleeves.Sleeves,
     obj_buffer = {},
     class_prefix = "sleeve",
     discovered = false,
@@ -237,7 +239,7 @@ SMODS.Sleeve = SMODS.GameObject:extend {
 }
 
 -- TODO: fix specific sleeve+deck combinations (and fix the explainer image)
-function SMODS.Sleeve:apply()
+function CardSleeves.Sleeve:apply()
     if self.config.voucher then
         G.GAME.used_vouchers[self.config.voucher] = true
         G.GAME.starting_voucher_count = (G.GAME.starting_voucher_count or 0) + 1
@@ -339,7 +341,7 @@ function SMODS.Sleeve:apply()
     end
 end
 
-function SMODS.Sleeve:trigger_effect(args)
+function CardSleeves.Sleeve:trigger_effect(args)
     if not args then return end
     
     if self.name == 'Plasma Sleeve' and args.context == 'final_scoring_step' then
@@ -390,7 +392,7 @@ function SMODS.Sleeve:trigger_effect(args)
     end
 end
 
-function SMODS.Sleeve.get_current_deck_name()
+function CardSleeves.Sleeve.get_current_deck_name()
     return G.GAME.viewed_back and G.GAME.viewed_back.name or 
            G.GAME.selected_back and G.GAME.selected_back.name or
            "Red Deck"
@@ -399,7 +401,7 @@ end
 -- SLEEVE INSTANCES
 -- TODO: create unlock conditions
 
-SMODS.Sleeve {
+CardSleeves.Sleeve {
     key = "none",
     name = "No Sleeve",
     config = {},
@@ -411,7 +413,7 @@ SMODS.Sleeve {
     pos = { x = 0, y = 3 }
 }
 
-SMODS.Sleeve {
+CardSleeves.Sleeve {
     key = "red",
     name = "Red Sleeve",
     config = { discards = 1 },
@@ -426,7 +428,7 @@ SMODS.Sleeve {
     pos = { x = 0, y = 0 }
 }
 
-SMODS.Sleeve {
+CardSleeves.Sleeve {
     key = "blue",
     name = "Blue Sleeve",
     config = { hands = 1 },
@@ -441,7 +443,7 @@ SMODS.Sleeve {
     pos = { x = 1, y = 0 }
 }
 
-SMODS.Sleeve {
+CardSleeves.Sleeve {
     key = "yellow",
     name = "Yellow Sleeve",
     config = { dollars = 10 },
@@ -456,7 +458,7 @@ SMODS.Sleeve {
     pos = { x = 2, y = 0 }
 }
 
-SMODS.Sleeve {
+CardSleeves.Sleeve {
     key = "green",
     name = "Green Sleeve",
     config = { extra_hand_bonus = 1, extra_discard_bonus = 1, no_interest = true },
@@ -476,7 +478,7 @@ SMODS.Sleeve {
     pos = { x = 3, y = 0 }
 }
 
-SMODS.Sleeve {
+CardSleeves.Sleeve {
     key = "black",
     name = "Black Sleeve",
     config = { hands = -1, joker_slot = 1 },
@@ -491,7 +493,7 @@ SMODS.Sleeve {
     pos = { x = 4, y = 0 }
 }
 
-SMODS.Sleeve {
+CardSleeves.Sleeve {
     key = "magic",
     name = "Magic Sleeve",
     loc_vars = function(self)
@@ -513,7 +515,7 @@ SMODS.Sleeve {
     pos = { x = 0, y = 1 }
 }
 
-SMODS.Sleeve {
+CardSleeves.Sleeve {
     key = "nebula",
     name = "Nebula Sleeve",
     loc_vars = function(self)
@@ -535,7 +537,7 @@ SMODS.Sleeve {
     pos = { x = 1, y = 1 }
 }
 
-SMODS.Sleeve {
+CardSleeves.Sleeve {
     key = "ghost",
     name = "Ghost Sleeve",
     loc_vars = function(self)
@@ -562,7 +564,7 @@ SMODS.Sleeve {
     end,
 }
 
-SMODS.Sleeve {
+CardSleeves.Sleeve {
     key = "abandoned",
     name = "Abandoned Sleeve",
     loc_vars = function(self)
@@ -648,7 +650,7 @@ SMODS.Sleeve {
     end,
 }
 
-SMODS.Sleeve {
+CardSleeves.Sleeve {
     key = "checkered",
     name = "Checkered Sleeve",
     loc_vars = function(self)
@@ -658,7 +660,7 @@ SMODS.Sleeve {
             self.config = {}
         else
             key = self.key .. "_alt"
-            self.config.force_suits = {["Clubs"] = "Spades", ["Diamonds"] = "Hearts"}
+            self.config = { force_suits = {["Clubs"] = "Spades", ["Diamonds"] = "Hearts"} }
         end
         return { key = key }
     end,
@@ -682,7 +684,7 @@ SMODS.Sleeve {
     end,
 }
 
-SMODS.Sleeve {
+CardSleeves.Sleeve {
     key = "zodiac",
     name = "Zodiac Sleeve",
     loc_vars = function(self)
@@ -719,7 +721,7 @@ SMODS.Sleeve {
     end,
 }
 
-SMODS.Sleeve {
+CardSleeves.Sleeve {
     key = "painted",
     name = "Painted Sleeve",
     config = {hand_size = 2, joker_slot = -1},
@@ -734,7 +736,7 @@ SMODS.Sleeve {
     pos = { x = 1, y = 2 }
 }
 
-SMODS.Sleeve {
+CardSleeves.Sleeve {
     key = "anaglyph",
     name = "Anaglyph Sleeve",
     config = {},
@@ -751,7 +753,7 @@ SMODS.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 2 },
     trigger_effect = function(self, args)
-        SMODS.Sleeve.trigger_effect(self, args)
+        CardSleeves.Sleeve.trigger_effect(self, args)
         
         local add_double_tag_event = Event({
             func = (function()
@@ -769,7 +771,7 @@ SMODS.Sleeve {
     end,
 }
 
-SMODS.Sleeve {
+CardSleeves.Sleeve {
     key = "plasma",
     name = "Plasma Sleeve",
     config = {ante_scaling = 2},
@@ -790,7 +792,7 @@ SMODS.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 2 },
     trigger_effect = function(self, args)
-        SMODS.Sleeve.trigger_effect(self, args)
+        CardSleeves.Sleeve.trigger_effect(self, args)
         if G.GAME.selected_back.name == "Plasma Deck" and self.name == 'Plasma Sleeve' and args.context == "shop_final_pass" then
             local cardareas = {}
             for _, obj in pairs(G) do
@@ -813,7 +815,13 @@ SMODS.Sleeve {
                     play_sound('gong', 0.94*1.5, 0.2)
                     play_sound('tarot1', 1.5)
                     attention_text({
-                        scale = 1.3, text = localize('k_balanced'), hold = 2, align = 'cm', offset = {x = 0,y = 0}, major = G.play
+                        scale = 1.3,
+                        colour = G.C.GOLD,
+                        text = localize('k_balanced'),
+                        hold = 2, 
+                        align = 'cm', 
+                        offset = {x = 0, y = 0}, 
+                        major = G.play
                     })
                     return true
                 end)
@@ -831,7 +839,7 @@ SMODS.Sleeve {
     end
 }
 
-SMODS.Sleeve {
+CardSleeves.Sleeve {
     key = "erratic",
     name = "Erratic Sleeve",
     config = {randomize_rank_suit = true},
@@ -1000,7 +1008,7 @@ function G.UIDEF.sleeve_option(_type)
         }
     }
     local sleeve_options = {}
-    for _, v in pairs(SMODS.Sleeves) do
+    for _, v in pairs(CardSleeves.Sleeves) do
         if v.unlocked then
             table.insert(sleeve_options, v)
         end
