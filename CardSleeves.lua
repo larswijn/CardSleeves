@@ -15,7 +15,9 @@
 
 GENERAL ISSUES:
 
-* currently no known issues
+* unlocks:
+** do not work between restarts
+** pop-ups says the completely wrong stuff
 
 --]]
 
@@ -24,17 +26,17 @@ GENERAL ISSUES:
 local function print_trace(...)
     return sendTraceMessage(table.concat({ ... }, "\t"), "CardSleeves")
 end
-
 local function print_debug(...)
     return sendDebugMessage(table.concat({ ... }, "\t"), "CardSleeves")
 end
-
 local function print_info(...)
     return sendInfoMessage(table.concat({ ... }, "\t"), "CardSleeves")
 end
-
 local function print_warning(...)
     return sendWarnMessage(table.concat({ ... }, "\t"), "CardSleeves")
+end
+local function print_error(...)
+    return sendErrorMessage(table.concat({ ... }, "\t"), "CardSleeves")
 end
 
 local function tprint(tbl, max_indent, _indent)
@@ -84,6 +86,15 @@ end
 
 function SMODS.current_mod.process_loc_text()
     G.localization.descriptions.Sleeve = G.localization.descriptions.Sleeve or {}
+    
+    G.localization.descriptions.Sleeve["sleeve_locked"] = {
+        name = "Locked",
+        text = {
+            "Win a run with",
+            "{C:attention}#1#{} on",
+            "at least {V:1}#2#{} difficulty"
+        }
+    }
     
     G.localization.descriptions.Sleeve["sleeve_casl_magic"] = {
         name = "Magic Sleeve",
@@ -210,10 +221,7 @@ SMODS.Atlas {
 -- SLEEVE BASE CLASS & METHODS
 
 CardSleeves = {}
-CardSleeves.Sleeves = {}
-CardSleeves.Sleeve = SMODS.GameObject:extend {
-    obj_table = CardSleeves.Sleeves,
-    obj_buffer = {},
+CardSleeves.Sleeve = SMODS.Center:extend {
     class_prefix = "sleeve",
     discovered = false,
     unlocked = true,
@@ -221,18 +229,50 @@ CardSleeves.Sleeve = SMODS.GameObject:extend {
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 0 }, -- within `atlas`
     required_params = { "key", "atlas", "pos" },
-    inject_class = function(self)
+    pre_inject_class = function(self)
         G.P_CENTER_POOLS[self.set] = {}
-        G.P_SLEEVES = {}
-        self.super.inject_class(self)
     end,
-    inject = function(self)
-        G.P_SLEEVES[self.key] = self
-        SMODS.insert_pool(G.P_CENTER_POOLS[self.set], self)
-    end,
-    loc_vars = function() return { vars = {} } end,
     generate_ui = function(self, info_queue, card, desc_nodes, specific_vars, full_UI_table)
-        return SMODS.Center.generate_ui(self, info_queue, card, desc_nodes, specific_vars, full_UI_table)
+        if not self.unlocked then
+            local target = {
+                type = 'descriptions',
+                key = self.class_prefix .. "_locked",
+                set = self.set,
+                nodes = desc_nodes,
+                vars = specific_vars or {}
+            }
+            if self.locked_loc_vars and type(self.locked_loc_vars) == 'function' then
+                local res = self:locked_loc_vars(info_queue, card) or {}
+                target.vars = res.vars or target.vars
+            end
+            localize(target)
+        else
+            return SMODS.Center.generate_ui(self, info_queue, card, desc_nodes, specific_vars, full_UI_table)
+        end
+    end,
+    locked_loc_vars = function(self, info_queue, card)
+        if not self.unlock_condition then
+            error("Please implement custom `locked_loc_vars` or define `unlock_condition` for Sleeve " .. self.name)
+        elseif not self.unlock_condition.deck or not self.unlock_condition.stake then
+            error("Please implement custom `locked_loc_vars` or define `unlock_condition.deck` and `unlock_condition.stake` for Sleeve " .. self.name)
+        end
+        local colours = G.C.BLACK
+        if self.unlock_condition.stake > 1 then
+            colours = get_stake_col(self.unlock_condition.stake)
+        end
+        local vars = { self.unlock_condition.deck, G.P_CENTER_POOLS.Stake[self.unlock_condition.stake].name, colours = {colours} }
+        return { vars = vars }
+    end,
+    check_for_unlock = function(self, args)
+        if not self.unlock_condition then
+            error("Please implement custom `check_for_unlock` or define `unlock_condition` for Sleeve " .. self.name)
+        elseif not self.unlock_condition.deck or not self.unlock_condition.stake then
+            error("Please implement custom `check_for_unlock` or define `unlock_condition.deck` and `unlock_condition.stake` for Sleeve " .. self.name)
+        end
+        local deck_center = get_deck_from_name(self.unlock_condition.deck)
+        if args.type == 'win_deck' and get_deck_win_stake(deck_center.key) >= self.unlock_condition.stake then
+            return true
+        end
     end,
 }
 
@@ -397,24 +437,27 @@ function CardSleeves.Sleeve.get_current_deck_name()
 end
 
 -- SLEEVE INSTANCES
--- TODO: create unlock conditions
 
 CardSleeves.Sleeve {
     key = "none",
     name = "No Sleeve",
+    atlas = "sleeve_atlas",
+    pos = { x = 0, y = 3 },
     config = {},
     loc_txt = {
         name = "No Sleeve",
         text = { "No sleeve modifiers" }
     },
-    atlas = "sleeve_atlas",
-    pos = { x = 0, y = 3 }
 }
 
 CardSleeves.Sleeve {
     key = "red",
     name = "Red Sleeve",
+    atlas = "sleeve_atlas",
+    pos = { x = 0, y = 0 },
     config = { discards = 1 },
+    unlocked = false,
+    unlock_condition = { deck = "Red Deck", stake = 1 },
     loc_txt = {
         name = "Red Sleeve",
         text = G.localization.descriptions.Back["b_red"].text
@@ -422,14 +465,16 @@ CardSleeves.Sleeve {
     loc_vars = function(self)
         return { vars = { self.config.discards } }
     end,
-    atlas = "sleeve_atlas",
-    pos = { x = 0, y = 0 }
 }
 
 CardSleeves.Sleeve {
     key = "blue",
     name = "Blue Sleeve",
+    atlas = "sleeve_atlas",
+    pos = { x = 1, y = 0 },
     config = { hands = 1 },
+    unlocked = false,
+    unlock_condition = { deck = "Blue Deck", stake = 2 },
     loc_txt = {
         name = "Blue Sleeve",
         text = G.localization.descriptions.Back["b_blue"].text
@@ -437,14 +482,16 @@ CardSleeves.Sleeve {
     loc_vars = function(self)
         return { vars = { self.config.hands } }
     end,
-    atlas = "sleeve_atlas",
-    pos = { x = 1, y = 0 }
 }
 
 CardSleeves.Sleeve {
     key = "yellow",
     name = "Yellow Sleeve",
+    atlas = "sleeve_atlas",
+    pos = { x = 2, y = 0 },
     config = { dollars = 10 },
+    unlocked = false,
+    unlock_condition = { deck = "Yellow Deck", stake = 3 },
     loc_txt = {
         name = "Yellow Sleeve",
         text = G.localization.descriptions.Back["b_yellow"].text
@@ -452,14 +499,16 @@ CardSleeves.Sleeve {
     loc_vars = function(self)
         return { vars = { self.config.dollars } }
     end,
-    atlas = "sleeve_atlas",
-    pos = { x = 2, y = 0 }
 }
 
 CardSleeves.Sleeve {
     key = "green",
     name = "Green Sleeve",
+    atlas = "sleeve_atlas",
+    pos = { x = 3, y = 0 },
     config = { extra_hand_bonus = 1, extra_discard_bonus = 1, no_interest = true },
+    unlocked = false,
+    unlock_condition = { deck = "Green Deck", stake = 3 },
     loc_txt = {
         name = "Green Sleeve",
         text = {
@@ -472,14 +521,16 @@ CardSleeves.Sleeve {
     loc_vars = function(self)
         return { vars = { self.config.extra_hand_bonus, self.config.extra_discard_bonus, self.config.no_interest } }
     end,
-    atlas = "sleeve_atlas",
-    pos = { x = 3, y = 0 }
 }
 
 CardSleeves.Sleeve {
     key = "black",
     name = "Black Sleeve",
+    atlas = "sleeve_atlas",
+    pos = { x = 4, y = 0 },
     config = { hands = -1, joker_slot = 1 },
+    unlocked = false,
+    unlock_condition = { deck = "Black Deck", stake = 3 },
     loc_txt = {
         name = "Black Sleeve",
         text = G.localization.descriptions.Back["b_black"].text
@@ -487,13 +538,15 @@ CardSleeves.Sleeve {
     loc_vars = function(self)
         return { vars = { self.config.joker_slot, -self.config.hands } }
     end,
-    atlas = "sleeve_atlas",
-    pos = { x = 4, y = 0 }
 }
 
 CardSleeves.Sleeve {
     key = "magic",
     name = "Magic Sleeve",
+    atlas = "sleeve_atlas",
+    pos = { x = 0, y = 1 },
+    unlocked = false,
+    unlock_condition = { deck = "Magic Deck", stake = 3 },
     loc_vars = function(self)
         local key
         if self.get_current_deck_name() ~= "Magic Deck" then
@@ -509,13 +562,15 @@ CardSleeves.Sleeve {
         end
         return { key = key, vars = vars }
     end,
-    atlas = "sleeve_atlas",
-    pos = { x = 0, y = 1 }
 }
 
 CardSleeves.Sleeve {
     key = "nebula",
     name = "Nebula Sleeve",
+    atlas = "sleeve_atlas",
+    pos = { x = 1, y = 1 },
+    unlocked = false,
+    unlock_condition = { deck = "Nebula Deck", stake = 3 },
     loc_vars = function(self)
         local key
         if self.get_current_deck_name() ~= "Nebula Deck" then
@@ -531,13 +586,15 @@ CardSleeves.Sleeve {
         end
         return { key = key, vars = vars }
     end,
-    atlas = "sleeve_atlas",
-    pos = { x = 1, y = 1 }
 }
 
 CardSleeves.Sleeve {
     key = "ghost",
     name = "Ghost Sleeve",
+    atlas = "sleeve_atlas",
+    pos = { x = 2, y = 1 },
+    unlocked = false,
+    unlock_condition = { deck = "Ghost Deck", stake = 3 },
     loc_vars = function(self)
         local key
         local vars = {}
@@ -552,8 +609,6 @@ CardSleeves.Sleeve {
         end
         return { key = key, vars = vars }
     end,
-    atlas = "sleeve_atlas",
-    pos = { x = 2, y = 1 },
     trigger_effect = function(self, args)
         local is_spectral_pack = args.context["card"] and args.context.card.ability.set == "Booster" and args.context.card.ability.name:find("Spectral")
         if args.context["create_booster"] and is_spectral_pack and self.config.spectral_more_options then
@@ -565,6 +620,10 @@ CardSleeves.Sleeve {
 CardSleeves.Sleeve {
     key = "abandoned",
     name = "Abandoned Sleeve",
+    atlas = "sleeve_atlas",
+    pos = { x = 3, y = 1 },
+    unlocked = false,
+    unlock_condition = { deck = "Abandoned Deck", stake = 3 },
     loc_vars = function(self)
         local key = self.key
         if self.get_current_deck_name() ~= "Abandoned Deck" then
@@ -576,8 +635,6 @@ CardSleeves.Sleeve {
         end
         return { key = key }
     end,
-    atlas = "sleeve_atlas",
-    pos = { x = 3, y = 1 },
     apply = function(self)
         if self.allowed_card_centers == nil then
             self.allowed_card_centers = {}
@@ -605,10 +662,10 @@ CardSleeves.Sleeve {
             self:apply()
         end
         
+        -- handle Familiar, Strength and Ouija
         if args.context["create_consumable"] and args.context["card"] then
             local card = args.context.card
             if card.ability.name == 'Familiar' then
-                -- change familiar
                 card.ability.extra = 0
             end
         elseif args.context["before_use_consumable"] and args.context["card"] then
@@ -624,6 +681,7 @@ CardSleeves.Sleeve {
         elseif args.context["after_use_consumable"] then
             self.in_strength = nil
             self.in_ouija = nil
+            self.ouija_rank = nil
         elseif (args.context["create_playing_card"] or args.context["modify_playing_card"]) and args.context["card"] and not is_in_run_info_tab then
             local card = args.context.card
             if SMODS.Ranks[card.base.value].face then
@@ -651,6 +709,10 @@ CardSleeves.Sleeve {
 CardSleeves.Sleeve {
     key = "checkered",
     name = "Checkered Sleeve",
+    atlas = "sleeve_atlas",
+    pos = { x = 4, y = 1 },
+    unlocked = false,
+    unlock_condition = { deck = "Checkered Deck", stake = 3 },
     loc_vars = function(self)
         local key
         if self.get_current_deck_name() ~= "Checkered Deck" then
@@ -662,8 +724,6 @@ CardSleeves.Sleeve {
         end
         return { key = key }
     end,
-    atlas = "sleeve_atlas",
-    pos = { x = 4, y = 1 },
     trigger_effect = function(self, args)
         if not self.config.force_suits then
             return
@@ -685,6 +745,10 @@ CardSleeves.Sleeve {
 CardSleeves.Sleeve {
     key = "zodiac",
     name = "Zodiac Sleeve",
+    atlas = "sleeve_atlas",
+    pos = { x = 0, y = 2 },
+    unlocked = false,
+    unlock_condition = { deck = "Zodiac Deck", stake = 3 },
     loc_vars = function(self)
         local key
         local vars = {}
@@ -702,8 +766,6 @@ CardSleeves.Sleeve {
         end
         return { key = key, vars = vars }
     end,
-    atlas = "sleeve_atlas",
-    pos = { x = 0, y = 2 },
     trigger_effect = function(self, args)
         if args.context["create_booster"] and args.context["card"] then
             local card = args.context.card
@@ -722,6 +784,10 @@ CardSleeves.Sleeve {
 CardSleeves.Sleeve {
     key = "painted",
     name = "Painted Sleeve",
+    atlas = "sleeve_atlas",
+    pos = { x = 1, y = 2 },
+    unlocked = false,
+    unlock_condition = { deck = "Painted Deck", stake = 3 },
     config = {hand_size = 2, joker_slot = -1},
     loc_txt = {
         name = "Painted Sleeve",
@@ -730,13 +796,15 @@ CardSleeves.Sleeve {
     loc_vars = function(self)
         return { vars = { self.config.hand_size, self.config.joker_slot } }
     end,
-    atlas = "sleeve_atlas",
-    pos = { x = 1, y = 2 }
 }
 
 CardSleeves.Sleeve {
     key = "anaglyph",
     name = "Anaglyph Sleeve",
+    atlas = "sleeve_atlas",
+    pos = { x = 2, y = 2 },
+    unlocked = false,
+    unlock_condition = { deck = "Anaglyph Deck", stake = 3 },
     config = {},
     loc_vars = function(self)
         local key
@@ -748,8 +816,6 @@ CardSleeves.Sleeve {
         local vars = { localize{type = 'name_text', key = 'tag_double', set = 'Tag'} }
         return { key = key, vars = vars }
     end,
-    atlas = "sleeve_atlas",
-    pos = { x = 2, y = 2 },
     trigger_effect = function(self, args)
         CardSleeves.Sleeve.trigger_effect(self, args)
         
@@ -772,11 +838,11 @@ CardSleeves.Sleeve {
 CardSleeves.Sleeve {
     key = "plasma",
     name = "Plasma Sleeve",
+    atlas = "sleeve_atlas",
+    pos = { x = 3, y = 2 },
+    unlocked = false,
+    unlock_condition = { deck = "Plasma Deck", stake = 3 },
     config = {ante_scaling = 2},
-    loc_txt = {
-        name = "Plasma Sleeve",
-        text = G.localization.descriptions.Back["b_plasma"].text
-    },
     loc_vars = function(self)
         local key
         if self.get_current_deck_name() ~= "Plasma Deck" then
@@ -787,8 +853,6 @@ CardSleeves.Sleeve {
         local vars = { self.config.ante_scaling }
         return { key = key, vars = vars }
     end,
-    atlas = "sleeve_atlas",
-    pos = { x = 3, y = 2 },
     trigger_effect = function(self, args)
         CardSleeves.Sleeve.trigger_effect(self, args)
         if G.GAME.selected_back.name == "Plasma Deck" and self.name == 'Plasma Sleeve' and args.context == "shop_final_pass" then
@@ -812,7 +876,6 @@ CardSleeves.Sleeve {
                     total_items_for_sale = total_items_for_sale + 1
                 end
             end
-            print_debug("total_cost / total_items_for_sale = " .. (total_cost) .. "/" .. total_items_for_sale)
             local avg_cost = math.floor(total_cost / total_items_for_sale)
             G.E_MANAGER:add_event(Event({
                 func = (function()
@@ -847,11 +910,11 @@ CardSleeves.Sleeve {
 CardSleeves.Sleeve {
     key = "erratic",
     name = "Erratic Sleeve",
+    atlas = "sleeve_atlas",
+    pos = { x = 4, y = 2 },
+    unlocked = false,
+    unlock_condition = { deck = "Erratic Deck", stake = 3 },
     config = {randomize_rank_suit = true},
-    loc_txt = {
-        name = "Erratic Sleeve",
-        text = G.localization.descriptions.Back["b_erratic"].text
-    },
     loc_vars = function(self)
         local key
         if self.get_current_deck_name() ~= "Erratic Deck" then
@@ -871,8 +934,6 @@ CardSleeves.Sleeve {
         end
         return { key = key, vars = vars }
     end,
-    atlas = "sleeve_atlas",
-    pos = { x = 4, y = 2 },
     apply = function(self)
         if self.config.randomize_start then
             local function get_random()
@@ -908,7 +969,12 @@ local function create_sleeve_card(area)
 end
 
 local function create_sleeve_sprite(x, y, w, h, sleeve_center)
-    return Sprite(x, y, w, h, G.ASSET_ATLAS[sleeve_center.atlas], sleeve_center.pos)
+    -- uses locked sprite if sleeve is locked - assumes the locked sprite is at (x=0, y=4)
+    if sleeve_center.unlocked == false then
+        return Sprite(x, y, w, h, G.ASSET_ATLAS[sleeve_center.atlas], {x=0, y=3})
+    else
+        return Sprite(x, y, w, h, G.ASSET_ATLAS[sleeve_center.atlas], sleeve_center.pos)
+    end
 end
 
 local function replace_sleeve_sprite(card, sleeve_center)
@@ -976,7 +1042,13 @@ end
 function G.UIDEF.sleeve_description(_sleeve)
     local sleeve_center = G.P_CENTER_POOLS.Sleeve[_sleeve]
     local ret_nodes = {}
+    local sleeve_text = ""
     if sleeve_center then
+        if sleeve_center.unlocked then
+            sleeve_text = localize { type = 'name_text', key = sleeve_center.key, set = sleeve_center.set }
+        else
+            sleeve_text = "Locked"
+        end
         sleeve_center:generate_ui({}, nil, ret_nodes, nil, {name = {}})
     end
 
@@ -984,7 +1056,7 @@ function G.UIDEF.sleeve_description(_sleeve)
     for k, v in ipairs(ret_nodes) do
         for k2, v2 in pairs(v) do
             if v2["config"] ~= nil and v2["config"]["scale"] ~= nil then
-                v[k2]["config"].scale = v[k2]["config"].scale / 1.2
+                v[k2].config.scale = v[k2].config.scale / 1.2
             end
         end
         desc_t[#desc_t + 1] = { n = G.UIT.R, config = { align = "cm", maxw = 5.3 }, nodes = v }
@@ -998,7 +1070,7 @@ function G.UIDEF.sleeve_description(_sleeve)
                 n = G.UIT.R,
                 config = { align = "cm", padding = 0 },
                 nodes = {
-                    { n = G.UIT.T, config = { text = localize { type = 'name_text', key = sleeve_center.key, set = sleeve_center.set }, 
+                    { n = G.UIT.T, config = { text = sleeve_text, 
                       scale = 0.35, colour = G.C.WHITE } }
                 }
             },
@@ -1016,10 +1088,9 @@ function G.UIDEF.sleeve_option(_type)
         }
     }
     local sleeve_options = {}
-    for _, v in pairs(CardSleeves.Sleeves) do
-        if v.unlocked then
-            table.insert(sleeve_options, v)
-        end
+    for _, v in pairs(G.P_CENTER_POOLS.Sleeve) do
+        -- if v.unlocked then
+        table.insert(sleeve_options, v)
     end
 
     return {
@@ -1096,8 +1167,9 @@ end
 *List of functions we hook into and change its output or properties:
  (not a full list) (also see lovely.toml)
 **G.UIDEF.run_setup_option
-**Game:init_game_object
+**G.FUNCS.can_start_run
 **G.FUNCS.change_viewed_back
+**Game:init_game_object
 **Back:apply_to_run
 **Back:trigger_effect
 **CardArea:draw
@@ -1160,13 +1232,6 @@ function G.UIDEF.run_setup_option(_type)
     return output
 end
 
-local old_Game_init_game_object = Game.init_game_object
-function Game:init_game_object()
-    local output = old_Game_init_game_object(self)
-    output.selected_sleeve = G.viewed_sleeve or 1
-    return output
-end
-
 local old_FUNCS_change_viewed_back = G.FUNCS.change_viewed_back
 function G.FUNCS.change_viewed_back(args)
     local area = G.sticker_card.area
@@ -1178,6 +1243,22 @@ function G.FUNCS.change_viewed_back(args)
     old_FUNCS_change_viewed_back(args)
     
     G.FUNCS.change_viewed_sleeve(args)
+end
+
+local old_FUNCS_can_start_run = G.FUNCS.can_start_run
+function G.FUNCS.can_start_run(e)
+    old_FUNCS_can_start_run(e)
+    if G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve or 1].unlocked == false then 
+        e.config.colour = G.C.UI.BACKGROUND_INACTIVE
+        e.config.button = nil
+    end
+end
+
+local old_Game_init_game_object = Game.init_game_object
+function Game:init_game_object()
+    local output = old_Game_init_game_object(self)
+    output.selected_sleeve = G.viewed_sleeve or 1
+    return output
 end
 
 local old_Back_apply_to_run = Back.apply_to_run
@@ -1353,6 +1434,19 @@ local old_FUNCS_your_collection = G.FUNCS.your_collection
 function G.FUNCS.your_collection(...)
     in_collection_deck = false
     return old_FUNCS_your_collection(...)
+end
+
+local old_smods_save_unlocks = SMODS.SAVE_UNLOCKS
+function SMODS.SAVE_UNLOCKS()
+    -- TODO: create PR to fix SMODS.SAVE_UNLOCKS itself
+    -- TODO: also, unlock menu says the completely wrong stuff ("joker unlocked" etc)
+    old_smods_save_unlocks()
+    
+    for _, v in pairs(G.P_CENTER_POOLS.Sleeve) do
+        if v.unlocked == false then
+            G.P_LOCKED[#G.P_LOCKED+1] = v
+        end
+    end
 end
 
 print_trace("CardSleeves loaded~!")
