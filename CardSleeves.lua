@@ -13,15 +13,16 @@
 
 --[[
 
-GENERAL ISSUES:
+KNOWN ISSUES:
 
 * unlocks:
 ** do not work between restarts
 ** pop-ups says the completely wrong stuff
+* tags on zodiac deck + sleeve still say "of 5"
 
 --]]
 
--- DEBUG FUNCS (can remove on release?)
+-- DEBUG FUNCS
 
 local function print_trace(...)
     return sendTraceMessage(table.concat({ ... }, "\t"), "CardSleeves")
@@ -456,7 +457,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 0 },
     config = { discards = 1 },
-    unlocked = false,
+    unlocked = true,
     unlock_condition = { deck = "Red Deck", stake = 1 },
     loc_txt = {
         name = "Red Sleeve",
@@ -473,7 +474,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 0 },
     config = { hands = 1 },
-    unlocked = false,
+    unlocked = true,
     unlock_condition = { deck = "Blue Deck", stake = 2 },
     loc_txt = {
         name = "Blue Sleeve",
@@ -490,7 +491,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 0 },
     config = { dollars = 10 },
-    unlocked = false,
+    unlocked = true,
     unlock_condition = { deck = "Yellow Deck", stake = 3 },
     loc_txt = {
         name = "Yellow Sleeve",
@@ -507,7 +508,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 0 },
     config = { extra_hand_bonus = 1, extra_discard_bonus = 1, no_interest = true },
-    unlocked = false,
+    unlocked = true,
     unlock_condition = { deck = "Green Deck", stake = 3 },
     loc_txt = {
         name = "Green Sleeve",
@@ -529,7 +530,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 0 },
     config = { hands = -1, joker_slot = 1 },
-    unlocked = false,
+    unlocked = true,
     unlock_condition = { deck = "Black Deck", stake = 3 },
     loc_txt = {
         name = "Black Sleeve",
@@ -545,7 +546,7 @@ CardSleeves.Sleeve {
     name = "Magic Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 1 },
-    unlocked = false,
+    unlocked = true,
     unlock_condition = { deck = "Magic Deck", stake = 3 },
     loc_vars = function(self)
         local key
@@ -569,7 +570,7 @@ CardSleeves.Sleeve {
     name = "Nebula Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 1 },
-    unlocked = false,
+    unlocked = true,
     unlock_condition = { deck = "Nebula Deck", stake = 3 },
     loc_vars = function(self)
         local key
@@ -593,7 +594,7 @@ CardSleeves.Sleeve {
     name = "Ghost Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 1 },
-    unlocked = false,
+    unlocked = true,
     unlock_condition = { deck = "Ghost Deck", stake = 3 },
     loc_vars = function(self)
         local key
@@ -622,7 +623,7 @@ CardSleeves.Sleeve {
     name = "Abandoned Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 1 },
-    unlocked = false,
+    unlocked = true,
     unlock_condition = { deck = "Abandoned Deck", stake = 3 },
     loc_vars = function(self)
         local key = self.key
@@ -711,7 +712,7 @@ CardSleeves.Sleeve {
     name = "Checkered Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 1 },
-    unlocked = false,
+    unlocked = true,
     unlock_condition = { deck = "Checkered Deck", stake = 3 },
     loc_vars = function(self)
         local key
@@ -747,7 +748,7 @@ CardSleeves.Sleeve {
     name = "Zodiac Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 2 },
-    unlocked = false,
+    unlocked = true,
     unlock_condition = { deck = "Zodiac Deck", stake = 3 },
     loc_vars = function(self)
         local key
@@ -786,7 +787,7 @@ CardSleeves.Sleeve {
     name = "Painted Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 2 },
-    unlocked = false,
+    unlocked = true,
     unlock_condition = { deck = "Painted Deck", stake = 3 },
     config = {hand_size = 2, joker_slot = -1},
     loc_txt = {
@@ -803,7 +804,7 @@ CardSleeves.Sleeve {
     name = "Anaglyph Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 2 },
-    unlocked = false,
+    unlocked = true,
     unlock_condition = { deck = "Anaglyph Deck", stake = 3 },
     config = {},
     loc_vars = function(self)
@@ -840,7 +841,7 @@ CardSleeves.Sleeve {
     name = "Plasma Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 2 },
-    unlocked = false,
+    unlocked = true,
     unlock_condition = { deck = "Plasma Deck", stake = 3 },
     config = {ante_scaling = 2},
     loc_vars = function(self)
@@ -912,7 +913,7 @@ CardSleeves.Sleeve {
     name = "Erratic Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 2 },
-    unlocked = false,
+    unlocked = true,
     unlock_condition = { deck = "Erratic Deck", stake = 3 },
     config = {randomize_rank_suit = true},
     loc_vars = function(self)
@@ -1438,7 +1439,7 @@ end
 
 local old_smods_save_unlocks = SMODS.SAVE_UNLOCKS
 function SMODS.SAVE_UNLOCKS()
-    -- TODO: create PR to fix SMODS.SAVE_UNLOCKS itself
+    -- TODO: create PR to fix SMODS.SAVE_UNLOCKS itself?
     -- TODO: also, unlock menu says the completely wrong stuff ("joker unlocked" etc)
     old_smods_save_unlocks()
     

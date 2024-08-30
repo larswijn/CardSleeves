@@ -3,11 +3,11 @@ version = "1.0.0"
 dump_lua = true
 priority = 0
 
-# until this gets merged into steamodded main (see https://github.com/Steamopollys/Steamodded/pull/218)
-# this will have to be a separate patch in this mod
+# stupid implementation because steamodded didn't accept my PR
+# (could possibly rewrite using events instead)
 
-# Move seed generation to be before Back:apply so that method can use random numbers
-# both are Game:start_run
+# Move seed generation to be before Back:apply and Stake.modifiers() so that both methods can use the seed and true pseudorandom numbers
+# both patches are in Game:start_run
 [[patches]]
 [patches.regex]
 target = "game.lua"
