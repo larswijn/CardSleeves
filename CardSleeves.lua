@@ -943,6 +943,7 @@ CardSleeves.Sleeve {
         return { key = key, vars = vars }
     end,
     apply = function(self)
+        CardSleeves.Sleeve.apply(self)
         if self.config.randomize_start then
             local function get_random()
                 return pseudorandom("slv", self.config.random_lb, self.config.random_ub)
