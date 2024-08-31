@@ -42,4 +42,4 @@ Any other mod (with lower priority) can create new sleeves. Currently not well d
 # Credits
 Big thanks to Sable for the idea and all the art, and the balatro modding community for helping out with the lua code.
 
-Any suggestions, improvements or bugs are welcome and can be submitted through Github's Issues, or on the Balatro Discord [Thread]().
+Any suggestions, improvements or bugs are welcome and can be submitted through Github's Issues, or on the Balatro Discord [Thread](https://discord.com/channels/1116389027176787968/1279246553931976714).
