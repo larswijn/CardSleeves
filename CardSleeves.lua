@@ -1,7 +1,7 @@
 --- STEAMODDED HEADER
 --- MOD_NAME: Card Sleeves
 --- MOD_ID: CardSleeves
---- MOD_AUTHOR: [LarsWijn]
+--- MOD_AUTHOR: [LarsWijn, Sable]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks, similar-ish to stakes.
 --- PREFIX: casl
 --- VERSION: 1.0.0
@@ -217,6 +217,13 @@ SMODS.Atlas {
     path = "sleeves.png",
     px = 71,
     py = 95
+}
+
+SMODS.Atlas {
+    key = "modicon",
+    path = "icon.png",
+    px = 34,
+    py = 34
 }
 
 -- SLEEVE BASE CLASS & METHODS
