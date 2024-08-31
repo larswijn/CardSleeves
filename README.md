@@ -9,8 +9,8 @@ Requires `steamodded >= 1.0.0` - [link](https://github.com/Steamopollys/Steamodd
 Requires `Lovely`, but this should already be installed as part of steamodded's installation process. If you do not have this, make sure you installed steamodded 1.0.0+ correctly.
 
 # Installation
-Currently, only cloning is supported. Use `git clone` or download and unpack the zip from [here](https://github.com/larswijn/CardSleeves/archive/refs/heads/main.zip).
-Releases will be supported in the future.
+Get the latest stable version from the [Releases](https://github.com/larswijn/CardSleeves/releases/latest), then download and extract the zip.
+You can also use `git clone` for the latest development code (may be unstable!).
 
 Make sure to put the `CardSleeves` folder in the `Mods` directory, and that it is not nested.
 
