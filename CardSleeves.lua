@@ -18,7 +18,7 @@ KNOWN ISSUES:
 * unlocks:
 ** do not work between restarts
 ** pop-ups says the completely wrong stuff
-* tags on zodiac deck + sleeve still say "of 5"
+* tags on zodiac deck + zodiac sleeve still say "of 5" (e.g. charm tag)
 
 --]]
 
@@ -87,127 +87,6 @@ end
 
 function SMODS.current_mod.process_loc_text()
     G.localization.descriptions.Sleeve = G.localization.descriptions.Sleeve or {}
-    
-    G.localization.descriptions.Sleeve["sleeve_locked"] = {
-        name = "Locked",
-        text = {
-            "Win a run with",
-            "{C:attention}#1#{} on",
-            "at least {V:1}#2#{} difficulty"
-        }
-    }
-    
-    G.localization.descriptions.Sleeve["sleeve_casl_magic"] = {
-        name = "Magic Sleeve",
-        text = G.localization.descriptions.Back["b_magic"].text
-    }
-    G.localization.descriptions.Sleeve["sleeve_casl_magic_alt"] = {
-        name = "Magic Sleeve",
-        text = {
-            "Start run with the",
-            "{C:tarot,T:v_omen_globe}#1#{} voucher",
-        }
-    }
-    
-    G.localization.descriptions.Sleeve["sleeve_casl_nebula"] = {
-        name = "Nebula Sleeve",
-        text = G.localization.descriptions.Back["b_nebula"].text
-    }
-    G.localization.descriptions.Sleeve["sleeve_casl_nebula_alt"] = {
-        name = "Nebula Sleeve",
-        text = {
-            "Start run with the",
-            "{C:planet,T:v_telescope}#1#{} voucher",
-            }
-    }
-    
-    G.localization.descriptions.Sleeve["sleeve_casl_ghost"] = {
-        name = "Ghost Sleeve",
-        text = G.localization.descriptions.Back["b_ghost"].text
-    }
-    G.localization.descriptions.Sleeve["sleeve_casl_ghost_alt"] = {
-        name = "Ghost Sleeve",
-        text = {
-            "{C:spectral}Spectral{} cards appearance rate",
-            "in the shop doubles,",
-            "{C:spectral}Spectral Packs{} have {C:attention}#1#{}",
-            "extra options to choose from",
-        }
-    }
-    
-    G.localization.descriptions.Sleeve["sleeve_casl_abandoned"] = {
-        name = "Abandoned Sleeve",
-        text = G.localization.descriptions.Back["b_abandoned"].text
-    }
-    G.localization.descriptions.Sleeve["sleeve_casl_abandoned_alt"] = {
-        name = "Abandoned Sleeve",
-        text = {
-            "{C:attention}Face Cards{} will no longer",
-            "appear during the run"
-        }
-    }
-    
-    G.localization.descriptions.Sleeve["sleeve_casl_checkered"] = {
-        name = "Checkered Sleeve",
-        text = G.localization.descriptions.Back["b_checkered"].text
-    }
-    G.localization.descriptions.Sleeve["sleeve_casl_checkered_alt"] = {
-        name = "Checkered Sleeve",
-        text = {
-            "All {C:clubs}Club{} cards will get converted to {C:spades}Spades{} and",
-            "all {C:diamonds}Diamond{} cards will get converted to {C:hearts}Hearts{}",
-        }
-    }
-    
-    G.localization.descriptions.Sleeve["sleeve_casl_zodiac"] = {
-        name = "Zodiac Sleeve",
-        text = G.localization.descriptions.Back["b_zodiac"].text
-    }
-    G.localization.descriptions.Sleeve["sleeve_casl_zodiac_alt"] = {
-        name = "Zodiac Sleeve",
-        text = {
-            "{C:tarot}Tarot{} and {C:planet}Celestial{} Packs both have ",
-            "{C:attention}#1#{} extra options to choose from",
-        }
-    }
-    
-    G.localization.descriptions.Sleeve["sleeve_casl_anaglyph"] = {
-        name = "Anaglyph Sleeve",
-        text = G.localization.descriptions.Back["b_anaglyph"].text
-    }
-    G.localization.descriptions.Sleeve["sleeve_casl_anaglyph_alt"] = {
-        name = "Anaglyph Sleeve",
-        text = {
-            "After defeating each",
-            "{C:attention}Small{} or {C:attention}Big Blind{}, gain",
-            "a {C:attention,T:tag_double}#1#"
-        }
-    }
-    
-    G.localization.descriptions.Sleeve["sleeve_casl_plasma"] = {
-        name = "Plasma Sleeve",
-        text = G.localization.descriptions.Back["b_plasma"].text
-    }
-    G.localization.descriptions.Sleeve["sleeve_casl_plasma_alt"] = {
-        name = "Plasma Sleeve",
-        text = {
-            "Balance {C:money}price{} of all items",
-            "in the {C:attention}shop{}",
-        }
-    }
-    
-    G.localization.descriptions.Sleeve["sleeve_casl_erratic"] = {
-        name = "Erratic Sleeve",
-        text = G.localization.descriptions.Back["b_erratic"].text
-    }
-    G.localization.descriptions.Sleeve["sleeve_casl_erratic_alt"] = {
-        name = "Erratic Sleeve",
-        text = {
-            "Starting amount for {C:blue}hands{}, {C:red}discards{},",
-            "{C:money}dollars{}, and {C:attention}joker slots{}",
-            "are all randomized between {C:attention}#1#{} and {C:attention}#2#{}",
-        }
-    }
 end
 
 -- ATLAS
@@ -452,10 +331,6 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 3 },
     config = {},
-    loc_txt = {
-        name = "No Sleeve",
-        text = { "No sleeve modifiers" }
-    },
 }
 
 CardSleeves.Sleeve {
@@ -466,10 +341,6 @@ CardSleeves.Sleeve {
     config = { discards = 1 },
     unlocked = true,
     unlock_condition = { deck = "Red Deck", stake = 1 },
-    loc_txt = {
-        name = "Red Sleeve",
-        text = G.localization.descriptions.Back["b_red"].text
-    },
     loc_vars = function(self)
         return { vars = { self.config.discards } }
     end,
@@ -483,10 +354,6 @@ CardSleeves.Sleeve {
     config = { hands = 1 },
     unlocked = true,
     unlock_condition = { deck = "Blue Deck", stake = 2 },
-    loc_txt = {
-        name = "Blue Sleeve",
-        text = G.localization.descriptions.Back["b_blue"].text
-    },
     loc_vars = function(self)
         return { vars = { self.config.hands } }
     end,
@@ -500,10 +367,6 @@ CardSleeves.Sleeve {
     config = { dollars = 10 },
     unlocked = true,
     unlock_condition = { deck = "Yellow Deck", stake = 3 },
-    loc_txt = {
-        name = "Yellow Sleeve",
-        text = G.localization.descriptions.Back["b_yellow"].text
-    },
     loc_vars = function(self)
         return { vars = { self.config.dollars } }
     end,
@@ -517,15 +380,6 @@ CardSleeves.Sleeve {
     config = { extra_hand_bonus = 1, extra_discard_bonus = 1, no_interest = true },
     unlocked = true,
     unlock_condition = { deck = "Green Deck", stake = 3 },
-    loc_txt = {
-        name = "Green Sleeve",
-        text = {
-            "At end of each Round:",
-            "+{C:money}$#1#{s:0.85} per remaining {C:blue}Hand",
-            "+{C:money}$#2#{s:0.85} per remaining {C:red}Discard",
-            "Earn no {C:attention}Interest"
-            }
-    },
     loc_vars = function(self)
         return { vars = { self.config.extra_hand_bonus, self.config.extra_discard_bonus, self.config.no_interest } }
     end,
@@ -539,10 +393,6 @@ CardSleeves.Sleeve {
     config = { hands = -1, joker_slot = 1 },
     unlocked = true,
     unlock_condition = { deck = "Black Deck", stake = 3 },
-    loc_txt = {
-        name = "Black Sleeve",
-        text = G.localization.descriptions.Back["b_black"].text
-    },
     loc_vars = function(self)
         return { vars = { self.config.joker_slot, -self.config.hands } }
     end,
@@ -797,10 +647,6 @@ CardSleeves.Sleeve {
     unlocked = true,
     unlock_condition = { deck = "Painted Deck", stake = 3 },
     config = {hand_size = 2, joker_slot = -1},
-    loc_txt = {
-        name = "Painted Sleeve",
-        text = G.localization.descriptions.Back["b_painted"].text
-    },
     loc_vars = function(self)
         return { vars = { self.config.hand_size, self.config.joker_slot } }
     end,
