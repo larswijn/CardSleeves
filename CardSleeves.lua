@@ -177,7 +177,7 @@ function CardSleeves.Sleeve:apply()
         G.E_MANAGER:add_event(Event({
             func = function()
                 for k, v in ipairs(self.config.consumables) do
-                    local card = create_card('Tarot', G.consumeables, nil, nil, nil, nil, v, 'deck')
+                    local card = SMODS.create_card{key=v}
                     card:add_to_deck()
                     G.consumeables:emplace(card)
                 end
@@ -267,7 +267,7 @@ end
 
 function CardSleeves.Sleeve:trigger_effect(args)
     if not args then return end
-    
+
     if self.name == 'Plasma Sleeve' and args.context == 'final_scoring_step' then
         local tot = args.chips + args.mult
         args.chips = math.floor(tot/2)
@@ -289,7 +289,7 @@ function CardSleeves.Sleeve:trigger_effect(args)
                     blockable = false,
                     blocking = false,
                     delay =  4.3,
-                    func = (function() 
+                    func = (function()
                             ease_colour(G.C.UI_CHIPS, G.C.BLUE, 2)
                             ease_colour(G.C.UI_MULT, G.C.RED, 2)
                         return true
@@ -301,7 +301,7 @@ function CardSleeves.Sleeve:trigger_effect(args)
                     blocking = false,
                     no_delete = true,
                     delay =  6.3,
-                    func = (function() 
+                    func = (function()
                         G.C.UI_CHIPS[1], G.C.UI_CHIPS[2], G.C.UI_CHIPS[3], G.C.UI_CHIPS[4] = G.C.BLUE[1], G.C.BLUE[2], G.C.BLUE[3], G.C.BLUE[4]
                         G.C.UI_MULT[1], G.C.UI_MULT[2], G.C.UI_MULT[3], G.C.UI_MULT[4] = G.C.RED[1], G.C.RED[2], G.C.RED[3], G.C.RED[4]
                         return true
@@ -317,7 +317,7 @@ function CardSleeves.Sleeve:trigger_effect(args)
 end
 
 function CardSleeves.Sleeve.get_current_deck_name()
-    return G.GAME.viewed_back and G.GAME.viewed_back.name or 
+    return G.GAME.viewed_back and G.GAME.viewed_back.name or
            G.GAME.selected_back and G.GAME.selected_back.name or
            "Red Deck"
 end
@@ -518,7 +518,7 @@ CardSleeves.Sleeve {
         if self.allowed_card_centers == nil then
             self:apply()
         end
-        
+
         -- handle Familiar, Strength and Ouija
         if args.context["create_consumable"] and args.context["card"] then
             local card = args.context.card
@@ -585,7 +585,7 @@ CardSleeves.Sleeve {
         if not self.config.force_suits then
             return
         end
-        
+
         if (args.context["create_playing_card"] or args.context["modify_playing_card"]) and args.context["card"] and not is_in_run_info_tab then
             local card = args.context.card
             for from_suit, to_suit in pairs(self.config.force_suits) do
@@ -671,7 +671,7 @@ CardSleeves.Sleeve {
     end,
     trigger_effect = function(self, args)
         CardSleeves.Sleeve.trigger_effect(self, args)
-        
+
         local add_double_tag_event = Event({
             func = (function()
                 add_tag(Tag('tag_double'))
@@ -739,9 +739,9 @@ CardSleeves.Sleeve {
                         scale = 1.3,
                         colour = G.C.GOLD,
                         text = localize('k_balanced'),
-                        hold = 2, 
-                        align = 'cm', 
-                        offset = {x = 0, y = 0}, 
+                        hold = 2,
+                        align = 'cm',
+                        offset = {x = 0, y = 0},
                         major = G.play
                     })
                     return true
@@ -775,9 +775,9 @@ CardSleeves.Sleeve {
             self.config = {randomize_rank_suit = true}
         else
             key = self.key .. "_alt"
-            self.config = {randomize_rank_suit = true, 
-                           randomize_start = true, 
-                           random_lb = 2, 
+            self.config = {randomize_rank_suit = true,
+                           randomize_start = true,
+                           random_lb = 2,
                            random_ub = 6}
         end
         local vars = {}
@@ -793,7 +793,7 @@ CardSleeves.Sleeve {
             local function get_random()
                 return pseudorandom("slv", self.config.random_lb, self.config.random_ub)
             end
-            
+
             G.GAME.starting_params.hands = get_random()
             G.GAME.starting_params.discards = get_random()
             G.GAME.starting_params.dollars = get_random()
@@ -814,7 +814,7 @@ local function find_sleeve_card(area)
 end
 
 local function create_sleeve_card(area)
-    local new_card = Card(area.T.x, area.T.y, area.T.w, area.T.h, 
+    local new_card = Card(area.T.x, area.T.y, area.T.w, area.T.h,
                           nil, G.P_CENTERS.c_base, {playing_card = 11, viewed_back = true})
     new_card.sprite_facing = 'back'
     new_card.facing = 'back'
@@ -923,7 +923,7 @@ function G.UIDEF.sleeve_description(_sleeve)
                 n = G.UIT.R,
                 config = { align = "cm", padding = 0 },
                 nodes = {
-                    { n = G.UIT.T, config = { text = sleeve_text, 
+                    { n = G.UIT.T, config = { text = sleeve_text,
                       scale = 0.35, colour = G.C.WHITE } }
                 }
             },
@@ -1063,7 +1063,7 @@ function G.UIDEF.run_setup_option(_type)
                 n = G.UIT.R,
                 config = { align = "cm", padding = 0.05, minh = 1.65 },
                 nodes = {
-                    {n=G.UIT.O, 
+                    {n=G.UIT.O,
                      config={id = nil, func = 'RUN_SETUP_check_sleeve', insta_func = true, object = Moveable() }
                     }
                 }
@@ -1092,16 +1092,16 @@ function G.FUNCS.change_viewed_back(args)
     if sleeve_card then
         sleeve_card:remove()
     end
-    
+
     old_FUNCS_change_viewed_back(args)
-    
-    G.FUNCS.change_viewed_sleeve(args)
+
+    G.FUNCS.change_viewed_sleeve()
 end
 
 local old_FUNCS_can_start_run = G.FUNCS.can_start_run
 function G.FUNCS.can_start_run(e)
     old_FUNCS_can_start_run(e)
-    if G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve or 1].unlocked == false then 
+    if G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve or 1].unlocked == false then
         e.config.colour = G.C.UI.BACKGROUND_INACTIVE
         e.config.button = nil
     end
@@ -1125,31 +1125,31 @@ local old_Back_trigger_effect = Back.trigger_effect
 function Back:trigger_effect(args)
     local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
     local new_chips, new_mult
-    
+
     new_chips, new_mult = old_Back_trigger_effect(self, args)
     args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
-    
+
     new_chips, new_mult = sleeve_center:trigger_effect(args)
     args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
-    
+
     return args.chips, args.mult
 end
 
 local old_CardArea_draw = CardArea.draw
 function CardArea:draw()
-    if not self.states.visible then return end 
+    if not self.states.visible then return end
     if G.VIEWING_DECK and (self==G.deck or self==G.hand or self==G.play) then return end
-    
+
     local draw_sleeve = self == G.deck and G.GAME.selected_sleeve and G.GAME.selected_sleeve > 1
-    
+
     if draw_sleeve and self.children["view_deck"] then
         -- prevent drawing this, we'll draw it ourselves later
         local old_view_deck_draw = self.children.view_deck.draw
         self.children.view_deck.draw = function() end
     end
-    
+
     old_CardArea_draw(self)
-    
+
     if draw_sleeve then
         local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve]
         local x = self.T.x
@@ -1168,7 +1168,7 @@ function CardArea:draw()
             self.sleeve_sprite.T.w = width
         end
         self.sleeve_sprite:draw()
-        if self.children["view_deck"] and G.deck_preview or self.states.collide.is or (G.buttons and G.buttons.states.collide.is and G.CONTROLLER.HID.controller) then 
+        if self.children["view_deck"] and G.deck_preview or self.states.collide.is or (G.buttons and G.buttons.states.collide.is and G.CONTROLLER.HID.controller) then
             -- restore draw behavior of "view deck" so it can be drawn on top of sleeve sprite
             self.children.view_deck.draw = old_view_deck_draw
             self.children.view_deck:draw()
@@ -1193,7 +1193,7 @@ function create_tabs(args)
             tab_definition_function = G.UIDEF.current_sleeve
         }
     end
-    
+
     return old_create_tabs(args)
 end
 
@@ -1201,7 +1201,7 @@ local old_Controller_snap_to = Controller.snap_to
 function Controller:snap_to(args)
     -- hooking into this might not be a good idea tbh, but I don't have a controller to test it, so...
     -- TODO: see if there's a better way to do this (Game:update_shop?)
-    local in_shop_load = G["shop"] and 
+    local in_shop_load = G["shop"] and
                          (args.node == G.shop:get_UIE_by_ID('next_round_button') or
                           args.node["area"] and args.node.area["config"] and args.node.area.config.type == "shop")
     if in_shop_load then
@@ -1225,7 +1225,7 @@ function Card:set_base(card, initial)
     local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
 
     local output = old_Card_set_base(self, card, initial)
-    
+
     local is_playing_card = (self.ability.set == "Default" or self.ability.set == "Enhanced") and self.config.card_key
     if initial and self.ability.set == "Booster" then
         sleeve_center:trigger_effect{context = {create_booster = true, card = self}}
@@ -1238,7 +1238,7 @@ function Card:set_base(card, initial)
     elseif initial and (self.ability.set == "Tarot" or self.ability.set == "Planet" or self.ability.set == "Spectral") then
         sleeve_center:trigger_effect{context = {create_consumable = true, card = self}}
     end
-    
+
     return output
 end
 
@@ -1246,9 +1246,9 @@ local old_Card_use_consumable = Card.use_consumeable
 function Card:use_consumeable(...)
     local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
     sleeve_center:trigger_effect{context = {before_use_consumable = true, card = self}}
-    
+
     local output = old_Card_use_consumable(self, ...)
-    
+
     G.E_MANAGER:add_event(Event({
         delay = 0.01,  --  because consumables don't apply immediately
         blockable = true,
@@ -1294,7 +1294,7 @@ function SMODS.SAVE_UNLOCKS()
     -- TODO: create PR to fix SMODS.SAVE_UNLOCKS itself?
     -- TODO: also, unlock menu says the completely wrong stuff ("joker unlocked" etc)
     old_smods_save_unlocks()
-    
+
     for _, v in pairs(G.P_CENTER_POOLS.Sleeve) do
         if v.unlocked == false then
             G.P_LOCKED[#G.P_LOCKED+1] = v
