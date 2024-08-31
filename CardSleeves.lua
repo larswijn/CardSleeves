@@ -163,7 +163,6 @@ CardSleeves.Sleeve = SMODS.Center:extend {
     end,
 }
 
--- TODO: fix the explainer image
 function CardSleeves.Sleeve:apply()
     if self.config.voucher then
         G.GAME.used_vouchers[self.config.voucher] = true
@@ -815,8 +814,7 @@ local function find_sleeve_card(area)
 end
 
 local function create_sleeve_card(area)
-    local inspiration_card = area.cards[1]
-    local new_card = Card(inspiration_card.T.x, inspiration_card.T.y, inspiration_card.T.w, inspiration_card.T.h, 
+    local new_card = Card(area.T.x, area.T.y, area.T.w, area.T.h, 
                           nil, G.P_CENTERS.c_base, {playing_card = 11, viewed_back = true})
     new_card.sprite_facing = 'back'
     new_card.facing = 'back'
