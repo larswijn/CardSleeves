@@ -22,6 +22,11 @@ KNOWN ISSUES:
 
 --]]
 
+-- GLOBALS (in CardSleeves)
+
+CardSleeves = {}
+local config = SMODS.current_mod.config
+
 -- DEBUG FUNCS
 
 local function print_trace(...)
@@ -107,7 +112,6 @@ SMODS.Atlas {
 
 -- SLEEVE BASE CLASS & METHODS
 
-CardSleeves = {}
 CardSleeves.Sleeve = SMODS.Center:extend {
     class_prefix = "sleeve",
     discovered = false,
@@ -988,7 +992,7 @@ function G.UIDEF.viewed_sleeve_option()
 end
 
 function G.UIDEF.current_sleeve(_scale)
-    local _scale = _scale or 1
+    _scale = _scale or 1
     local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve or 1]
     local sleeve_sprite = create_sleeve_sprite(0, 0, _scale*1, _scale*(95/71), sleeve_center)
     sleeve_sprite.states.drag.can = false
@@ -1015,6 +1019,25 @@ function G.UIDEF.current_sleeve(_scale)
     }
 end
 
+SMODS.current_mod.config_tab = function()
+    return {n=G.UIT.ROOT, config = {align = "cl", minw = G.ROOM.T.w*0.6, padding = 0.0, r = 0.1, colour = {G.C.GREY[1], G.C.GREY[2], G.C.GREY[3],0.7}}, nodes = {
+        {n=G.UIT.C, config={align = "c", padding = 0, minw = 5, minh = 3}, nodes = {
+            {n = G.UIT.R, config = { padding = 0, align = "tl", minw = 9, bg_colour = G.C.CLEAR, colour = G.C.CLEAR }, nodes = {
+                {n = G.UIT.ROOT, config = {r = 0.1, align = "t", padding = 0.0, colour = G.C.CLEAR, minw = 8.5, minh = 6}, nodes ={
+                    {n = G.UIT.R, config = {align = "c", padding = 0}, nodes = {
+                        {n = G.UIT.C, config = { align = "c", padding = 0 }, nodes = {
+                            { n = G.UIT.T, config = { text = "Stack deck pile (possibly conflicts with Cartomancer)", scale = 0.35, colour = G.C.UI.TEXT_LIGHT }},
+                        }},
+                        {n = G.UIT.C, config = { align = "cr", padding = 0.05 }, nodes = {
+                            create_toggle{ col = true, label = "", scale = 0.70, w = 0, shadow = true, ref_table = config, ref_value = "adjust_deck_alignment" },
+                        }},
+                    }}
+                }}
+            }}
+        }}
+    }}
+end
+
 --[[ HOOKING / WRAPPING FUNCS
 
 *List of functions we hook into and change its output or properties:
@@ -1037,6 +1060,15 @@ end
 **create_UIBox_buffoon_pack
 **create_UIBox_celestial_pack
 --]]
+
+local is_in_run_info_tab = false
+local old_uidef_run_info = G.UIDEF.run_info
+function G.UIDEF.run_info()
+    is_in_run_info_tab = true
+    local output = old_uidef_run_info()
+    is_in_run_info_tab = false
+    return output
+end
 
 local old_uidef_run_setup_option = G.UIDEF.run_setup_option
 function G.UIDEF.run_setup_option(_type)
@@ -1107,6 +1139,17 @@ function G.FUNCS.can_start_run(e)
     end
 end
 
+local old_FUNCS_your_collection_decks = G.FUNCS.your_collection_decks
+function G.FUNCS.your_collection_decks(...)
+    in_collection_deck = true
+    return old_FUNCS_your_collection_decks(...)
+end
+local old_FUNCS_your_collection = G.FUNCS.your_collection
+function G.FUNCS.your_collection(...)
+    in_collection_deck = false
+    return old_FUNCS_your_collection(...)
+end
+
 local old_Game_init_game_object = Game.init_game_object
 function Game:init_game_object()
     local output = old_Game_init_game_object(self)
@@ -1143,7 +1186,7 @@ function CardArea:draw()
     local draw_sleeve = self == G.deck and G.GAME.selected_sleeve and G.GAME.selected_sleeve > 1
 
     if draw_sleeve and self.children["view_deck"] then
-        -- prevent drawing this, we'll draw it ourselves later
+        -- prevent drawing the "view deck" button, we'll draw it ourselves later
         local old_view_deck_draw = self.children.view_deck.draw
         self.children.view_deck.draw = function() end
     end
@@ -1154,18 +1197,20 @@ function CardArea:draw()
         local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve]
         local x = self.T.x
         local width = self.T.w
+        local height = self.T.h
         if self.cards[2] then
             -- using 2nd card because player can move the first card anywhere
             x = self.cards[#self.cards].T.x
             width = self.cards[2].T.w + (self.cards[2].T.x - self.cards[#self.cards].T.x)
         end
         if self.sleeve_sprite == nil then
-            self.sleeve_sprite = create_sleeve_sprite(x, self.T.y, width, self.T.h, sleeve_center)
+            self.sleeve_sprite = create_sleeve_sprite(x, self.T.y, width, height, sleeve_center)
             -- self.sleeve_sprite.states.drag.can = false
         else
-            -- update x & width
+            -- update x, width, height
             self.sleeve_sprite.T.x = x
             self.sleeve_sprite.T.w = width
+            self.sleeve_sprite.T.h = height
         end
         self.sleeve_sprite:draw()
         if self.children["view_deck"] and G.deck_preview or self.states.collide.is or (G.buttons and G.buttons.states.collide.is and G.CONTROLLER.HID.controller) then
@@ -1176,25 +1221,19 @@ function CardArea:draw()
     end
 end
 
-local is_in_run_info_tab = false
-local old_uidef_run_info = G.UIDEF.run_info
-function G.UIDEF.run_info()
-    is_in_run_info_tab = true
-    local output = old_uidef_run_info()
-    is_in_run_info_tab = false
-    return output
-end
+local old_CardArea_align_cards = CardArea.align_cards
+function CardArea:align_cards()
+    old_CardArea_align_cards(self)
 
-local old_create_tabs = create_tabs
-function create_tabs(args)
-    if args["tabs"] and is_in_run_info_tab and G.GAME.selected_sleeve > 1 then
-        args.tabs[#args.tabs+1] = {
-            label = "Sleeve",
-            tab_definition_function = G.UIDEF.current_sleeve
-        }
+    if (self == G.hand or self == G.deck or self == G.discard or self == G.play) and G.view_deck and G.view_deck[1] and G.view_deck[1].cards then return end
+    if self.config.type == 'deck' and self == G.deck and config.adjust_deck_alignment then
+        for k, card in ipairs(self.cards) do
+            if not card.states.drag.is then
+                card.T.x = self.T.x + 0.1 + 0.0005*(#self.cards-k)
+                card.T.y = self.T.y - 0.1
+            end
+        end
     end
-
-    return old_create_tabs(args)
 end
 
 local old_Controller_snap_to = Controller.snap_to
@@ -1261,6 +1300,18 @@ function Card:use_consumeable(...)
     return output
 end
 
+local old_create_tabs = create_tabs
+function create_tabs(args)
+    if args["tabs"] and is_in_run_info_tab and G.GAME.selected_sleeve > 1 then
+        args.tabs[#args.tabs+1] = {
+            label = "Sleeve",
+            tab_definition_function = G.UIDEF.current_sleeve
+        }
+    end
+
+    return old_create_tabs(args)
+end
+
 local function booster_pack_size_fix_wrapper(func)
     -- fix the cardarea for these booster packs growing way too big
     local function wrapper(...)
@@ -1278,17 +1329,6 @@ create_UIBox_standard_pack = booster_pack_size_fix_wrapper(create_UIBox_standard
 create_UIBox_buffoon_pack = booster_pack_size_fix_wrapper(create_UIBox_buffoon_pack)
 create_UIBox_celestial_pack = booster_pack_size_fix_wrapper(create_UIBox_celestial_pack)
 
-local old_FUNCS_your_collection_decks = G.FUNCS.your_collection_decks
-function G.FUNCS.your_collection_decks(...)
-    in_collection_deck = true
-    return old_FUNCS_your_collection_decks(...)
-end
-local old_FUNCS_your_collection = G.FUNCS.your_collection
-function G.FUNCS.your_collection(...)
-    in_collection_deck = false
-    return old_FUNCS_your_collection(...)
-end
-
 local old_smods_save_unlocks = SMODS.SAVE_UNLOCKS
 function SMODS.SAVE_UNLOCKS()
     -- TODO: create PR to fix SMODS.SAVE_UNLOCKS itself?
@@ -1302,7 +1342,10 @@ function SMODS.SAVE_UNLOCKS()
     end
 end
 
-print_trace("CardSleeves loaded~!")
+-- TODO: mod compatibility with Jen's Almanac and Galdur
+
+print_trace("Trace logging level enabled")
+print_info("CardSleeves loaded~!")
 
 ----------------------------------------------
 ------------MOD CODE END----------------------

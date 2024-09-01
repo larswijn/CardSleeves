@@ -5,9 +5,8 @@ priority = 0
 
 # stupid implementation because steamodded didn't accept my PR
 # (could possibly rewrite using events instead)
-
 # Move seed generation to be before Back:apply and Stake.modifiers() so that both methods can use the seed and true pseudorandom numbers
-# both patches are in Game:start_run
+# in Game:start_run (both patches)
 [[patches]]
 [patches.regex]
 target = "game.lua"
