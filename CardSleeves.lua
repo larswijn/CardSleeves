@@ -2,9 +2,9 @@
 --- MOD_NAME: Card Sleeves
 --- MOD_ID: CardSleeves
 --- MOD_AUTHOR: [LarsWijn]
---- MOD_DESCRIPTION: Adds sleeves as modifier to decks, similar-ish to stakes.
+--- MOD_DESCRIPTION: Adds sleeves as modifier to decks, similar-ish to stakes. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.0.0
+--- VERSION: 1.1.0
 --- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
@@ -816,6 +816,7 @@ CardSleeves.Sleeve {
 -- UI FUNCS
 
 local function find_sleeve_card(area)
+    -- return (index, card) or nil
     -- loop safeguard in case some other mod decides to modify this (which would be dumb, but we did it, so...)
     for i, v in pairs(area.cards) do
         if v.children.back.atlas["original_key"] == "sleeve_atlas" then
@@ -858,6 +859,7 @@ local function insert_sleeve_card(area, sleeve_center)
             replace_sleeve_sprite(new_card, sleeve_center)
             area:emplace(new_card)
         else
+            sleeve_card.config.center = sleeve_center
             replace_sleeve_sprite(sleeve_card, sleeve_center)
         end
     elseif sleeve_center.name == "No Sleeve" and sleeve_card then
@@ -1241,7 +1243,7 @@ function CardArea:align_cards()
         for k, card in ipairs(self.cards) do
             if card.states.visible and not card.states.drag.is then
                 card.T.x = self.T.x + 0.1 + 0.0002*(total_cards-k)
-                card.T.y = self.T.y - 0.1 - 0.0005*(total_cards-k)
+                card.T.y = self.T.y - 0.2 - 0.0005*(total_cards-k)
             end
         end
     end
@@ -1379,6 +1381,7 @@ if Galdur then
         if G.viewed_sleeve and Galdur.run_setup.selected_deck_area and Galdur.run_setup.current_page >= galdur_page_min_index then
             local area, sleeve_center = Galdur.run_setup.selected_deck_area, G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve]
             local card = create_sleeve_card(area, sleeve_center)
+            card.params = {sleeve_select = 1}
             replace_sleeve_sprite(card, sleeve_center)
             area:emplace(card)
         end
@@ -1437,9 +1440,9 @@ if Galdur then
             end
             local card = create_sleeve_card(area, G.P_CENTER_POOLS.Sleeve[count])
             card.params = {sleeve_select = i}
+            card.sleeve_select_position = {page = page, count = i}
             replace_sleeve_sprite(card, G.P_CENTER_POOLS.Sleeve[count])
             area:emplace(card)
-            card.sleeve_select_position = {page = page, count = i}
             count = count + 1
         end
     end
@@ -1502,6 +1505,10 @@ if Galdur then
     local function set_new_sleeve(sleeve_center, silent)
         G.E_MANAGER:clear_queue('galdur')
         insert_sleeve_card(Galdur.run_setup.selected_deck_area, sleeve_center)
+        local _, card = find_sleeve_card(Galdur.run_setup.selected_deck_area)
+        if card then
+            card.params = {sleeve_select = 1}
+        end
 
         local texts = split_string_2(sleeve_center:get_name())
         local text = G.OVERLAY_MENU:get_UIE_by_ID('selected_deck_name')
@@ -1541,7 +1548,7 @@ if Galdur then
 
     local old_Card_hover = Card.hover
     function Card:hover()
-        if self.sleeve_select_position and (not self.states.drag.is or G.CONTROLLER.HID.touch) and not self.no_ui and not G.debug_tooltip_toggle then
+        if self.params.sleeve_select and (not self.states.drag.is or G.CONTROLLER.HID.touch) and not self.no_ui and not G.debug_tooltip_toggle then
             self:juice_up(0.05, 0.03)
             play_sound('paper1', math.random()*0.2 + 0.9, 0.35)
             if self.children.alert and not self.config.center.alerted then
