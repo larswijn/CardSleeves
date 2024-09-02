@@ -19,6 +19,7 @@ KNOWN ISSUES:
 ** do not work between restarts
 ** pop-ups says the completely wrong stuff
 * tags on zodiac deck + zodiac sleeve still say "of 5" (e.g. charm tag)
+* erratic deck + abandoned sleeve doesn't work as expected (face cards show up)
 
 --]]
 
@@ -1346,11 +1347,16 @@ local old_smods_save_unlocks = SMODS.SAVE_UNLOCKS
 function SMODS.SAVE_UNLOCKS()
     -- TODO: create PR to fix SMODS.SAVE_UNLOCKS itself?
     -- TODO: also, unlock menu says the completely wrong stuff ("joker unlocked" etc)
+
     old_smods_save_unlocks()
 
-    for _, v in pairs(G.P_CENTER_POOLS.Sleeve) do
-        if v.unlocked == false then
-            G.P_LOCKED[#G.P_LOCKED+1] = v
+    if G.P_CENTER_POOLS.Sleeve then
+        -- some IDIOTIC mods call SMODS.SAVE_UNLOCKS() when initiating, even though steamodded does it for them once loaded
+        -- so do this quick check to prevent a crash
+        for _, v in pairs(G.P_CENTER_POOLS.Sleeve) do
+            if v.unlocked == false then
+                G.P_LOCKED[#G.P_LOCKED+1] = v
+            end
         end
     end
 end
