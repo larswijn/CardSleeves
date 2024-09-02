@@ -1030,7 +1030,7 @@ SMODS.current_mod.config_tab = function()
                 {n = G.UIT.ROOT, config = {r = 0.1, align = "t", padding = 0.0, colour = G.C.CLEAR, minw = 8.5, minh = 6}, nodes ={
                     {n = G.UIT.R, config = {align = "c", padding = 0}, nodes = {
                         {n = G.UIT.C, config = { align = "c", padding = 0 }, nodes = {
-                            { n = G.UIT.T, config = { text = "Stack deck pile (possibly conflicts with Cartomancer)", scale = 0.35, colour = G.C.UI.TEXT_LIGHT }},
+                            { n = G.UIT.T, config = { text = "Stack deck pile", scale = 0.35, colour = G.C.UI.TEXT_LIGHT }},
                         }},
                         {n = G.UIT.C, config = { align = "cr", padding = 0.05 }, nodes = {
                             create_toggle{ col = true, label = "", scale = 0.70, w = 0, shadow = true, ref_table = config, ref_value = "adjust_deck_alignment" },
@@ -1231,9 +1231,15 @@ function CardArea:align_cards()
 
     if (self == G.hand or self == G.deck or self == G.discard or self == G.play) and G.view_deck and G.view_deck[1] and G.view_deck[1].cards then return end
     if self.config.type == 'deck' and self == G.deck and config.adjust_deck_alignment then
+        local total_cards = 0
+        for _, card in ipairs(self.cards) do
+            if card.states.visible and not card.states.drag.is then
+                total_cards = total_cards + 1
+            end
+        end
         for k, card in ipairs(self.cards) do
-            if not card.states.drag.is then
-                card.T.x = self.T.x + 0.1 + 0.0005*(#self.cards-k)
+            if card.states.visible and not card.states.drag.is then
+                card.T.x = self.T.x + 0.1 + 0.0005*(total_cards-k)
                 card.T.y = self.T.y - 0.1
             end
         end
