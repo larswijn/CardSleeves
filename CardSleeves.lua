@@ -4,7 +4,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks, similar-ish to stakes. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.1.2
+--- VERSION: 1.1.3
 --- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
@@ -23,10 +23,12 @@ KNOWN ISSUES:
 
 --]]
 
--- GLOBALS (in CardSleeves)
+-- GLOBALS (in this mod)
 
 CardSleeves = {}
 local config = SMODS.current_mod.config
+local in_collection_deck = false
+local is_in_run_info_tab = false
 
 -- DEBUG FUNCS
 
@@ -505,7 +507,8 @@ CardSleeves.Sleeve {
         return { key = key }
     end,
     apply = function(self)
-        if self.allowed_card_centers == nil then
+        CardSleeves.Sleeve.apply(self)
+        if self.config.prevent_faces and self.allowed_card_centers == nil then
             self.allowed_card_centers = {}
             self.skip_trigger_effect = true
             for _, card_center in pairs(G.P_CARDS) do
@@ -875,7 +878,6 @@ function G.FUNCS.change_sleeve(args)
     G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve = args.to_key
 end
 
-local in_collection_deck = false  -- here because lua globals/locals are being weird?
 function G.FUNCS.change_viewed_sleeve()
     if in_collection_deck then
         return
@@ -1068,7 +1070,6 @@ end
 **create_UIBox_celestial_pack
 --]]
 
-local is_in_run_info_tab = false
 local old_uidef_run_info = G.UIDEF.run_info
 function G.UIDEF.run_info()
     is_in_run_info_tab = true
