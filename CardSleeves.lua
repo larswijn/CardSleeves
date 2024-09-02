@@ -1234,13 +1234,14 @@ function CardArea:align_cards()
         local total_cards = 0
         for _, card in ipairs(self.cards) do
             if card.states.visible and not card.states.drag.is then
+                -- cartomancer compatibility
                 total_cards = total_cards + 1
             end
         end
         for k, card in ipairs(self.cards) do
             if card.states.visible and not card.states.drag.is then
-                card.T.x = self.T.x + 0.1 + 0.0005*(total_cards-k)
-                card.T.y = self.T.y - 0.1
+                card.T.x = self.T.x + 0.1 + 0.0002*(total_cards-k)
+                card.T.y = self.T.y - 0.1 - 0.0005*(total_cards-k)
             end
         end
     end
@@ -1358,6 +1359,39 @@ if Galdur then
     local sleeve_count_horizontal = 6
     local sleeve_count_vertical = 2
     local sleeve_count_total = sleeve_count_horizontal * sleeve_count_vertical
+    local galdur_page_min_index = #Galdur.pages_to_add + 1  -- page that our sleeves appear on - only start drawing information from this page onward
+
+    local function modify_sleeve_text(ui_nodes, sleeve_center)
+        local texts = split_string_2(sleeve_center:get_name())
+        local text = ui_nodes.nodes[1].nodes[1].nodes[1]
+        text.config.text = texts[1]
+        text.config.scale = 0.7/math.max(1,string.len(texts[1])/8)
+        text = ui_nodes.nodes[1].nodes[2].nodes[1]
+        text.config.text = texts[2]
+        text.config.scale = 0.75/math.max(1,string.len(texts[2])/8)
+        return ui_nodes
+    end
+
+    local old_Galdur_populate_deck_preview = Galdur.populate_deck_preview
+    function Galdur.populate_deck_preview(_deck, silent)
+        old_Galdur_populate_deck_preview(_deck, silent)
+
+        if G.viewed_sleeve and Galdur.run_setup.selected_deck_area and Galdur.run_setup.current_page >= galdur_page_min_index then
+            local area, sleeve_center = Galdur.run_setup.selected_deck_area, G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve]
+            local card = create_sleeve_card(area, sleeve_center)
+            replace_sleeve_sprite(card, sleeve_center)
+            area:emplace(card)
+        end
+    end
+
+    local old_Galdur_display_deck_preview = Galdur.display_deck_preview
+    function Galdur.display_deck_preview()
+        local output = old_Galdur_display_deck_preview()
+        if G.viewed_sleeve and Galdur.run_setup.current_page >= galdur_page_min_index then
+            output = modify_sleeve_text(output, G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve])
+        end
+        return output
+    end
 
     local function generate_sleeve_card_areas()
         if Galdur.run_setup.sleeve_select_areas then
@@ -1465,6 +1499,21 @@ if Galdur then
         populate_sleeve_card_areas(args.cycle_config.current_option)
     end
 
+    local function set_new_sleeve(sleeve_center, silent)
+        G.E_MANAGER:clear_queue('galdur')
+        insert_sleeve_card(Galdur.run_setup.selected_deck_area, sleeve_center)
+
+        local texts = split_string_2(sleeve_center:get_name())
+        local text = G.OVERLAY_MENU:get_UIE_by_ID('selected_deck_name')
+        text.config.text = texts[1]
+        text.config.scale = 0.7/math.max(1,string.len(texts[1])/8)
+        text.UIBox:recalculate()
+        text = G.OVERLAY_MENU:get_UIE_by_ID('selected_deck_name_2')
+        text.config.text = texts[2]
+        text.config.scale = 0.75/math.max(1,string.len(texts[2])/8)
+        text.UIBox:recalculate()
+    end
+
     local function galdur_sleeve_page()
         generate_sleeve_card_areas()
         Galdur.include_deck_preview()
@@ -1477,21 +1526,6 @@ if Galdur then
             }},
             Galdur.display_deck_preview()
         }}
-    end
-
-    local function set_new_sleeve(sleeve_center, silent)
-        G.E_MANAGER:clear_queue('galdur')
-        insert_sleeve_card(Galdur.run_setup.selected_deck_area, sleeve_center)
-
-        local texts = split_string_2(sleeve_center.name)
-        local text = G.OVERLAY_MENU:get_UIE_by_ID('selected_deck_name')
-        text.config.text = texts[1]
-        text.config.scale = 0.7/math.max(1,string.len(texts[1])/8)
-        text.UIBox:recalculate()
-        text = G.OVERLAY_MENU:get_UIE_by_ID('selected_deck_name_2')
-        text.config.text = texts[2]
-        text.config.scale = 0.75/math.max(1,string.len(texts[2])/8)
-        text.UIBox:recalculate()
     end
 
     local old_Card_click = Card.click
