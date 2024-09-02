@@ -1231,9 +1231,15 @@ function CardArea:align_cards()
 
     if (self == G.hand or self == G.deck or self == G.discard or self == G.play) and G.view_deck and G.view_deck[1] and G.view_deck[1].cards then return end
     if self.config.type == 'deck' and self == G.deck and config.adjust_deck_alignment then
+        local total_cards = 0
+        for _, card in ipairs(self.cards) do
+            if card.states.visible and not card.states.drag.is then
+                total_cards = total_cards + 1
+            end
+        end
         for k, card in ipairs(self.cards) do
-            if not card.states.drag.is then
-                card.T.x = self.T.x + 0.1 + 0.0005*(#self.cards-k)
+            if card.states.visible and not card.states.drag.is then
+                card.T.x = self.T.x + 0.1 + 0.0005*(total_cards-k)
                 card.T.y = self.T.y - 0.1
             end
         end
