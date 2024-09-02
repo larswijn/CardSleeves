@@ -4,7 +4,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks, similar-ish to stakes. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.1.1
+--- VERSION: 1.1.2
 --- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
