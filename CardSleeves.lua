@@ -4,7 +4,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks, similar-ish to stakes. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.1.0
+--- VERSION: 1.1.1
 --- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
@@ -1315,7 +1315,7 @@ end
 
 local old_create_tabs = create_tabs
 function create_tabs(args)
-    if args["tabs"] and is_in_run_info_tab and G.GAME.selected_sleeve > 1 then
+    if args["tabs"] and is_in_run_info_tab and G.GAME.selected_sleeve and G.GAME.selected_sleeve > 1 then
         args.tabs[#args.tabs+1] = {
             label = "Sleeve",
             tab_definition_function = G.UIDEF.current_sleeve
