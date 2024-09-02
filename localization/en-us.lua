@@ -162,5 +162,10 @@ return {
                 }
             }
         }
+    },
+    misc = {
+        dictionary = {
+            gald_sleeves = "Select Sleeve"
+        }
     }
 }
