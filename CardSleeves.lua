@@ -19,7 +19,6 @@ KNOWN ISSUES:
 ** do not work between restarts
 ** pop-ups says the completely wrong stuff
 * tags on zodiac deck + zodiac sleeve still say "of 5" (e.g. charm tag)
-* erratic deck + abandoned sleeve doesn't work as expected (face cards show up)
 
 --]]
 
@@ -557,9 +556,10 @@ CardSleeves.Sleeve {
         elseif (args.context["create_playing_card"] or args.context["modify_playing_card"]) and args.context["card"] and not is_in_run_info_tab then
             local card = args.context.card
             if SMODS.Ranks[card.base.value].face then
+                local initial = G.GAME.blind == nil or args.context["create_playing_card"]
                 if self.in_strength then
                     local base_key = SMODS.Suits[card.base.suit].card_key .. "_" .. self.get_rank_after_10()
-                    card:set_base(G.P_CARDS[base_key])
+                    card:set_base(G.P_CARDS[base_key], initial)
                 elseif self.in_ouija then
                     if self.ouija_rank == nil then
                         local random_base = pseudorandom_element(self.allowed_card_centers, pseudoseed("slv"))
@@ -568,10 +568,10 @@ CardSleeves.Sleeve {
                         card_instance:remove()
                     end
                     local base_key = SMODS.Suits[card.base.suit].card_key .. "_" .. self.ouija_rank.card_key
-                    card:set_base(G.P_CARDS[base_key])
+                    card:set_base(G.P_CARDS[base_key], initial)
                 else
                     local random_base = pseudorandom_element(self.allowed_card_centers, pseudoseed("slv"))
-                    card:set_base(random_base)
+                    card:set_base(random_base, initial)
                 end
             end
         end
