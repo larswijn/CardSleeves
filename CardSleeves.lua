@@ -4,7 +4,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks, similar-ish to stakes. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.1.3
+--- VERSION: 1.1.4
 --- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
@@ -830,9 +830,10 @@ local function find_sleeve_card(area)
 end
 
 local function create_sleeve_card(area, sleeve_center)
-    local viewed_back = G.GAME.viewed_back ~= nil
+    local viewed_back = G.GAME.viewed_back ~= nil and {effect = {config = {}}} or false  -- cryptid compat
     local new_card = Card(area.T.x, area.T.y, area.T.w + 0.1, area.T.h,
-                          nil, sleeve_center or G.P_CENTERS.c_base, {playing_card = 11, viewed_back = viewed_back})
+                          nil, sleeve_center or G.P_CENTERS.c_base, 
+                          {playing_card = 11, viewed_back = viewed_back})
     new_card.sprite_facing = 'back'
     new_card.facing = 'back'
     return new_card
@@ -1109,7 +1110,7 @@ function G.UIDEF.run_setup_option(_type)
                 }
             })
     elseif _type == "New Run" then
-        G.viewed_sleeve = G.viewed_sleeve or 1
+        G.viewed_sleeve = G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve or G.viewed_sleeve or 1
         table.insert(output.nodes, 3,
             {
                 n = G.UIT.R,
@@ -1213,7 +1214,7 @@ function CardArea:draw()
         end
         if self.sleeve_sprite == nil then
             self.sleeve_sprite = create_sleeve_sprite(x, self.T.y, width, height, sleeve_center)
-            -- self.sleeve_sprite.states.drag.can = false
+        -- self.sleeve_sprite.states.drag.can = false
         else
             -- update x, width, height
             self.sleeve_sprite.T.x = x
