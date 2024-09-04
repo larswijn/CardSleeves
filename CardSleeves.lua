@@ -4,7 +4,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks, similar-ish to stakes. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.1.5
+--- VERSION: 1.1.6
 --- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
@@ -1144,7 +1144,7 @@ end
 local old_FUNCS_can_start_run = G.FUNCS.can_start_run
 function G.FUNCS.can_start_run(e)
     old_FUNCS_can_start_run(e)
-    if G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve or 1].unlocked == false then
+    if G.viewed_sleeve and G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve or 1] and G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve or 1].unlocked == false then
         e.config.colour = G.C.UI.BACKGROUND_INACTIVE
         e.config.button = nil
     end
@@ -1579,7 +1579,15 @@ if Galdur then
             local info_col = self.params.deck_preview and G.UIT.R or G.UIT.C
             local sleeve = self.config.center
 
-            local info_queue = populate_info_queue('Sleeve', sleeve.key)
+            local status, result = pcall(populate_info_queue, 'Sleeve', sleeve.key)
+            if not status then
+                -- exception
+                if result:find("'loc_target'") then
+                    error("Incorrect or missing localization for '" .. sleeve.key .. "'")
+                end
+                populate_info_queue('Sleeve', sleeve.key)
+            end
+            local info_queue = result
             local tooltips = {}
             for _, center in pairs(info_queue) do
                 local desc = generate_card_ui(center, {main = {},info = {},type = {},name = 'done'}, nil, center.set, nil)
