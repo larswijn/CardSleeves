@@ -119,12 +119,13 @@ CardSleeves.Sleeve = SMODS.Center:extend {
     discovered = false,
     unlocked = true,
     set = "Sleeve",
-    atlas = "sleeve_atlas",
-    pos = { x = 0, y = 0 }, -- within `atlas`,
     config = {},
     required_params = { "key", "atlas", "pos" },
     pre_inject_class = function(self)
         G.P_CENTER_POOLS[self.set] = {}
+    end,
+    get_obj = function(self, key)
+        return self.obj_table[key] or SMODS.Center.get_obj(self, key)
     end,
     locked_loc_vars = function(self, info_queue, card)
         if not self.unlock_condition then
@@ -723,6 +724,7 @@ CardSleeves.Sleeve {
     end,
     trigger_effect = function(self, args)
         CardSleeves.Sleeve.trigger_effect(self, args)
+        -- TODO: this isn't API friendly
         if G.GAME.selected_back.name == "Plasma Deck" and self.name == 'Plasma Sleeve' and args.context == "shop_final_pass" then
             local cardareas = {}
             for _, obj in pairs(G) do
