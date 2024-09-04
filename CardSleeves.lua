@@ -1206,20 +1206,29 @@ function CardArea:draw()
 
     if draw_sleeve then
         local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve]
-        local x = self.T.x
-        local width = self.T.w
-        local height = self.T.h
-        if self.cards[2] then
-            -- using 2nd card because player can move the first card anywhere
-            x = self.cards[#self.cards].T.x
-            width = self.cards[2].T.w + (self.cards[2].T.x - self.cards[#self.cards].T.x)
+        local x, y = 999999999, -1
+        local x2, height = -1, -1
+        for i, card in pairs(self.cards) do
+            local index_is_drawn = i == 1 or i%(self.config.thin_draw or 9) == 0 or i == #self.cards
+            local is_stationary = not card.states.drag.is and card.velocity.x < 0.01 and card.velocity.y < 0.01
+            if index_is_drawn and card.states.visible and is_stationary then
+                x = math.min(x, card.T.x)
+                y = math.max(y, card.T.y)
+                x2 = math.max(x2, card.T.x + card.T.w)
+                height = math.max(height, card.T.h)
+            end
         end
+        local width = x2 - x
+        x = x > 1000000 and self.T.x + 0.1 or x
+        y = (y < 0 and self.T.y or y) - 0.05
+        width = width <= 0 and self.T.w - 0.2 or width
+        height = height <= 0 and self.T.h or height
         if self.sleeve_sprite == nil then
-            self.sleeve_sprite = create_sleeve_sprite(x, self.T.y, width, height, sleeve_center)
-        -- self.sleeve_sprite.states.drag.can = false
+            self.sleeve_sprite = create_sleeve_sprite(x, y, width, height, sleeve_center)
         else
-            -- update x, width, height
+            -- update x, y, width, height
             self.sleeve_sprite.T.x = x
+            self.sleeve_sprite.T.y = y
             self.sleeve_sprite.T.w = width
             self.sleeve_sprite.T.h = height
         end
