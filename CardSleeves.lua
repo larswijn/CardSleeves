@@ -4,7 +4,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks, similar-ish to stakes. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.1.6
+--- VERSION: 1.1.7
 --- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
@@ -724,7 +724,7 @@ CardSleeves.Sleeve {
     end,
     trigger_effect = function(self, args)
         CardSleeves.Sleeve.trigger_effect(self, args)
-        -- TODO: this isn't API friendly
+        -- TODO: this isn't API friendly?
         if G.GAME.selected_back.name == "Plasma Deck" and self.name == 'Plasma Sleeve' and args.context == "shop_final_pass" then
             local cardareas = {}
             for _, obj in pairs(G) do
@@ -825,7 +825,7 @@ local function find_sleeve_card(area)
     -- return (index, card) or nil
     -- loop safeguard in case some other mod decides to modify this (which would be dumb, but we did it, so...)
     for i, v in pairs(area.cards) do
-        if v.children.back.atlas["original_key"] == "sleeve_atlas" then
+        if v.params.sleeve_card then
             return i, v
         end
     end
@@ -834,8 +834,8 @@ end
 local function create_sleeve_card(area, sleeve_center)
     local viewed_back = G.GAME.viewed_back ~= nil and {effect = {config = {}}} or false  -- cryptid compat
     local new_card = Card(area.T.x, area.T.y, area.T.w + 0.1, area.T.h,
-                          nil, sleeve_center or G.P_CENTERS.c_base, 
-                          {playing_card = 11, viewed_back = viewed_back})
+                          nil, sleeve_center or G.P_CENTERS.c_base,
+                          {playing_card = 11, viewed_back = viewed_back, sleeve_card = true})
     new_card.sprite_facing = 'back'
     new_card.facing = 'back'
     return new_card
@@ -1220,7 +1220,7 @@ function CardArea:draw()
         end
         local width = x2 - x
         x = x > 1000000 and self.T.x + 0.1 or x
-        y = (y < 0 and self.T.y or y) - 0.05
+        y = (y < 0 and self.T.y or y) + 0.05
         width = width <= 0 and self.T.w - 0.2 or width
         height = height <= 0 and self.T.h or height
         if self.sleeve_sprite == nil then
@@ -1292,7 +1292,7 @@ function Card:set_base(card, initial)
 
     local output = old_Card_set_base(self, card, initial)
 
-    local is_playing_card = (self.ability.set == "Default" or self.ability.set == "Enhanced") and self.config.card_key
+    local is_playing_card = (self.ability.set == "Default" or self.ability.set == "Enhanced") and self.config.card_key  -- what about self.playing_card?
     if initial and self.ability.set == "Booster" then
         sleeve_center:trigger_effect{context = {create_booster = true, card = self}}
     elseif is_playing_card then
@@ -1301,7 +1301,7 @@ function Card:set_base(card, initial)
         else
             sleeve_center:trigger_effect{context = {modify_playing_card = true, card = self}}
         end
-    elseif initial and (self.ability.set == "Tarot" or self.ability.set == "Planet" or self.ability.set == "Spectral") then
+    elseif initial and self.ability.consumeable then
         sleeve_center:trigger_effect{context = {create_consumable = true, card = self}}
     end
 
@@ -1400,7 +1400,7 @@ if Galdur then
         if G.viewed_sleeve and Galdur.run_setup.selected_deck_area and Galdur.run_setup.current_page >= galdur_page_min_index then
             local area, sleeve_center = Galdur.run_setup.selected_deck_area, G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve]
             local card = create_sleeve_card(area, sleeve_center)
-            card.params = {sleeve_select = 1}
+            card.params["sleeve_select"] = 1
             replace_sleeve_sprite(card, sleeve_center)
             area:emplace(card)
         end
@@ -1458,7 +1458,7 @@ if Galdur then
                 end
             end
             local card = create_sleeve_card(area, G.P_CENTER_POOLS.Sleeve[count])
-            card.params = {sleeve_select = i}
+            card.params["sleeve_select"] = i
             card.sleeve_select_position = {page = page, count = i}
             replace_sleeve_sprite(card, G.P_CENTER_POOLS.Sleeve[count])
             area:emplace(card)
@@ -1526,7 +1526,7 @@ if Galdur then
         insert_sleeve_card(Galdur.run_setup.selected_deck_area, sleeve_center)
         local _, card = find_sleeve_card(Galdur.run_setup.selected_deck_area)
         if card then
-            card.params = {sleeve_select = 1}
+            card.params["sleeve_select"] = 1
         end
 
         local texts = split_string_2(sleeve_center:get_name())
