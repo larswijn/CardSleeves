@@ -37,7 +37,7 @@ CardSleeves adds 15 Sleeves by default, some of which have an unique effect when
 | Erratic Sleeve   | All ranks/suits in starting deck are randomized        | Starting Hands/Discards/Dollars/Joker slots are randomized between 2-6 |
 
 # API
-Any other mod (with lower priority) can create new sleeves. Currently not well documented, but you can look at the code or send me a DM on discord.
+Any other mod (with lower priority) can create new sleeves. See [the wiki](https://github.com/larswijn/CardSleeves/wiki).
 
 # Credits
 Big thanks to Sable for the idea and all the art, and the balatro modding community for helping out with the lua code.
