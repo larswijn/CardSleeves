@@ -4,7 +4,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks, similar-ish to stakes. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.1.7
+--- VERSION: 1.2.0
 --- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
@@ -19,6 +19,11 @@ KNOWN ISSUES:
 ** do not work between restarts
 ** pop-ups says the completely wrong stuff
 * tags on zodiac deck + zodiac sleeve still say "of 5" (e.g. charm tag)
+* API:
+** add optional shaders
+** support unlocks
+* Galdur:
+** see if people want sleeves to be moved before stakes?
 
 --]]
 
@@ -481,9 +486,12 @@ CardSleeves.Sleeve {
         return { key = key, vars = vars }
     end,
     trigger_effect = function(self, args)
-        local is_spectral_pack = args.context["card"] and args.context.card.ability.set == "Booster" and args.context.card.ability.name:find("Spectral")
-        if args.context["create_booster"] and is_spectral_pack and self.config.spectral_more_options then
-            args.context.card.ability.extra = args.context.card.ability.extra + self.config.spectral_more_options
+        if args.context.create_card and args.context.card then
+            local card = args.context.card
+            local is_spectral_pack = card.ability.set == "Booster" and card.ability.name:find("Spectral")
+            if is_spectral_pack and self.config.spectral_more_options then
+               card.ability.extra = card.ability.extra + self.config.spectral_more_options
+            end
         end
     end,
 }
@@ -534,14 +542,9 @@ CardSleeves.Sleeve {
             self:apply()
         end
 
-        -- handle Familiar, Strength and Ouija
-        if args.context["create_consumable"] and args.context["card"] then
-            local card = args.context.card
-            if card.ability.name == 'Familiar' then
-                card.ability.extra = 0
-            end
-        elseif args.context["before_use_consumable"] and args.context["card"] then
-            local card = args.context.card
+        -- handle Strength and Ouija
+        local card = args.context.card
+        if args.context.before_use_consumable and card then
             if card.ability.name == 'Strength' then
                 self.in_strength = true
             elseif card.ability.name == "Ouija" then
@@ -550,14 +553,13 @@ CardSleeves.Sleeve {
             if self.in_strength and self.in_ouija then
                 print_warning("cannot be in both strength and ouija!")
             end
-        elseif args.context["after_use_consumable"] then
+        elseif args.context.after_use_consumable then
             self.in_strength = nil
             self.in_ouija = nil
             self.ouija_rank = nil
-        elseif (args.context["create_playing_card"] or args.context["modify_playing_card"]) and args.context["card"] and not is_in_run_info_tab then
-            local card = args.context.card
+        elseif (args.context.create_card or args.context.modify_playing_card) and card and card.playing_card then  -- playing cards
             if SMODS.Ranks[card.base.value].face then
-                local initial = G.GAME.blind == nil or args.context["create_playing_card"]
+                local initial = G.GAME.blind == nil or args.context.create_card
                 if self.in_strength then
                     local base_key = SMODS.Suits[card.base.suit].card_key .. "_" .. self.get_rank_after_10()
                     card:set_base(G.P_CARDS[base_key], initial)
@@ -602,13 +604,13 @@ CardSleeves.Sleeve {
             return
         end
 
-        if (args.context["create_playing_card"] or args.context["modify_playing_card"]) and args.context["card"] and not is_in_run_info_tab then
+        if (args.context.create_card or args.context.modify_playing_card) and args.context.card and args.context.card.playing_card then
             local card = args.context.card
             for from_suit, to_suit in pairs(self.config.force_suits) do
                 if card.base.suit == from_suit then
-                        local base = SMODS.Suits[to_suit].card_key .. "_" .. SMODS.Ranks[card.base.value].card_key
-                        local initial = G.GAME.blind == nil or args.context["create_playing_card"]
-                        card:set_base(G.P_CARDS[base], initial)
+                    local base = SMODS.Suits[to_suit].card_key .. "_" .. SMODS.Ranks[card.base.value].card_key
+                    local initial = G.GAME.blind == nil or args.context.create_card
+                    card:set_base(G.P_CARDS[base], initial)
                 end
             end
         end
@@ -640,7 +642,7 @@ CardSleeves.Sleeve {
         return { key = key, vars = vars }
     end,
     trigger_effect = function(self, args)
-        if args.context["create_booster"] and args.context["card"] then
+        if args.context.create_card and args.context.card then
             local card = args.context.card
             local is_booster_pack = card.ability.set == "Booster"
             local is_arcana_pack = is_booster_pack and card.ability.name:find("Arcana")
@@ -1292,17 +1294,12 @@ function Card:set_base(card, initial)
 
     local output = old_Card_set_base(self, card, initial)
 
-    local is_playing_card = (self.ability.set == "Default" or self.ability.set == "Enhanced") and self.config.card_key  -- what about self.playing_card?
-    if initial and self.ability.set == "Booster" then
-        sleeve_center:trigger_effect{context = {create_booster = true, card = self}}
-    elseif is_playing_card then
+    if not is_in_run_info_tab then
         if initial then
-            sleeve_center:trigger_effect{context = {create_playing_card = true, card = self}}
-        else
+            sleeve_center:trigger_effect{context = {create_card = true, card = self}}
+        elseif not initial and self.playing_card then
             sleeve_center:trigger_effect{context = {modify_playing_card = true, card = self}}
         end
-    elseif initial and self.ability.consumeable then
-        sleeve_center:trigger_effect{context = {create_consumable = true, card = self}}
     end
 
     return output
