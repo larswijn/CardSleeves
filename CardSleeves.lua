@@ -1243,7 +1243,8 @@ function CardArea:draw()
     if not self.states.visible then return end
     if G.VIEWING_DECK and (self==G.deck or self==G.hand or self==G.play) then return end
 
-    local draw_sleeve = self == G.deck and CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve)
+    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve)
+    local draw_sleeve = self == G.deck and sleeve_center
 
     if draw_sleeve and self.children["view_deck"] then
         -- prevent drawing the "view deck" button, we'll draw it ourselves later
@@ -1254,7 +1255,6 @@ function CardArea:draw()
     old_CardArea_draw(self)
 
     if draw_sleeve then
-        local sleeve_center = G.P_CENTER_POOLS.Sleeve[G.GAME.selected_sleeve]
         local x, y = 999999999, -1
         local x2, height = -1, -1
         for i, card in pairs(self.cards) do
