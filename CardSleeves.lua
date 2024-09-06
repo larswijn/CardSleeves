@@ -4,7 +4,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.3.0
+--- VERSION: 1.3.1
 --- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
@@ -548,6 +548,7 @@ CardSleeves.Sleeve {
 
         -- handle Strength and Ouija
         local card = args.context.card
+        local is_playing_card = card and (card.ability.set == "Default" or card.ability.set == "Enhanced") and card.config.card_key
         if args.context.before_use_consumable and card then
             if card.ability.name == 'Strength' then
                 self.in_strength = true
@@ -561,7 +562,7 @@ CardSleeves.Sleeve {
             self.in_strength = nil
             self.in_ouija = nil
             self.ouija_rank = nil
-        elseif (args.context.create_card or args.context.modify_playing_card) and card and card.playing_card then  -- playing cards
+        elseif (args.context.create_card or args.context.modify_playing_card) and card and is_playing_card then
             if SMODS.Ranks[card.base.value].face then
                 local initial = G.GAME.blind == nil or args.context.create_card
                 if self.in_strength then
@@ -608,8 +609,9 @@ CardSleeves.Sleeve {
             return
         end
 
-        if (args.context.create_card or args.context.modify_playing_card) and args.context.card and args.context.card.playing_card then
-            local card = args.context.card
+        local card = args.context.card
+        local is_playing_card = card and (card.ability.set == "Default" or card.ability.set == "Enhanced") and card.config.card_key
+        if (args.context.create_card or args.context.modify_playing_card) and card and is_playing_card then
             for from_suit, to_suit in pairs(self.config.force_suits) do
                 if card.base.suit == from_suit then
                     local base = SMODS.Suits[to_suit].card_key .. "_" .. SMODS.Ranks[card.base.value].card_key
