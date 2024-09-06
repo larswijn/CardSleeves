@@ -1132,7 +1132,7 @@ function G.UIDEF.run_setup_option(_type)
         if G.SAVED_GAME ~= nil then
             G.viewed_sleeve = saved_game.GAME.selected_sleeve or G.viewed_sleeve
         end
-        if type(G.viewed_sleeve) == "number" then G.viewed_sleeve = G.P_CENTER_POOLS.Sleeve[3].key end  -- TEMPORARY, REMOVE NEXT UPDATE
+        if type(G.viewed_sleeve) == "number" then G.viewed_sleeve = G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve].key end  -- TEMPORARY, REMOVE NEXT UPDATE
         table.insert(output.nodes, 3,
             {
                 n = G.UIT.R,
@@ -1145,7 +1145,7 @@ function G.UIDEF.run_setup_option(_type)
             })
     elseif _type == "New Run" then
         G.viewed_sleeve = G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve or G.viewed_sleeve or "sleeve_casl_none"
-        if type(G.viewed_sleeve) == "number" then G.viewed_sleeve = G.P_CENTER_POOLS.Sleeve[3].key end  -- TEMPORARY, REMOVE NEXT UPDATE
+        if type(G.viewed_sleeve) == "number" then G.viewed_sleeve = G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve].key end  -- TEMPORARY, REMOVE NEXT UPDATE
         table.insert(output.nodes, 3,
             {
                 n = G.UIT.R,
