@@ -165,7 +165,9 @@ return {
     },
     misc = {
         dictionary = {
-            gald_sleeves = "Select Sleeve"
+            gald_sleeves = "Select Sleeve",
+            adjust_deck_alignment = "Stack deck pile",
+            sleeve_not_found_error = "Sleeve could not be found! Did you remove its mod?"
         }
     }
 }
