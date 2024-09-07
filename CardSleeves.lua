@@ -4,7 +4,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.3.2
+--- VERSION: 1.3.3
 --- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
@@ -844,7 +844,7 @@ local function create_sleeve_card(area, sleeve_center)
     local viewed_back = G.GAME.viewed_back ~= nil and {effect = {config = {}}} or false  -- cryptid compat
     local new_card = Card(area.T.x, area.T.y, area.T.w + 0.1, area.T.h,
                           nil, sleeve_center or G.P_CENTERS.c_base,
-                          {playing_card = 11, viewed_back = viewed_back, sleeve_card = true})
+                          {playing_card = 11, viewed_back = viewed_back, galdur_selector = true, sleeve_card = true})
     new_card.sprite_facing = 'back'
     new_card.facing = 'back'
     return new_card
