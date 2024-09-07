@@ -4,7 +4,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.3.1
+--- VERSION: 1.3.2
 --- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
@@ -13,9 +13,10 @@
 
 --[[
 
-KNOWN ISSUES:
+KNOWN ISSUES/IDEAS:
 
 * tags on zodiac deck + zodiac sleeve still say "of 5" (e.g. charm tag)
+* see if people want stake stickers on sleeves?
 
 * unlocks:
 ** do not work between restarts
@@ -1134,14 +1135,6 @@ function G.UIDEF.run_setup_option(_type)
         if G.SAVED_GAME ~= nil then
             G.viewed_sleeve = saved_game.GAME.selected_sleeve or G.viewed_sleeve
         end
-        if type(G.viewed_sleeve) == "number" then
-            -- TEMPORARY, REMOVE NEXT UPDATE
-            if G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve] then
-                G.viewed_sleeve = G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve].key
-            else
-                G.viewed_sleeve = tostring(G.viewed_sleeve)
-            end
-        end
         table.insert(output.nodes, 3,
             {
                 n = G.UIT.R,
@@ -1154,14 +1147,6 @@ function G.UIDEF.run_setup_option(_type)
             })
     elseif _type == "New Run" then
         G.viewed_sleeve = G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve or G.viewed_sleeve or "sleeve_casl_none"
-        if type(G.viewed_sleeve) == "number" then
-            -- TEMPORARY, REMOVE NEXT UPDATE
-            if G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve] then
-                G.viewed_sleeve = G.P_CENTER_POOLS.Sleeve[G.viewed_sleeve].key
-            else
-                G.viewed_sleeve = tostring(G.viewed_sleeve)
-            end
-        end
         table.insert(output.nodes, 3,
             {
                 n = G.UIT.R,
@@ -1568,6 +1553,7 @@ if Galdur then
     end
 
     local function set_new_sleeve(sleeve_center, silent)
+        -- visual only - use G.FUNCS.change_sleeve to change the actual value
         G.E_MANAGER:clear_queue('galdur')
         insert_sleeve_card(Galdur.run_setup.selected_deck_area, sleeve_center)
         local _, card = find_sleeve_card(Galdur.run_setup.selected_deck_area)
@@ -1586,9 +1572,31 @@ if Galdur then
         text.UIBox:recalculate()
     end
 
+    G.FUNCS.random_sleeve = function()
+        local selected = false
+        local random
+        while not selected do
+            math.randomseed(os.time())
+            random = math.random(#G.P_CENTER_POOLS.Sleeve)
+            if G.P_CENTER_POOLS.Sleeve[random].unlocked then
+                selected = true
+                play_sound('whoosh1', math.random()*0.2 + 0.9, 0.35)
+            end
+        end
+        G.FUNCS.change_sleeve{to_key = random}
+        set_new_sleeve(G.P_CENTER_POOLS.Sleeve[random])
+    end
+
     local function galdur_sleeve_page()
         generate_sleeve_card_areas()
         Galdur.include_deck_preview()
+
+        local deck_preview = Galdur.display_deck_preview()
+        deck_preview.nodes[#deck_preview.nodes+1] = {n = G.UIT.R, config={align = 'cm', padding = 0.15}, nodes = {
+            {n=G.UIT.R, config = {maxw = 2.5, minw = 2.5, minh = 0.8, r = 0.1, hover = true, ref_value = 1, button = 'random_sleeve', colour = Galdur.badge_colour, align = "cm", emboss = 0.1}, nodes = {
+                {n=G.UIT.T, config={text = localize("gald_random_sleeve"), scale = 0.4, colour = G.C.WHITE}}
+            }}
+        }}
 
         return
         {n=G.UIT.ROOT, config={align = "tm", minh = 3.8, colour = G.C.CLEAR, padding=0.1}, nodes={
@@ -1596,7 +1604,7 @@ if Galdur then
                 generate_sleeve_card_areas_ui(),
                 create_sleeve_page_cycle(),
             }},
-            Galdur.display_deck_preview()
+            deck_preview
         }}
     end
 
