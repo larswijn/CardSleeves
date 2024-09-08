@@ -24,7 +24,7 @@ CardSleeves adds 15 Sleeves by default, some of which have an unique effect when
 | Blue Sleeve      | +1 hands                                               | none                                                                   |
 | Yellow Sleeve    | +$10                                                   | none                                                                   |
 | Green Sleeve     | +$1 per remaining hand/discard                         | none                                                                   |
-| Black Sleeve     | +1 joker slots, -1 hands                               | none                                                                   |
+| Black Sleeve     | +1 joker slots, -1 hands                               | +1 joker slots, -1 discards                                            |
 | Magic Sleeve     | Crystal Ball Voucher, 2 Fools                          | Omen Globe Voucher                                                     |
 | Nebula Sleeve    | Telescope Voucher, -1 consumable slot                  | Observatory Voucher                                                    |
 | Ghost Sleeve     | Spectral cards appear in shop, Hex card                | Spectral pack size increases by 2                                      |

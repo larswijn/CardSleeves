@@ -413,11 +413,20 @@ CardSleeves.Sleeve {
     name = "Black Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 0 },
-    config = { hands = -1, joker_slot = 1 },
     unlocked = true,
     unlock_condition = { deck = "Black Deck", stake = 3 },
     loc_vars = function(self)
-        return { vars = { self.config.joker_slot, -self.config.hands } }
+        local key, vars
+        if self.get_current_deck_name() ~= "Black Deck" then
+            key = self.key
+            self.config = { hands = -1, joker_slot = 1 }
+            vars = { self.config.joker_slot, -self.config.hands }
+        else
+            key = self.key .. "_alt"
+            self.config = { discards = -1, joker_slot = 1 }
+            vars = { self.config.joker_slot, -self.config.discards }
+        end
+        return { key = key, vars = vars }
     end,
 }
 

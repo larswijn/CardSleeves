@@ -44,6 +44,15 @@ return {
                 name = "Black Sleeve",
                 text = G.localization.descriptions.Back["b_black"].text
             },
+            sleeve_casl_black_alt = {
+                name = "Black Sleeve",
+                text = {
+                    "{C:attention}+#1#{} Joker slot",
+                    "",
+                    "{C:red}-#2#{} discard",
+                    "every round"
+                }
+            },
             
             sleeve_casl_magic = {
                 name = "Magic Sleeve",
