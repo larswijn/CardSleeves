@@ -340,7 +340,7 @@ function CardSleeves.Sleeve:generate_ui(info_queue, card, desc_nodes, specific_v
 end
 
 function CardSleeves.Sleeve.get_current_deck_name()
-    return (Galdur and Galdur.run_setup.choices.deck) and Galdur.run_setup.choices.deck.name or
+    return (Galdur and Galdur.config.use and Galdur.run_setup.choices.deck) and Galdur.run_setup.choices.deck.name or
            G.GAME.viewed_back and G.GAME.viewed_back.name or
            G.GAME.selected_back and G.GAME.selected_back.name or
            "Red Deck"
@@ -1144,7 +1144,7 @@ function G.UIDEF.run_setup_option(_type)
         if G.SAVED_GAME ~= nil then
             G.viewed_sleeve = saved_game.GAME.selected_sleeve or G.viewed_sleeve
         end
-        table.insert(output.nodes, 3,
+        table.insert(output.nodes, 2,
             {
                 n = G.UIT.R,
                 config = { align = "cm", padding = 0.05, minh = 1.65 },
@@ -1156,7 +1156,7 @@ function G.UIDEF.run_setup_option(_type)
             })
     elseif _type == "New Run" then
         G.viewed_sleeve = G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve or G.viewed_sleeve or "sleeve_casl_none"
-        table.insert(output.nodes, 3,
+        table.insert(output.nodes, 2,
             {
                 n = G.UIT.R,
                 config = { align = "cm", minh = 1.65, minw = 6.8 },
@@ -1414,13 +1414,13 @@ function SMODS.SAVE_UNLOCKS()
     end
 end
 
--- GALDUR (1.1) COMPATIBILITY
+-- GALDUR (1.1.1) COMPATIBILITY
 
 if Galdur then
     local sleeve_count_horizontal = 6
     local sleeve_count_vertical = 2
     local sleeve_count_total = sleeve_count_horizontal * sleeve_count_vertical
-    local galdur_page_min_index = #Galdur.pages_to_add + 1  -- page that our sleeves appear on - only start drawing information from this page onward
+    local galdur_page_index = 2  -- page that our sleeves appear on - only start drawing information from this page onward
 
     local function modify_sleeve_text(ui_nodes, sleeve_center)
         local texts = split_string_2(sleeve_center:get_name())
@@ -1437,7 +1437,7 @@ if Galdur then
     function Galdur.populate_deck_preview(_deck, silent)
         old_Galdur_populate_deck_preview(_deck, silent)
 
-        if CardSleeves.Sleeve:get_obj(G.viewed_sleeve) and Galdur.run_setup.selected_deck_area and Galdur.run_setup.current_page >= galdur_page_min_index then
+        if CardSleeves.Sleeve:get_obj(G.viewed_sleeve) and Galdur.run_setup.selected_deck_area and Galdur.run_setup.current_page >= galdur_page_index then
             local area, sleeve_center = Galdur.run_setup.selected_deck_area, CardSleeves.Sleeve:get_obj(G.viewed_sleeve)
             local card = create_sleeve_card(area, sleeve_center)
             card.params["sleeve_select"] = 1
@@ -1449,7 +1449,7 @@ if Galdur then
     local old_Galdur_display_deck_preview = Galdur.display_deck_preview
     function Galdur.display_deck_preview()
         local output = old_Galdur_display_deck_preview()
-        if CardSleeves.Sleeve:get_obj(G.viewed_sleeve) and Galdur.run_setup.current_page >= galdur_page_min_index then
+        if CardSleeves.Sleeve:get_obj(G.viewed_sleeve) and Galdur.run_setup.current_page >= galdur_page_index then
             output = modify_sleeve_text(output, CardSleeves.Sleeve:get_obj(G.viewed_sleeve))
         end
         return output
@@ -1582,16 +1582,20 @@ if Galdur then
     end
 
     G.FUNCS.random_sleeve = function()
-        local selected = false
         local random
-        while not selected do
-            math.randomseed(os.time())
-            random = math.random(#G.P_CENTER_POOLS.Sleeve)
-            if G.P_CENTER_POOLS.Sleeve[random].unlocked then
-                selected = true
-                play_sound('whoosh1', math.random()*0.2 + 0.9, 0.35)
+        local random_sleeve_opts = {}
+        for i=1, #G.P_CENTER_POOLS.Sleeve do
+            if G.P_CENTER_POOLS.Sleeve[i].unlocked then
+                random_sleeve_opts[#random_sleeve_opts + 1] = i
             end
         end
+        while not random do
+            random = pseudorandom_element(random_sleeve_opts, pseudoseed(os.time()))
+            if G.P_CENTER_POOLS.Sleeve[random_sleeve_opts[random]].key == G.viewed_sleeve and #random_sleeve_opts > 1 then
+                random = false
+            end
+        end
+        play_sound('whoosh1', math.random()*0.2 + 0.9, 0.35)
         G.FUNCS.change_sleeve{to_key = random}
         set_new_sleeve(G.P_CENTER_POOLS.Sleeve[random])
     end
@@ -1615,6 +1619,13 @@ if Galdur then
             }},
             deck_preview
         }}
+    end
+
+    local function quick_start_text()
+        local sleeve_center = CardSleeves.Sleeve:get_obj(G.viewed_sleeve)
+        if sleeve_center then
+            return sleeve_center:get_name()
+        end
     end
 
     local old_Card_click = Card.click
@@ -1699,8 +1710,8 @@ if Galdur then
     Galdur.add_new_page({
         definition = galdur_sleeve_page,
         name = 'gald_sleeves',
-        -- pre_start = pre_game_start,
-        -- post_start = post_game_start
+        page = galdur_page_index,
+        quick_start_text = quick_start_text
     })
 end
 
