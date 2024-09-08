@@ -4,7 +4,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.3.3
+--- VERSION: 1.3.4
 --- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
