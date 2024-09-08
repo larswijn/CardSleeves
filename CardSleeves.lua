@@ -4,7 +4,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.3.4
+--- VERSION: 1.3.5
 --- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
@@ -1622,9 +1622,11 @@ if Galdur then
     end
 
     local function quick_start_text()
-        local sleeve_center = CardSleeves.Sleeve:get_obj(G.viewed_sleeve)
+        local sleeve_center = CardSleeves.Sleeve:get_obj(G.viewed_sleeve or "sleeve_casl_none")
         if sleeve_center then
             return sleeve_center:get_name()
+        else
+            return "ERROR"
         end
     end
 
