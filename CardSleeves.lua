@@ -4,7 +4,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.3.5
+--- VERSION: 1.3.6
 --- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
@@ -24,8 +24,6 @@ KNOWN ISSUES/IDEAS:
 * API:
 ** add optional shaders
 ** support unlocks
-* Galdur:
-** see if people want sleeves to be moved before stakes?
 
 --]]
 
@@ -1601,24 +1599,41 @@ if Galdur then
     end
 
     local function galdur_sleeve_page()
-        generate_sleeve_card_areas()
-        Galdur.include_deck_preview()
+        local min_galdur_version = '1.1.1'
+        if SMODS.Mods.galdur.version >= min_galdur_version then
+            generate_sleeve_card_areas()
+            Galdur.include_deck_preview()
 
-        local deck_preview = Galdur.display_deck_preview()
-        deck_preview.nodes[#deck_preview.nodes+1] = {n = G.UIT.R, config={align = 'cm', padding = 0.15}, nodes = {
-            {n=G.UIT.R, config = {maxw = 2.5, minw = 2.5, minh = 0.8, r = 0.1, hover = true, ref_value = 1, button = 'random_sleeve', colour = Galdur.badge_colour, align = "cm", emboss = 0.1}, nodes = {
-                {n=G.UIT.T, config={text = localize("gald_random_sleeve"), scale = 0.4, colour = G.C.WHITE}}
+            local deck_preview = Galdur.display_deck_preview()
+            deck_preview.nodes[#deck_preview.nodes+1] = {n = G.UIT.R, config={align = 'cm', padding = 0.15}, nodes = {
+                {n=G.UIT.R, config = {maxw = 2.5, minw = 2.5, minh = 0.8, r = 0.1, hover = true, ref_value = 1, button = 'random_sleeve', colour = Galdur.badge_colour, align = "cm", emboss = 0.1}, nodes = {
+                    {n=G.UIT.T, config={text = localize("gald_random_sleeve"), scale = 0.4, colour = G.C.WHITE}}
+                }}
             }}
-        }}
 
-        return
-        {n=G.UIT.ROOT, config={align = "tm", minh = 3.8, colour = G.C.CLEAR, padding=0.1}, nodes={
-            {n=G.UIT.C, config = {padding = 0.15}, nodes ={
-                generate_sleeve_card_areas_ui(),
-                create_sleeve_page_cycle(),
-            }},
-            deck_preview
-        }}
+            return
+            {n=G.UIT.ROOT, config={align = "tm", minh = 3.8, colour = G.C.CLEAR, padding=0.1}, nodes={
+                {n=G.UIT.C, config = {padding = 0.15}, nodes ={
+                    generate_sleeve_card_areas_ui(),
+                    create_sleeve_page_cycle(),
+                }},
+                deck_preview
+            }}
+        else
+            return
+            {n=G.UIT.ROOT, config={align = "tm", minh = 3.8, colour = G.C.CLEAR, padding=0.1}, nodes={
+                {n=G.UIT.R, config = {align = "cm", padding = 0.15}, nodes ={
+                    {n=G.UIT.C, nodes = {
+                        {n=G.UIT.T, config={text = "Update Galdur to v" .. min_galdur_version .. " or higher!", scale = 0.8, colour = G.C.WHITE}},
+                    }}
+                }},
+                {n=G.UIT.R, config = {align = "cm", padding = 0.15}, nodes ={
+                    {n=G.UIT.C, nodes = {
+                        {n=G.UIT.T, config={text = "(detected version: v" .. tprint(SMODS.Mods.galdur.version) .. ")", scale = 0.5, colour = G.C.WHITE}}
+                    }}
+                }}
+            }}
+        end
     end
 
     local function quick_start_text()
