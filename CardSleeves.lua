@@ -1415,6 +1415,8 @@ end
 -- GALDUR (1.1.1) COMPATIBILITY
 
 if Galdur then
+    local min_galdur_version = '1.1.1'
+
     local sleeve_count_horizontal = 6
     local sleeve_count_vertical = 2
     local sleeve_count_total = sleeve_count_horizontal * sleeve_count_vertical
@@ -1599,7 +1601,6 @@ if Galdur then
     end
 
     local function galdur_sleeve_page()
-        local min_galdur_version = '1.1.1'
         if SMODS.Mods.galdur.version >= min_galdur_version then
             generate_sleeve_card_areas()
             Galdur.include_deck_preview()
@@ -1730,6 +1731,26 @@ if Galdur then
         page = galdur_page_index,
         quick_start_text = quick_start_text
     })
+end
+
+-- DIVVY'S PREVIEW (2.4) COMPATIBILITY
+
+if DV and DV.SIM then
+    local old_DV_SIM_simulate_deck_effects = DV.SIM.simulate_deck_effects
+    function DV.SIM.simulate_deck_effects()
+        old_DV_SIM_simulate_deck_effects()
+        if G.GAME.selected_sleeve == "sleeve_casl_plasma" then
+            local function plasma(data)
+                local sum = data.chips + data.mult
+                local half_sum = math.floor(sum/2)
+                data.chips = mod_chips(half_sum)
+                data.mult = mod_mult(half_sum)
+            end
+            plasma(DV.SIM.running.min)
+            plasma(DV.SIM.running.exact)
+            plasma(DV.SIM.running.max)
+        end
+    end
 end
 
 print_trace("Trace logging level enabled")
