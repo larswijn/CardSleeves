@@ -739,6 +739,7 @@ CardSleeves.Sleeve {
         return { key = key, vars = vars }
     end,
     trigger_effect = function(self, args)
+        -- TODO: don't balance chips/mult twice for no reason?
         CardSleeves.Sleeve.trigger_effect(self, args)
         -- TODO: this isn't API friendly?
         if G.GAME.selected_back.name == "Plasma Deck" and self.name == 'Plasma Sleeve' and args.context == "shop_final_pass" then
@@ -1046,7 +1047,7 @@ end
 
 function G.UIDEF.current_sleeve(_scale)
     _scale = _scale or 1
-    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
+    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve) or CardSleeves.Sleeve:get_obj("sleeve_casl_none")
     local sleeve_sprite = create_sleeve_sprite(0, 0, _scale*1, _scale*(95/71), sleeve_center)
     sleeve_sprite.states.drag.can = false
     return {
@@ -1213,14 +1214,14 @@ end
 
 local old_Back_apply_to_run = Back.apply_to_run
 function Back:apply_to_run()
-    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
+    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve) or CardSleeves.Sleeve:get_obj("sleeve_casl_none")
     old_Back_apply_to_run(self)
     sleeve_center:apply()
 end
 
 local old_Back_trigger_effect = Back.trigger_effect
 function Back:trigger_effect(args)
-    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
+    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve) or CardSleeves.Sleeve:get_obj("sleeve_casl_none")
     local new_chips, new_mult
 
     new_chips, new_mult = old_Back_trigger_effect(self, args)
@@ -1366,8 +1367,7 @@ end
 
 local old_create_tabs = create_tabs
 function create_tabs(args)
-    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve)
-    if args["tabs"] and is_in_run_info_tab and sleeve_center and sleeve_center.key ~= "sleeve_casl_none" then
+    if args["tabs"] and is_in_run_info_tab and G.GAME.selected_sleeve and G.GAME.selected_sleeve ~= "sleeve_casl_none" then
         args.tabs[#args.tabs+1] = {
             label = "Sleeve",
             tab_definition_function = G.UIDEF.current_sleeve
