@@ -4,7 +4,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.3.7
+--- VERSION: 1.3.8
 --- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
@@ -1047,7 +1047,7 @@ end
 
 function G.UIDEF.current_sleeve(_scale)
     _scale = _scale or 1
-    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve) or CardSleeves.Sleeve:get_obj("sleeve_casl_none")
+    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
     local sleeve_sprite = create_sleeve_sprite(0, 0, _scale*1, _scale*(95/71), sleeve_center)
     sleeve_sprite.states.drag.can = false
     return {
@@ -1214,14 +1214,14 @@ end
 
 local old_Back_apply_to_run = Back.apply_to_run
 function Back:apply_to_run()
-    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve) or CardSleeves.Sleeve:get_obj("sleeve_casl_none")
+    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
     old_Back_apply_to_run(self)
     sleeve_center:apply()
 end
 
 local old_Back_trigger_effect = Back.trigger_effect
 function Back:trigger_effect(args)
-    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve) or CardSleeves.Sleeve:get_obj("sleeve_casl_none")
+    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
     local new_chips, new_mult
 
     new_chips, new_mult = old_Back_trigger_effect(self, args)
@@ -1348,7 +1348,7 @@ end
 
 local old_Card_use_consumable = Card.use_consumeable
 function Card:use_consumeable(...)
-    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve) or CardSleeves.Sleeve:get_obj("sleeve_casl_none")
+    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
     sleeve_center:trigger_effect{context = {before_use_consumable = true, card = self}}
 
     local output = old_Card_use_consumable(self, ...)
@@ -1579,6 +1579,15 @@ if Galdur then
         text.config.text = texts[2]
         text.config.scale = 0.75/math.max(1,string.len(texts[2])/8)
         text.UIBox:recalculate()
+    end
+
+    local old_quick_start = G.FUNCS.quick_start
+    function G.FUNCS.quick_start()
+        if G.viewed_sleeve == nil or CardSleeves.Sleeve:get_obj(G.viewed_sleeve) == nil then
+            -- make sure G.viewed_sleeve actually has a sensible definition
+            G.FUNCS.change_sleeve{to_key=1}
+        end
+        return old_quick_start()
     end
 
     G.FUNCS.random_sleeve = function()
