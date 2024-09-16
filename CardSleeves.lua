@@ -4,7 +4,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.3.8
+--- VERSION: 1.3.9
 --- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
@@ -54,37 +54,34 @@ end
 
 local function tprint(tbl, max_indent, _indent)
     if type(tbl) ~= "table" then return tostring(tbl) end
-    if not _indent then _indent = 0 end
-    if not max_indent then max_indent = 32 end
+
+    max_indent = max_indent or 32
+    _indent = _indent or 0
     local toprint = string.rep(" ", _indent) .. "{\r\n"
+
     _indent = _indent + 2
     for k, v in pairs(tbl) do
-        toprint = toprint .. string.rep(" ", _indent)
-        if (type(k) == "number") then
-            toprint = toprint .. "[" .. k .. "] = "
-        elseif (type(k) == "string") then
-            toprint = toprint .. k .. "= "
-        end
-        if (type(v) == "number") then
-            toprint = toprint .. v .. ",\r\n"
-        elseif (type(v) == "string") then
-            if k == "content" then
-                toprint = toprint .. "...,\r\n"
-            else
-                toprint = toprint .. "\"" .. v .. "\",\r\n"
-            end
-        elseif (type(v) == "table") then
-            if _indent > max_indent then
-                toprint = toprint .. tostring(v) .. ",\r\n"
-            else
-                toprint = toprint .. tostring(v) .. tprint(v, max_indent, _indent + 1) .. ",\r\n"
-            end
+        local key_str, value_str
+        if type(k) == "number" then
+            key_str = "[" .. k .. "]"
         else
-            toprint = toprint .. "\"" .. tostring(v) .. "\",\r\n"
+            key_str = tostring(k)
         end
+        if type(v) == "string" then
+            if k == "content" then
+                value_str = "..."
+            else
+                value_str = '"' .. v .. '"'
+            end
+        elseif type(v) == "table" and _indent <= max_indent then
+            value_str = tostring(v) .. tprint(v, max_indent, _indent)
+        else
+            value_str = tostring(v)
+        end
+        toprint = toprint .. string.rep(" ", _indent) .. key_str .. " = " .. value_str .. ",\r\n"
     end
-    toprint = toprint .. string.rep(" ", _indent - 2) .. "}"
-    return toprint
+
+    return toprint .. string.rep(" ", _indent - 2) .. "}"
 end
 
 local function tablesize(tbl)
@@ -1311,7 +1308,7 @@ local old_Controller_snap_to = Controller.snap_to
 function Controller:snap_to(args)
     -- hooking into this might not be a good idea tbh, but I don't have a controller to test it, so...
     -- TODO: see if there's a better way to do this (Game:update_shop?)
-    local in_shop_load = G["shop"] and
+    local in_shop_load = G["shop"] and args["node"] and
                          (args.node == G.shop:get_UIE_by_ID('next_round_button') or
                           args.node["area"] and args.node.area["config"] and args.node.area.config.type == "shop")
     if in_shop_load then
