@@ -4,7 +4,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.3.9
+--- VERSION: 1.4.0-dev1
 --- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
@@ -138,11 +138,12 @@ CardSleeves.Sleeve = SMODS.Center:extend {
         elseif not self.unlock_condition.deck or not self.unlock_condition.stake then
             error("Please implement custom `locked_loc_vars` or define `unlock_condition.deck` and `unlock_condition.stake` for Sleeve " .. self.name)
         end
+        local deck_name = localize{type = "name_text", set = "Back", key = self.unlock_condition.deck}
         local colours = G.C.BLACK
         if self.unlock_condition.stake > 1 then
             colours = get_stake_col(self.unlock_condition.stake)
         end
-        local vars = { self.unlock_condition.deck, G.P_CENTER_POOLS.Stake[self.unlock_condition.stake].name, colours = {colours} }
+        local vars = { deck_name, G.P_CENTER_POOLS.Stake[self.unlock_condition.stake].name, colours = {colours} }
         return { vars = vars }
     end,
     check_for_unlock = function(self, args)
@@ -151,8 +152,7 @@ CardSleeves.Sleeve = SMODS.Center:extend {
         elseif not self.unlock_condition.deck or not self.unlock_condition.stake then
             error("Please implement custom `check_for_unlock` or define `unlock_condition.deck` and `unlock_condition.stake` for Sleeve " .. self.name)
         end
-        local deck_center = get_deck_from_name(self.unlock_condition.deck)
-        if args.type == 'win_deck' and get_deck_win_stake(deck_center.key) >= self.unlock_condition.stake then
+        if args.type == 'win_deck' and get_deck_win_stake(self.unlock_condition.deck) >= self.unlock_condition.stake then
             return true
         end
     end,
@@ -334,11 +334,20 @@ function CardSleeves.Sleeve:generate_ui(info_queue, card, desc_nodes, specific_v
     end
 end
 
+function CardSleeves.Sleeve.get_current_deck_key()
+    if Galdur and Galdur.config.use and Galdur.run_setup.choices.deck then
+        return Galdur.run_setup.choices.deck.effect.center.key
+    elseif G.GAME.viewed_back then
+        return G.GAME.viewed_back.effect.center.key
+    elseif G.GAME.selected_back then
+        return G.GAME.selected_back.effect.center.key
+    end
+    return "b_red"
+end
+
 function CardSleeves.Sleeve.get_current_deck_name()
-    return (Galdur and Galdur.config.use and Galdur.run_setup.choices.deck) and Galdur.run_setup.choices.deck.name or
-           G.GAME.viewed_back and G.GAME.viewed_back.name or
-           G.GAME.selected_back and G.GAME.selected_back.name or
-           "Red Deck"
+    -- REMOVE on 1.4.0 full release?
+    return CardSleeves.Sleeve.get_current_deck_key()
 end
 
 -- SLEEVE INSTANCES
@@ -358,7 +367,7 @@ CardSleeves.Sleeve {
     pos = { x = 0, y = 0 },
     config = { discards = 1 },
     unlocked = true,
-    unlock_condition = { deck = "Red Deck", stake = 1 },
+    unlock_condition = { deck = "b_red", stake = 1 },
     loc_vars = function(self)
         return { vars = { self.config.discards } }
     end,
@@ -371,7 +380,7 @@ CardSleeves.Sleeve {
     pos = { x = 1, y = 0 },
     config = { hands = 1 },
     unlocked = true,
-    unlock_condition = { deck = "Blue Deck", stake = 2 },
+    unlock_condition = { deck = "b_blue", stake = 2 },
     loc_vars = function(self)
         return { vars = { self.config.hands } }
     end,
@@ -384,7 +393,7 @@ CardSleeves.Sleeve {
     pos = { x = 2, y = 0 },
     config = { dollars = 10 },
     unlocked = true,
-    unlock_condition = { deck = "Yellow Deck", stake = 3 },
+    unlock_condition = { deck = "b_yellow", stake = 3 },
     loc_vars = function(self)
         return { vars = { self.config.dollars } }
     end,
@@ -397,7 +406,7 @@ CardSleeves.Sleeve {
     pos = { x = 3, y = 0 },
     config = { extra_hand_bonus = 1, extra_discard_bonus = 1, no_interest = true },
     unlocked = true,
-    unlock_condition = { deck = "Green Deck", stake = 3 },
+    unlock_condition = { deck = "b_green", stake = 3 },
     loc_vars = function(self)
         return { vars = { self.config.extra_hand_bonus, self.config.extra_discard_bonus, self.config.no_interest } }
     end,
@@ -409,10 +418,10 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 0 },
     unlocked = true,
-    unlock_condition = { deck = "Black Deck", stake = 3 },
+    unlock_condition = { deck = "b_black", stake = 3 },
     loc_vars = function(self)
         local key, vars
-        if self.get_current_deck_name() ~= "Black Deck" then
+        if self.get_current_deck_key() ~= "b_black" then
             key = self.key
             self.config = { hands = -1, joker_slot = 1 }
             vars = { self.config.joker_slot, -self.config.hands }
@@ -431,10 +440,10 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 1 },
     unlocked = true,
-    unlock_condition = { deck = "Magic Deck", stake = 3 },
+    unlock_condition = { deck = "b_magic", stake = 3 },
     loc_vars = function(self)
         local key
-        if self.get_current_deck_name() ~= "Magic Deck" then
+        if self.get_current_deck_key() ~= "b_magic" then
             key = self.key
             self.config = { voucher = 'v_crystal_ball', consumables = { 'c_fool', 'c_fool' } }
         else
@@ -455,10 +464,10 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 1 },
     unlocked = true,
-    unlock_condition = { deck = "Nebula Deck", stake = 3 },
+    unlock_condition = { deck = "b_nebula", stake = 3 },
     loc_vars = function(self)
         local key
-        if self.get_current_deck_name() ~= "Nebula Deck" then
+        if self.get_current_deck_key() ~= "b_nebula" then
             key = self.key
             self.config = { voucher = 'v_telescope', consumable_slot = -1 }
         else
@@ -479,11 +488,11 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 1 },
     unlocked = true,
-    unlock_condition = { deck = "Ghost Deck", stake = 3 },
+    unlock_condition = { deck = "b_ghost", stake = 3 },
     loc_vars = function(self)
         local key
         local vars = {}
-        if self.get_current_deck_name() ~= "Ghost Deck" then
+        if self.get_current_deck_key() ~= "b_ghost" then
             key = self.key
             self.config = { spectral_rate = 2, consumables = { 'c_hex' } }
             vars[#vars+1] = localize{type = 'name_text', key = self.config.consumables[1], set = 'Tarot'}
@@ -511,10 +520,10 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 1 },
     unlocked = true,
-    unlock_condition = { deck = "Abandoned Deck", stake = 3 },
+    unlock_condition = { deck = "b_abandoned", stake = 3 },
     loc_vars = function(self)
         local key = self.key
-        if self.get_current_deck_name() ~= "Abandoned Deck" then
+        if self.get_current_deck_key() ~= "b_abandoned" then
             key = self.key
             self.config = { remove_faces = true }
         else
@@ -597,10 +606,10 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 1 },
     unlocked = true,
-    unlock_condition = { deck = "Checkered Deck", stake = 3 },
+    unlock_condition = { deck = "b_checkered", stake = 3 },
     loc_vars = function(self)
         local key
-        if self.get_current_deck_name() ~= "Checkered Deck" then
+        if self.get_current_deck_key() ~= "b_checkered" then
             key = self.key
             self.config = {}
         else
@@ -634,11 +643,11 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 2 },
     unlocked = true,
-    unlock_condition = { deck = "Zodiac Deck", stake = 3 },
+    unlock_condition = { deck = "b_zodiac", stake = 3 },
     loc_vars = function(self)
         local key
         local vars = {}
-        if self.get_current_deck_name() ~= "Zodiac Deck" then
+        if self.get_current_deck_key() ~= "b_zodiac" then
             key = self.key
             self.config = { vouchers = {'v_tarot_merchant', 'v_planet_merchant', 'v_overstock_norm'} }
             for _, voucher in pairs(self.config.vouchers) do
@@ -673,7 +682,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 2 },
     unlocked = true,
-    unlock_condition = { deck = "Painted Deck", stake = 3 },
+    unlock_condition = { deck = "b_painted", stake = 3 },
     config = {hand_size = 2, joker_slot = -1},
     loc_vars = function(self)
         return { vars = { self.config.hand_size, self.config.joker_slot } }
@@ -686,11 +695,11 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 2 },
     unlocked = true,
-    unlock_condition = { deck = "Anaglyph Deck", stake = 3 },
+    unlock_condition = { deck = "b_anaglyph", stake = 3 },
     config = {},
     loc_vars = function(self)
         local key
-        if self.get_current_deck_name() ~= "Anaglyph Deck" then
+        if self.get_current_deck_key() ~= "b_anaglyph" then
             key = self.key
         else
             key = self.key .. "_alt"
@@ -709,9 +718,9 @@ CardSleeves.Sleeve {
                 return true
             end)
         })
-        if self.name == 'Anaglyph Sleeve' and self.get_current_deck_name() ~= "Anaglyph Deck" and args.context == 'eval' and G.GAME.last_blind and G.GAME.last_blind.boss then
+        if self.name == 'Anaglyph Sleeve' and self.get_current_deck_key() ~= "b_anaglyph" and args.context == 'eval' and G.GAME.last_blind and G.GAME.last_blind.boss then
             G.E_MANAGER:add_event(add_double_tag_event)
-        elseif self.name == 'Anaglyph Sleeve' and self.get_current_deck_name() == "Anaglyph Deck" and args.context == 'eval' and G.GAME.last_blind and not G.GAME.last_blind.boss then
+        elseif self.name == 'Anaglyph Sleeve' and self.get_current_deck_key() == "b_anaglyph" and args.context == 'eval' and G.GAME.last_blind and not G.GAME.last_blind.boss then
             G.E_MANAGER:add_event(add_double_tag_event)
         end
     end,
@@ -723,11 +732,11 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 2 },
     unlocked = true,
-    unlock_condition = { deck = "Plasma Deck", stake = 3 },
+    unlock_condition = { deck = "b_plasma", stake = 3 },
     config = {ante_scaling = 2},
     loc_vars = function(self)
         local key
-        if self.get_current_deck_name() ~= "Plasma Deck" then
+        if self.get_current_deck_key() ~= "b_plasma" then
             key = self.key
         else
             key = self.key .. "_alt"
@@ -739,7 +748,7 @@ CardSleeves.Sleeve {
         -- TODO: don't balance chips/mult twice for no reason?
         CardSleeves.Sleeve.trigger_effect(self, args)
         -- TODO: this isn't API friendly?
-        if G.GAME.selected_back.name == "Plasma Deck" and self.name == 'Plasma Sleeve' and args.context == "shop_final_pass" then
+        if G.GAME.selected_back.name == "b_plasma" and self.name == 'Plasma Sleeve' and args.context == "shop_final_pass" then
             local cardareas = {}
             for _, obj in pairs(G) do
                 if type(obj) == "table" and obj["is"] and obj:is(CardArea) and obj.config.type == "shop" then
@@ -797,11 +806,11 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 2 },
     unlocked = true,
-    unlock_condition = { deck = "Erratic Deck", stake = 3 },
+    unlock_condition = { deck = "b_erratic", stake = 3 },
     config = {randomize_rank_suit = true},
     loc_vars = function(self)
         local key
-        if self.get_current_deck_name() ~= "Erratic Deck" then
+        if self.get_current_deck_key() ~= "b_erratic" then
             key = self.key
             self.config = {randomize_rank_suit = true}
         else
@@ -1760,7 +1769,7 @@ if DV and DV.SIM then
 end
 
 print_trace("Trace logging level enabled")
-print_info("CardSleeves loaded~!")
+print_info("CardSleeves v" .. SMODS.Mods.CardSleeves.version .. " loaded~!")
 
 ----------------------------------------------
 ------------MOD CODE END----------------------
