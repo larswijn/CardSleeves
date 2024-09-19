@@ -5,7 +5,7 @@ return {
                 name = "No Sleeve",
                 text = { "No sleeve modifiers" }
             },
-            
+
             sleeve_locked = {
                 name = "Locked",
                 text = {
@@ -14,22 +14,22 @@ return {
                     "at least {V:1}#2#{} difficulty"
                 }
             },
-            
+
             sleeve_casl_red = {
                 name = "Red Sleeve",
                 text = G.localization.descriptions.Back["b_red"].text
             },
-            
+
             sleeve_casl_blue = {
                 name = "Blue Sleeve",
                 text = G.localization.descriptions.Back["b_blue"].text
             },
-            
+
             sleeve_casl_yellow = {
                 name = "Yellow Sleeve",
                 text = G.localization.descriptions.Back["b_yellow"].text
             },
-            
+
             sleeve_casl_green = {
                 name = "Green Sleeve",
                 text = {
@@ -39,7 +39,7 @@ return {
                     "Earn no {C:attention}Interest"
                     }
             },
-            
+
             sleeve_casl_black = {
                 name = "Black Sleeve",
                 text = G.localization.descriptions.Back["b_black"].text
@@ -53,7 +53,7 @@ return {
                     "every round"
                 }
             },
-            
+
             sleeve_casl_magic = {
                 name = "Magic Sleeve",
                 text = G.localization.descriptions.Back["b_magic"].text
@@ -65,7 +65,7 @@ return {
                     "{C:tarot,T:v_omen_globe}#1#{} voucher",
                 }
             },
-            
+
             sleeve_casl_nebula = {
                 name = "Nebula Sleeve",
                 text = G.localization.descriptions.Back["b_nebula"].text
@@ -74,10 +74,10 @@ return {
                 name = "Nebula Sleeve",
                 text = {
                     "Start run with the",
-                    "{C:planet,T:v_telescope}#1#{} voucher",
+                    "{C:planet,T:v_observatory}#1#{} voucher",
                     }
             },
-            
+
             sleeve_casl_ghost = {
                 name = "Ghost Sleeve",
                 text = G.localization.descriptions.Back["b_ghost"].text
@@ -91,7 +91,7 @@ return {
                     "extra options to choose from",
                 }
             },
-            
+
             sleeve_casl_abandoned = {
                 name = "Abandoned Sleeve",
                 text = G.localization.descriptions.Back["b_abandoned"].text
@@ -103,7 +103,7 @@ return {
                     "appear during the run"
                 }
             },
-            
+
             sleeve_casl_checkered = {
                 name = "Checkered Sleeve",
                 text = G.localization.descriptions.Back["b_checkered"].text
@@ -111,11 +111,13 @@ return {
             sleeve_casl_checkered_alt = {
                 name = "Checkered Sleeve",
                 text = {
-                    "All {C:clubs}Club{} cards will get converted to {C:spades}Spades{} and",
-                    "all {C:diamonds}Diamond{} cards will get converted to {C:hearts}Hearts{}",
+                    "All {C:clubs}Club{} cards will get",
+                    "converted to {C:spades}Spades{} and",
+                    "all {C:diamonds}Diamond{} cards will get",
+                    "converted to {C:hearts}Hearts{}",
                 }
             },
-    
+
             sleeve_casl_zodiac = {
                 name = "Zodiac Sleeve",
                 text = G.localization.descriptions.Back["b_zodiac"].text
@@ -127,12 +129,12 @@ return {
                     "{C:attention}#1#{} extra options to choose from",
                 }
             },
-            
+
             sleeve_casl_painted = {
                 name = "Painted Sleeve",
                 text = G.localization.descriptions.Back["b_painted"].text
             },
-            
+
             sleeve_casl_anaglyph = {
                 name = "Anaglyph Sleeve",
                 text = G.localization.descriptions.Back["b_anaglyph"].text
@@ -145,7 +147,7 @@ return {
                     "a {C:attention,T:tag_double}#1#"
                 }
             },
-            
+
             sleeve_casl_plasma = {
                 name = "Plasma Sleeve",
                 text = G.localization.descriptions.Back["b_plasma"].text
@@ -157,7 +159,7 @@ return {
                     "in the {C:attention}shop{}",
                 }
             },
-            
+
             sleeve_casl_erratic = {
                 name = "Erratic Sleeve",
                 text = G.localization.descriptions.Back["b_erratic"].text
