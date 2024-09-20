@@ -5,7 +5,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.4.0-dev2
+--- VERSION: 1.4.0-dev3
 --- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
@@ -16,7 +16,6 @@
 
 KNOWN ISSUES/IDEAS:
 
-* Nebula + Magic doesn't decrease consumable slots like expected
 * Tags on zodiac deck + zodiac sleeve still say "of 5" (e.g. charm tag)
 * Add stake stickers on sleeves
 
@@ -179,7 +178,7 @@ function CardSleeves.Sleeve:apply()
         delay(0.4)
         G.E_MANAGER:add_event(Event({
             func = function()
-                for k, v in ipairs(self.config.consumables) do
+                for _, v in ipairs(self.config.consumables) do
                     local card = SMODS.create_card{key=v}
                     card:add_to_deck()
                     G.consumeables:emplace(card)
@@ -221,7 +220,7 @@ function CardSleeves.Sleeve:apply()
         }))
     end
     if self.config.vouchers then
-        for k, v in pairs(self.config.vouchers) do
+        for _, v in pairs(self.config.vouchers) do
             G.GAME.used_vouchers[v] = true
             G.GAME.starting_voucher_count = (G.GAME.starting_voucher_count or 0) + 1
             Card.apply_to_run(nil, G.P_CENTERS[v])
@@ -907,6 +906,31 @@ local function insert_sleeve_card(area, sleeve_center)
     end
 end
 
+local function create_sleeve_badges(sleeve_center)
+    local restore_dependencies = false
+    if sleeve_center.mod.id ~= "CardSleeves" and not sleeve_center.dependencies then
+        sleeve_center.dependencies = {"CardSleeves"}
+        restore_dependencies = true
+    end
+    local badges = {}
+    SMODS.create_mod_badges(sleeve_center, badges)
+    if restore_dependencies then
+        sleeve_center.dependencies = nil
+    end
+    if badges then
+        local nodes = {}
+        for k, v in ipairs(badges) do
+            nodes[k] = v
+        end
+        return {
+            n = G.UIT.R,
+            config = {align = "cm", padding = 0.1},
+            nodes = nodes
+        }
+    end
+    return {n=G.UIT.R}
+end
+
 function G.FUNCS.change_sleeve(args)
     local sleeve_key = G.P_CENTER_POOLS.Sleeve[args.to_key].key
     G.viewed_sleeve = sleeve_key
@@ -1064,11 +1088,7 @@ function G.UIDEF.current_sleeve(_scale)
     local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
     local sleeve_sprite = create_sleeve_sprite(0, 0, _scale*1, _scale*(95/71), sleeve_center)
     sleeve_sprite.states.drag.can = false
-    local cardsleeves_badge = create_badge(SMODS.Mods.CardSleeves.display_name, SMODS.Mods.CardSleeves.badge_colour, nil, _scale)
-    local othermod_badge
-    if sleeve_center.mod.id ~= "CardSleeves" then
-        othermod_badge = create_badge(sleeve_center.mod.display_name, sleeve_center.mod.badge_colour, nil, _scale)
-    end
+    local mod_badges = create_sleeve_badges(sleeve_center)
     return {
         n = G.UIT.ROOT,
         config = { align = "cm", colour = G.C.BLACK, r = 0.1, padding = 0.1},
@@ -1088,30 +1108,7 @@ function G.UIDEF.current_sleeve(_scale)
                     G.UIDEF.sleeve_description(G.GAME.selected_sleeve)
                 }
             },
-            {
-                n = G.UIT.R,
-                config = {align = "cm", padding = 0.1},
-                nodes = {
-                    {
-                        n = G.UIT.C,
-                        config = {},
-                        nodes = {
-                            cardsleeves_badge
-                        }
-                    },
-                    {
-                        n = G.UIT.T,
-                        config = {text = othermod_badge and "+" or "", scale = _scale / 2, colour = G.C.WHITE, align = "r"},
-                    },
-                    {
-                        n = G.UIT.C,
-                        config = {align = "r"},
-                        nodes = {
-                            (othermod_badge or {n=G.UIT.R})
-                        }
-                    },
-                }
-            },
+            mod_badges
         }
     }
 end
@@ -1624,7 +1621,7 @@ function Card:hover()
                     {n=G.UIT.R, config={align = "cm", colour = G.C.WHITE, minh = 1.3, maxh = 3, minw = 3, maxw = 4, r = 0.1}, nodes={
                         {n=G.UIT.R, config = { align = "cm", padding = 0.03, colour = G.C.WHITE, r = 0.1}, nodes = desc_t }
                     }},
-                    create_badge(sleeve.mod.display_name, sleeve.mod.badge_colour)
+                    create_sleeve_badges(sleeve)
                 }}
             }},
             (self.params.sleeve_select <= sleeve_count_horizontal and {n=col, config={align=(self.params.deck_preview and 'bm' or 'cm'), padding=0.1}, nodes = tooltips} or {n=G.UIT.R})
