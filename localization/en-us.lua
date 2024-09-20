@@ -178,6 +178,7 @@ return {
         dictionary = {
             gald_sleeves = "Select Sleeve",
             gald_random_sleeve = "Random Sleeve",
+            sleeve_unique_effect_desc = "Some sleeves have unique effects when combined with specific decks",
             adjust_deck_alignment = "Stack deck pile",
             sleeve_not_found_error = "Sleeve could not be found! Did you remove its mod?"
         }
