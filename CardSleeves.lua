@@ -5,7 +5,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.4.0-dev3
+--- VERSION: 1.4.0-dev4
 --- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
@@ -25,6 +25,7 @@ KNOWN ISSUES/IDEAS:
 * API:
 ** add optional shaders
 ** support unlocks
+* See if people want selectable sleeves in challenges or challenge support for sleeves?
 
 --]]
 
@@ -35,6 +36,7 @@ CardSleeves = {}
 local config = SMODS.current_mod.config
 local in_collection = false
 local is_in_run_info_tab = false
+local game_args = {}
 
 local sleeve_count_horizontal = 6
 local sleeve_count_vertical = 2
@@ -1236,10 +1238,19 @@ function G.FUNCS.mods_button(...)
     return old_FUNCS_mods_button(...)
 end
 
+local old_Game_start_run = Game.start_run
+function Game:start_run(args)
+    -- because G.GAME.challenge only gets defined _after_ `:init_game_object`
+    game_args = args
+    old_Game_start_run(self, args)
+end
+
 local old_Game_init_game_object = Game.init_game_object
 function Game:init_game_object()
     local output = old_Game_init_game_object(self)
-    output.selected_sleeve = G.viewed_sleeve or "sleeve_casl_none"
+    if not game_args.challenge then
+        output.selected_sleeve = G.viewed_sleeve or "sleeve_casl_none"
+    end
     return output
 end
 
