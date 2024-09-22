@@ -4,7 +4,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.3.9
+--- VERSION: 1.3.10
 --- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
@@ -891,9 +891,12 @@ local function insert_sleeve_card(area, sleeve_center)
 end
 
 function G.FUNCS.change_sleeve(args)
-    local sleeve_key = G.P_CENTER_POOLS.Sleeve[args.to_key].key
-    G.viewed_sleeve = sleeve_key
-    G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve = sleeve_key
+    local sleeve_center = G.P_CENTER_POOLS.Sleeve[args.to_key]
+    G.viewed_sleeve = sleeve_center.key
+    G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve = sleeve_center.key
+    if sleeve_center["loc_vars"] then
+        sleeve_center:loc_vars()
+    end
 end
 
 function G.FUNCS.change_viewed_sleeve()
