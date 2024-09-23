@@ -5,7 +5,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.4.0-dev5
+--- VERSION: 1.4.0-dev6
 --- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
@@ -17,7 +17,6 @@
 KNOWN ISSUES/IDEAS:
 
 * Tags on zodiac deck + zodiac sleeve still say "of 5" (e.g. charm tag)
-* Restarting the game removes the sleeve from the "last run" setup
 
 * unlocks:
 ** do not work between restarts
@@ -1851,7 +1850,10 @@ if Galdur then
     end
 
     local function quick_start_text()
-        local sleeve_center = CardSleeves.Sleeve:get_obj(G.viewed_sleeve or "sleeve_casl_none")
+        if not G.viewed_sleeve then
+            G.viewed_sleeve = G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve or "sleeve_casl_none"
+        end
+        local sleeve_center = CardSleeves.Sleeve:get_obj(G.viewed_sleeve)
         if sleeve_center then
             return sleeve_center:get_name()
         else
