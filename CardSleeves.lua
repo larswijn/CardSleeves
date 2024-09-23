@@ -5,7 +5,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.4.0-dev4
+--- VERSION: 1.4.0-dev5
 --- PRIORITY: -1
 --- LOADER_VERSION_GEQ: 1.0.0
 
@@ -17,7 +17,7 @@
 KNOWN ISSUES/IDEAS:
 
 * Tags on zodiac deck + zodiac sleeve still say "of 5" (e.g. charm tag)
-* Add stake stickers on sleeves
+* Restarting the game removes the sleeve from the "last run" setup
 
 * unlocks:
 ** do not work between restarts
@@ -139,7 +139,7 @@ CardSleeves.Sleeve = SMODS.Center:extend {
         if key == nil then
             return nil
         end
-        return self.obj_table[key] or SMODS.Center.get_obj(self, key)
+        return self.obj_table[key] or SMODS.Center:get_obj(key)
     end,
     locked_loc_vars = function(self, info_queue, card)
         if not self.unlock_condition then
@@ -355,7 +355,7 @@ function CardSleeves.Sleeve.get_current_deck_key()
 end
 
 function CardSleeves.Sleeve.get_current_deck_name()
-    -- REMOVE on 1.4.0 full release?
+    -- REMOVE on 1.4.2 full release?
     return CardSleeves.Sleeve.get_current_deck_key()
 end
 
@@ -853,6 +853,21 @@ CardSleeves.Sleeve {
 
 -- UI FUNCS
 
+local function get_sleeve_win_sticker(sleeve_key)
+    local profile = G.PROFILES[G.SETTINGS.profile]
+    if profile.sleeve_usage and profile.sleeve_usage[sleeve_key] and profile.sleeve_usage[sleeve_key].wins_by_key then
+        local _stake = nil
+		for key, _ in pairs(profile.sleeve_usage[sleeve_key].wins_by_key) do
+			if (G.P_STAKES[key] and G.P_STAKES[key].stake_level or 0) > (_stake and G.P_STAKES[_stake].stake_level or 0) then
+				_stake = key
+			end
+		end
+		if _stake then
+            return G.sticker_map[_stake]
+        end
+    end
+end
+
 local function find_sleeve_card(area)
     -- return (index, card) or nil
     -- loop safeguard in case some other mod decides to modify this (which would be dumb, but we did it, so...)
@@ -887,7 +902,11 @@ local function replace_sleeve_sprite(card, sleeve_center)
         card.children.back:remove()
     end
     card.children.back = create_sleeve_sprite(card.T.x, card.T.y, card.T.w, card.T.h, sleeve_center)
-    card.children.back:set_role({major = card, role_type = 'Minor', draw_major = card, offset = {x=0, y=0.25}})
+    card.children.back:set_role{major = card, role_type = 'Minor', draw_major = card, offset = {x=0, y=0.25}}
+    if sleeve_center.key ~= "sleeve_casl_none" then
+        card.sticker = get_sleeve_win_sticker(sleeve_center.key)
+        card.sticker_rotation = math.pi
+    end
 end
 
 local function insert_sleeve_card(area, sleeve_center)
@@ -1139,9 +1158,9 @@ end
 --]]
 
 local old_uidef_run_info = G.UIDEF.run_info
-function G.UIDEF.run_info()
+function G.UIDEF.run_info(...)
     is_in_run_info_tab = true
-    local output = old_uidef_run_info()
+    local output = old_uidef_run_info(...)
     is_in_run_info_tab = false
     return output
 end
@@ -1224,6 +1243,7 @@ function G.FUNCS.your_collection(...)
 end
 local old_buildAdditionsTab = buildAdditionsTab
 function buildAdditionsTab(...)
+    -- from steamodded
     in_collection = true
     return old_buildAdditionsTab(...)
 end
@@ -1234,6 +1254,7 @@ function G.FUNCS.exit_overlay_menu(...)
 end
 local old_FUNCS_mods_button = G.FUNCS.mods_button
 function G.FUNCS.mods_button(...)
+    -- from steamodded
     in_collection = false
     return old_FUNCS_mods_button(...)
 end
@@ -1246,8 +1267,8 @@ function Game:start_run(args)
 end
 
 local old_Game_init_game_object = Game.init_game_object
-function Game:init_game_object()
-    local output = old_Game_init_game_object(self)
+function Game:init_game_object(...)
+    local output = old_Game_init_game_object(self, ...)
     if not game_args.challenge then
         output.selected_sleeve = G.viewed_sleeve or "sleeve_casl_none"
     end
@@ -1255,9 +1276,9 @@ function Game:init_game_object()
 end
 
 local old_Back_apply_to_run = Back.apply_to_run
-function Back:apply_to_run()
+function Back:apply_to_run(...)
     local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
-    old_Back_apply_to_run(self)
+    old_Back_apply_to_run(self, ...)
     sleeve_center:apply()
 end
 
@@ -1276,7 +1297,7 @@ function Back:trigger_effect(args)
 end
 
 local old_CardArea_draw = CardArea.draw
-function CardArea:draw()
+function CardArea:draw(...)
     if not self.states.visible then return end
     if G.VIEWING_DECK and (self==G.deck or self==G.hand or self==G.play) then return end
 
@@ -1289,7 +1310,7 @@ function CardArea:draw()
         self.children.view_deck.draw = function() end
     end
 
-    old_CardArea_draw(self)
+    old_CardArea_draw(self, ...)
 
     if draw_sleeve then
         local x, y = 999999999, -1
@@ -1328,8 +1349,8 @@ function CardArea:draw()
 end
 
 local old_CardArea_align_cards = CardArea.align_cards
-function CardArea:align_cards()
-    old_CardArea_align_cards(self)
+function CardArea:align_cards(...)
+    old_CardArea_align_cards(self, ...)
 
     if (self == G.hand or self == G.deck or self == G.discard or self == G.play) and G.view_deck and G.view_deck[1] and G.view_deck[1].cards then return end
     if self.config.type == 'deck' and self == G.deck and config.adjust_deck_alignment then
@@ -1424,7 +1445,7 @@ local function booster_pack_size_fix_wrapper(func)
     local function wrapper(...)
         local old_pack_size = G.GAME.pack_size
         G.GAME.pack_size = math.min(G.GAME.pack_size, 5)  -- 6 is fine for tarot packs, but not for celestial packs
-        local output = func()
+        local output = func(...)
         G.GAME.pack_size = old_pack_size
         return output
     end
@@ -1437,11 +1458,11 @@ create_UIBox_buffoon_pack = booster_pack_size_fix_wrapper(create_UIBox_buffoon_p
 create_UIBox_celestial_pack = booster_pack_size_fix_wrapper(create_UIBox_celestial_pack)
 
 local old_smods_save_unlocks = SMODS.SAVE_UNLOCKS
-function SMODS.SAVE_UNLOCKS()
+function SMODS.SAVE_UNLOCKS(...)
     -- TODO: create PR to fix SMODS.SAVE_UNLOCKS itself?
     -- TODO: also, unlock menu says the completely wrong stuff ("joker unlocked" etc)
 
-    old_smods_save_unlocks()
+    old_smods_save_unlocks(...)
 
     if G.P_CENTER_POOLS.Sleeve then
         -- some IDIOTIC mods call SMODS.SAVE_UNLOCKS() when initiating, even though steamodded does it for them once loaded
@@ -1452,6 +1473,59 @@ function SMODS.SAVE_UNLOCKS()
             end
         end
     end
+end
+
+local function set_sleeve_usage()
+    if G.GAME.selected_sleeve then
+        local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve)
+        if sleeve_center then
+            if not G.PROFILES[G.SETTINGS.profile].sleeve_usage then
+                G.PROFILES[G.SETTINGS.profile].sleeve_usage = {}
+            end
+            if not G.PROFILES[G.SETTINGS.profile].sleeve_usage[G.GAME.selected_sleeve] then
+                G.PROFILES[G.SETTINGS.profile].sleeve_usage[G.GAME.selected_sleeve] = {count = 1, wins = {}, losses = {}, wins_by_key = {}, losses_by_key = {}}
+            end
+        end
+    end
+end
+
+local old_set_deck_win = set_deck_win
+function set_deck_win(...)
+    -- basically set_sleeve_win()
+    if G.GAME.selected_sleeve then
+        local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve)
+        if sleeve_center then
+            set_sleeve_usage()
+            local sleeve_usage = G.PROFILES[G.SETTINGS.profile].sleeve_usage[G.GAME.selected_sleeve]
+            sleeve_usage.wins_by_key[SMODS.stake_from_index(G.GAME.stake)] = (sleeve_usage.wins_by_key[SMODS.stake_from_index(G.GAME.stake)] or 0) + 1
+            local applied =  SMODS.build_stake_chain(G.P_STAKES[SMODS.stake_from_index(G.GAME.stake)]) or {}
+            for i, _ in ipairs(G.P_CENTER_POOLS.Stake) do
+                if applied[i] then
+                    sleeve_usage.wins_by_key[SMODS.stake_from_index(G.GAME.stake)] = sleeve_usage.wins_by_key[SMODS.stake_from_index(G.GAME.stake)] or 1
+                end
+            end
+            G.PROFILES[G.SETTINGS.profile].sleeve_usage[G.GAME.selected_sleeve] = sleeve_usage
+        end
+    end
+    old_set_deck_win(...)  -- at end to let old func call `G:save_settings()`
+end
+
+local old_set_deck_loss = set_deck_loss
+function set_deck_loss(...)
+    -- basically set_sleeve_loss()
+    if G.GAME.selected_sleeve then
+        local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve)
+        if sleeve_center then
+            set_sleeve_usage()
+            local sleeve_usage = G.PROFILES[G.SETTINGS.profile].sleeve_usage[G.GAME.selected_sleeve]
+            if not sleeve_usage then
+                sleeve_usage = {count = 1, wins = {}, losses = {}, wins_by_key = {}, losses_by_key = {}}
+            end
+            sleeve_usage.losses_by_key[SMODS.stake_from_index(G.GAME.stake)] = (sleeve_usage.losses_by_key[SMODS.stake_from_index(G.GAME.stake)] or 0) + 1
+            G.PROFILES[G.SETTINGS.profile].sleeve_usage[G.GAME.selected_sleeve] = sleeve_usage
+        end
+    end
+    old_set_deck_loss(...)  -- at end to let old func call `G:save_settings()`
 end
 
 -- GALDUR (1.1.1) COMPATIBILITY
@@ -1496,7 +1570,7 @@ local function populate_sleeve_card_areas(page)
         if Galdur and not Galdur.config.reduce then
             card_number = 10
         end
-        local selected_deck_center = G.P_CENTERS.b_red
+        local selected_deck_center = in_collection and G.P_CENTERS.b_red or Galdur.run_setup.choices.deck.effect.center
         for index = 1, card_number do
             local card = Card(area.T.x, area.T.y, area.T.w, area.T.h, selected_deck_center, selected_deck_center,
                 {galdur_back = Back(selected_deck_center)})

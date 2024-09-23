@@ -42,3 +42,14 @@ target = 'card.lua'
 pattern = '''self.params.viewed_back and G.GAME.viewed_back or G.GAME.selected_back'''
 position = 'before'
 payload = ''' type(self.params.viewed_back) == 'table' and self.params.viewed_back or '''
+
+# allow stake sticker to have rotation and positional offset
+# Card:draw()
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = '''G.shared_stickers[self.sticker]:draw_shader('dissolve', nil, nil, true, self.children.center)'''
+position = 'at'
+match_indent = true
+payload = '''local sticker_offset = self.sticker_offset or {}
+G.shared_stickers[self.sticker]:draw_shader('dissolve', nil, nil, true, self.children.center, nil, self.sticker_rotation, sticker_offset.x, sticker_offset.y)'''
