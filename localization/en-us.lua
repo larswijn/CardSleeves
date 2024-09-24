@@ -176,6 +176,7 @@ return {
     },
     misc = {
         dictionary = {
+            k_sleeve = "Sleeve",
             gald_sleeves = "Select Sleeve",
             gald_random_sleeve = "Random Sleeve",
             sleeve_unique_effect_desc = "Some sleeves have unique effects when combined with specific decks",

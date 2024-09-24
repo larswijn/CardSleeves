@@ -5,9 +5,9 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.4.0-dev6
+--- VERSION: 1.4.0-dev7
 --- PRIORITY: -1
---- LOADER_VERSION_GEQ: 1.0.0
+--- DEPENDS: [Steamodded>=1.0.0~ALPHA-0924a]
 
 ----------------------------------------------
 ------------MOD CODE -------------------------
@@ -18,9 +18,6 @@ KNOWN ISSUES/IDEAS:
 
 * Tags on zodiac deck + zodiac sleeve still say "of 5" (e.g. charm tag)
 
-* unlocks:
-** do not work between restarts
-** pop-ups says the completely wrong stuff
 * API:
 ** add optional shaders
 ** support unlocks
@@ -142,12 +139,12 @@ CardSleeves.Sleeve = SMODS.Center:extend {
     end,
     locked_loc_vars = function(self, info_queue, card)
         if not self.unlock_condition then
-            error("Please implement custom `locked_loc_vars` or define `unlock_condition` for Sleeve " .. self.name)
+            error("Please implement custom `locked_loc_vars` or define `unlock_condition` for Sleeve " .. self.key)
         elseif not self.unlock_condition.deck or not self.unlock_condition.stake then
-            error("Please implement custom `locked_loc_vars` or define `unlock_condition.deck` and `unlock_condition.stake` for Sleeve " .. self.name)
+            error("Please implement custom `locked_loc_vars` or define `unlock_condition.deck` and `unlock_condition.stake` for Sleeve " .. self.key)
         end
         local deck_name = localize{type = "name_text", set = "Back", key = self.unlock_condition.deck}
-        local colours = G.C.BLACK
+        local colours = G.C.GREY
         if self.unlock_condition.stake > 1 then
             colours = get_stake_col(self.unlock_condition.stake)
         end
@@ -156,9 +153,9 @@ CardSleeves.Sleeve = SMODS.Center:extend {
     end,
     check_for_unlock = function(self, args)
         if not self.unlock_condition then
-            error("Please implement custom `check_for_unlock` or define `unlock_condition` for Sleeve " .. self.name)
+            error("Please implement custom `check_for_unlock` or define `unlock_condition` for Sleeve " .. self.key)
         elseif not self.unlock_condition.deck or not self.unlock_condition.stake then
-            error("Please implement custom `check_for_unlock` or define `unlock_condition.deck` and `unlock_condition.stake` for Sleeve " .. self.name)
+            error("Please implement custom `check_for_unlock` or define `unlock_condition.deck` and `unlock_condition.stake` for Sleeve " .. self.key)
         end
         if args.type == 'win_deck' and get_deck_win_stake(self.unlock_condition.deck) >= self.unlock_condition.stake then
             return true
@@ -374,8 +371,8 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 0 },
     config = { discards = 1 },
-    unlocked = true,
-    unlock_condition = { deck = "b_red", stake = 1 },
+    unlocked = false,
+    unlock_condition = { deck = "b_red", stake = 2 },
     loc_vars = function(self)
         return { vars = { self.config.discards } }
     end,
@@ -387,8 +384,8 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 0 },
     config = { hands = 1 },
-    unlocked = true,
-    unlock_condition = { deck = "b_blue", stake = 2 },
+    unlocked = false,
+    unlock_condition = { deck = "b_blue", stake = 3 },
     loc_vars = function(self)
         return { vars = { self.config.hands } }
     end,
@@ -400,7 +397,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 0 },
     config = { dollars = 10 },
-    unlocked = true,
+    unlocked = false,
     unlock_condition = { deck = "b_yellow", stake = 3 },
     loc_vars = function(self)
         return { vars = { self.config.dollars } }
@@ -413,7 +410,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 0 },
     config = { extra_hand_bonus = 1, extra_discard_bonus = 1, no_interest = true },
-    unlocked = true,
+    unlocked = false,
     unlock_condition = { deck = "b_green", stake = 3 },
     loc_vars = function(self)
         return { vars = { self.config.extra_hand_bonus, self.config.extra_discard_bonus, self.config.no_interest } }
@@ -425,7 +422,7 @@ CardSleeves.Sleeve {
     name = "Black Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 0 },
-    unlocked = true,
+    unlocked = false,
     unlock_condition = { deck = "b_black", stake = 3 },
     loc_vars = function(self)
         local key, vars
@@ -447,7 +444,7 @@ CardSleeves.Sleeve {
     name = "Magic Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 1 },
-    unlocked = true,
+    unlocked = false,
     unlock_condition = { deck = "b_magic", stake = 3 },
     loc_vars = function(self)
         local key
@@ -471,7 +468,7 @@ CardSleeves.Sleeve {
     name = "Nebula Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 1 },
-    unlocked = true,
+    unlocked = false,
     unlock_condition = { deck = "b_nebula", stake = 3 },
     loc_vars = function(self)
         local key
@@ -495,7 +492,7 @@ CardSleeves.Sleeve {
     name = "Ghost Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 1 },
-    unlocked = true,
+    unlocked = false,
     unlock_condition = { deck = "b_ghost", stake = 3 },
     loc_vars = function(self)
         local key
@@ -527,7 +524,7 @@ CardSleeves.Sleeve {
     name = "Abandoned Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 1 },
-    unlocked = true,
+    unlocked = false,
     unlock_condition = { deck = "b_abandoned", stake = 3 },
     loc_vars = function(self)
         local key = self.key
@@ -613,7 +610,7 @@ CardSleeves.Sleeve {
     name = "Checkered Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 1 },
-    unlocked = true,
+    unlocked = false,
     unlock_condition = { deck = "b_checkered", stake = 3 },
     loc_vars = function(self)
         local key
@@ -650,7 +647,7 @@ CardSleeves.Sleeve {
     name = "Zodiac Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 2 },
-    unlocked = true,
+    unlocked = false,
     unlock_condition = { deck = "b_zodiac", stake = 3 },
     loc_vars = function(self)
         local key
@@ -689,7 +686,7 @@ CardSleeves.Sleeve {
     name = "Painted Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 2 },
-    unlocked = true,
+    unlocked = false,
     unlock_condition = { deck = "b_painted", stake = 3 },
     config = {hand_size = 2, joker_slot = -1},
     loc_vars = function(self)
@@ -702,8 +699,8 @@ CardSleeves.Sleeve {
     name = "Anaglyph Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 2 },
-    unlocked = true,
-    unlock_condition = { deck = "b_anaglyph", stake = 3 },
+    unlocked = false,
+    unlock_condition = { deck = "b_anaglyph", stake = 4 },
     config = {},
     loc_vars = function(self)
         local key
@@ -739,8 +736,8 @@ CardSleeves.Sleeve {
     name = "Plasma Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 2 },
-    unlocked = true,
-    unlock_condition = { deck = "b_plasma", stake = 3 },
+    unlocked = false,
+    unlock_condition = { deck = "b_plasma", stake = 5 },
     config = {ante_scaling = 2},
     loc_vars = function(self)
         local key
@@ -813,8 +810,8 @@ CardSleeves.Sleeve {
     name = "Erratic Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 2 },
-    unlocked = true,
-    unlock_condition = { deck = "b_erratic", stake = 3 },
+    unlocked = false,
+    unlock_condition = { deck = "b_erratic", stake = 7 },
     config = {randomize_rank_suit = true},
     loc_vars = function(self)
         local key
@@ -850,7 +847,7 @@ CardSleeves.Sleeve {
     end,
 }
 
--- UI FUNCS
+-- LOCAL FUNCS
 
 local function get_sleeve_win_sticker(sleeve_key)
     local profile = G.PROFILES[G.SETTINGS.profile]
@@ -890,18 +887,19 @@ end
 local function create_sleeve_sprite(x, y, w, h, sleeve_center)
     -- uses locked sprite if sleeve is locked - assumes the locked sprite is at (x=0, y=3)
     if sleeve_center.unlocked == false then
-        return Sprite(x, y, w, h, G.ASSET_ATLAS[CardSleeves.Sleeve.atlas], {x=0, y=3})
+        return Sprite(x, y, w, h, G.ASSET_ATLAS["casl_sleeve_atlas"], {x=0, y=3})  -- string in case modded sleeve has custom atlas
     else
         return Sprite(x, y, w, h, G.ASSET_ATLAS[sleeve_center.atlas], sleeve_center.pos)
     end
 end
 
-local function replace_sleeve_sprite(card, sleeve_center)
+local function replace_sleeve_sprite(card, sleeve_center, offset)
+    offset = offset or {x=0, y=0.35}
     if card.children.back then
         card.children.back:remove()
     end
     card.children.back = create_sleeve_sprite(card.T.x, card.T.y, card.T.w, card.T.h, sleeve_center)
-    card.children.back:set_role{major = card, role_type = 'Minor', draw_major = card, offset = {x=0, y=0.25}}
+    card.children.back:set_role{major = card, role_type = 'Minor', draw_major = card, offset = offset}
     if sleeve_center.key ~= "sleeve_casl_none" then
         card.sticker = get_sleeve_win_sticker(sleeve_center.key)
         card.sticker_rotation = math.pi
@@ -915,9 +913,11 @@ local function insert_sleeve_card(area, sleeve_center)
             local new_card = create_sleeve_card(area, sleeve_center)
             replace_sleeve_sprite(new_card, sleeve_center)
             area:emplace(new_card)
+            return new_card
         else
             sleeve_card.config.center = sleeve_center
             replace_sleeve_sprite(sleeve_card, sleeve_center)
+            return sleeve_card
         end
     elseif sleeve_center.name == "No Sleeve" and sleeve_card then
         sleeve_card:remove()
@@ -950,6 +950,34 @@ local function create_sleeve_badges(sleeve_center)
     end
     return {n=G.UIT.R}
 end
+
+local function booster_pack_size_fix_wrapper(func)
+    -- fix the cardarea for these booster packs growing way too big
+    local function wrapper(...)
+        local old_pack_size = G.GAME.pack_size
+        G.GAME.pack_size = math.min(G.GAME.pack_size, 5)  -- 6 is fine for tarot packs, but not for celestial packs
+        local output = func(...)
+        G.GAME.pack_size = old_pack_size
+        return output
+    end
+    return wrapper
+end
+
+local function set_sleeve_usage()
+    if G.GAME.selected_sleeve then
+        local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve)
+        if sleeve_center then
+            if not G.PROFILES[G.SETTINGS.profile].sleeve_usage then
+                G.PROFILES[G.SETTINGS.profile].sleeve_usage = {}
+            end
+            if not G.PROFILES[G.SETTINGS.profile].sleeve_usage[G.GAME.selected_sleeve] then
+                G.PROFILES[G.SETTINGS.profile].sleeve_usage[G.GAME.selected_sleeve] = {count = 1, wins = {}, losses = {}, wins_by_key = {}, losses_by_key = {}}
+            end
+        end
+    end
+end
+
+-- GLOBAL (UI) FUNCS
 
 function G.FUNCS.change_sleeve(args)
     local sleeve_key = G.P_CENTER_POOLS.Sleeve[args.to_key].key
@@ -1132,6 +1160,49 @@ function G.UIDEF.current_sleeve(_scale)
         }
     }
 end
+
+function create_UIBox_sleeve_unlock(sleeve_center)
+    local area = CardArea(G.ROOM.T.x - 100, G.ROOM.T.h, 1.2*G.CARD_W, 1.2*G.CARD_H,
+                          {card_limit = 52, type = 'deck', highlight_limit = 0})
+    local card = Card(G.ROOM.T.x + 0.2*G.ROOM.T.w/2,G.ROOM.T.h, G.CARD_W*1.2, G.CARD_H*1.2, pseudorandom_element(G.P_CARDS), G.P_CENTERS.c_base, {viewed_back = true})
+    card.sprite_facing = 'back'
+    card.facing = 'back'
+    area:emplace(card)
+    local sleeve_card = create_sleeve_card(area, sleeve_center)
+    replace_sleeve_sprite(sleeve_card, sleeve_center, {x=0, y=0.2})
+    area:emplace(sleeve_card)
+
+    local sleeve_criteria = {}
+    localize{type = 'descriptions', set = "Sleeve", key = 'sleeve_locked', nodes = sleeve_criteria, vars = sleeve_center:locked_loc_vars().vars, default_col = G.C.WHITE, shadow = true}
+    local sleeve_criteria_cols = {}
+    for k, v in ipairs(sleeve_criteria) do
+        if k > 1 then sleeve_criteria_cols[#sleeve_criteria_cols+1] = {n=G.UIT.C, config={align = "cm", padding = 0, minw = 0.1}, nodes={}} end
+        sleeve_criteria_cols[#sleeve_criteria_cols+1] = {n=G.UIT.C, config={align = "cm", padding = 0}, nodes=v}
+    end
+
+    local sleeve_description = {}
+    sleeve_center:generate_ui({}, nil, sleeve_description, nil, {name = {}})
+    local sleeve_description_cols = {}
+    for _, v in ipairs(sleeve_description) do
+        sleeve_description_cols[#sleeve_description_cols + 1] = { n = G.UIT.R, config = { align = "cm"}, nodes = v }
+    end
+
+    local t = create_UIBox_generic_options({ back_label = localize('b_continue'), no_pip = true, snap_back = true, back_func = 'continue_unlock', minw = 7, contents = {
+      {n=G.UIT.R, config={align = "cm", padding = 0}, nodes={
+        {n=G.UIT.O, config={object = DynaText({string = {{string = localize{type = 'name_text', set = 'Sleeve', key = sleeve_center.key}, suffix = ' '..localize('k_unlocked_ex'), outer_colour = G.C.UI.TEXT_LIGHT}}, colours = {G.C.BLUE},shadow = true, rotate = true, float = true, scale = 0.7, pop_in = 0.1})}}
+      }},
+      {n=G.UIT.R, config={align = "cm", padding = 0}, nodes=sleeve_criteria_cols},
+      {n=G.UIT.R, config={align = "cm", padding = 0.2, colour = G.C.BLACK, r = 0.2}, nodes={
+          {n=G.UIT.C, config={align = "cm", padding = 0}, nodes={
+            {n=G.UIT.O, config={object = area}}
+          }},
+          {n=G.UIT.C, config={align = "cm", r = 0.2, colour = G.C.WHITE, emboss = 0.05, padding = 0.2, minw = 4}, nodes={
+            {n=G.UIT.R, config={align = "cm", padding = 0}, nodes=sleeve_description_cols}
+          }}
+        }}
+    }})
+    return t
+  end
 
 --[[ HOOKING / WRAPPING FUNCS
 
@@ -1439,53 +1510,23 @@ function create_tabs(args)
     return old_create_tabs(args)
 end
 
-local function booster_pack_size_fix_wrapper(func)
-    -- fix the cardarea for these booster packs growing way too big
-    local function wrapper(...)
-        local old_pack_size = G.GAME.pack_size
-        G.GAME.pack_size = math.min(G.GAME.pack_size, 5)  -- 6 is fine for tarot packs, but not for celestial packs
-        local output = func(...)
-        G.GAME.pack_size = old_pack_size
-        return output
-    end
-    return wrapper
-end
 create_UIBox_arcana_pack = booster_pack_size_fix_wrapper(create_UIBox_arcana_pack)
 create_UIBox_spectral_pack = booster_pack_size_fix_wrapper(create_UIBox_spectral_pack)
 create_UIBox_standard_pack = booster_pack_size_fix_wrapper(create_UIBox_standard_pack)
 create_UIBox_buffoon_pack = booster_pack_size_fix_wrapper(create_UIBox_buffoon_pack)
 create_UIBox_celestial_pack = booster_pack_size_fix_wrapper(create_UIBox_celestial_pack)
 
-local old_smods_save_unlocks = SMODS.SAVE_UNLOCKS
-function SMODS.SAVE_UNLOCKS(...)
-    -- TODO: create PR to fix SMODS.SAVE_UNLOCKS itself?
-    -- TODO: also, unlock menu says the completely wrong stuff ("joker unlocked" etc)
-
-    old_smods_save_unlocks(...)
-
-    if G.P_CENTER_POOLS.Sleeve then
-        -- some IDIOTIC mods call SMODS.SAVE_UNLOCKS() when initiating, even though steamodded does it for them once loaded
-        -- so do this quick check to prevent a crash
-        for _, v in pairs(G.P_CENTER_POOLS.Sleeve) do
-            if v.unlocked == false then
-                G.P_LOCKED[#G.P_LOCKED+1] = v
-            end
-        end
+local old_create_UIBox_card_unlock = create_UIBox_card_unlock
+function create_UIBox_card_unlock(card_center)
+    if card_center.set == "Sleeve" then
+        return create_UIBox_sleeve_unlock(card_center)
     end
+    return old_create_UIBox_card_unlock(card_center)
 end
 
-local function set_sleeve_usage()
-    if G.GAME.selected_sleeve then
-        local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve)
-        if sleeve_center then
-            if not G.PROFILES[G.SETTINGS.profile].sleeve_usage then
-                G.PROFILES[G.SETTINGS.profile].sleeve_usage = {}
-            end
-            if not G.PROFILES[G.SETTINGS.profile].sleeve_usage[G.GAME.selected_sleeve] then
-                G.PROFILES[G.SETTINGS.profile].sleeve_usage[G.GAME.selected_sleeve] = {count = 1, wins = {}, losses = {}, wins_by_key = {}, losses_by_key = {}}
-            end
-        end
-    end
+local old_smods_save_unlocks = SMODS.SAVE_UNLOCKS
+function SMODS.SAVE_UNLOCKS(...)
+    old_smods_save_unlocks(...)
 end
 
 local old_set_deck_win = set_deck_win
@@ -1923,8 +1964,14 @@ SMODS.current_mod.config_tab = function()
 end
 
 SMODS.current_mod.custom_collection_tabs = function()
+    local tally = 0
+    for _, v in pairs(G.P_CENTER_POOLS['Sleeve']) do
+        if v.unlocked then
+            tally = tally + 1
+        end
+    end
     return { UIBox_button {
-        count = {tally = #G.P_CENTER_POOLS['Sleeve'], of = #G.P_CENTER_POOLS['Sleeve']},
+        count = {tally = tally, of = #G.P_CENTER_POOLS['Sleeve']},
         button = 'your_collection_sleeves', label = {"Sleeves"}, minw = 5, id = 'your_collection_sleeves'
     }}
 end
