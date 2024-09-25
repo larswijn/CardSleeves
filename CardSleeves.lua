@@ -5,7 +5,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.4.0-dev7
+--- VERSION: 1.4.0-dev8
 --- PRIORITY: -1
 --- DEPENDS: [Steamodded>=1.0.0~ALPHA-0924a]
 
@@ -14,7 +14,7 @@
 
 --[[
 
-KNOWN ISSUES/IDEAS:
+KNOWN ISSUES/TODO IDEAS:
 
 * Tags on zodiac deck + zodiac sleeve still say "of 5" (e.g. charm tag)
 
@@ -22,14 +22,14 @@ KNOWN ISSUES/IDEAS:
 ** add optional shaders
 ** support unlocks
 * See if people want selectable sleeves in challenges or challenge support for sleeves?
+* See want conditions people want for unlockable sleeves
 
 --]]
 
 -- GLOBALS (in this mod)
 
-CardSleeves = {}
+CardSleeves = SMODS.current_mod
 
-local config = SMODS.current_mod.config
 local in_collection = false
 local is_in_run_info_tab = false
 local game_args = {}
@@ -317,11 +317,15 @@ function CardSleeves.Sleeve:trigger_effect(args)
 end
 
 function CardSleeves.Sleeve:get_name()
-    if self.unlocked then return localize{type = "name_text", set = self.set, key = self.key} else return localize('k_locked') end
+    if self.unlocked or CardSleeves.config.allow_any_sleeve_selection then
+        return localize{type = "name_text", set = self.set, key = self.key}
+    else
+        return localize('k_locked')
+    end
 end
 
 function CardSleeves.Sleeve:generate_ui(info_queue, card, desc_nodes, specific_vars, full_UI_table)
-    if not self.unlocked then
+    if not self.unlocked and not CardSleeves.config.allow_any_sleeve_selection then
         local target = {
             type = 'descriptions',
             key = self.class_prefix .. "_locked",
@@ -886,10 +890,10 @@ end
 
 local function create_sleeve_sprite(x, y, w, h, sleeve_center)
     -- uses locked sprite if sleeve is locked - assumes the locked sprite is at (x=0, y=3)
-    if sleeve_center.unlocked == false then
-        return Sprite(x, y, w, h, G.ASSET_ATLAS["casl_sleeve_atlas"], {x=0, y=3})  -- string in case modded sleeve has custom atlas
-    else
+    if sleeve_center.unlocked or CardSleeves.config.allow_any_sleeve_selection then
         return Sprite(x, y, w, h, G.ASSET_ATLAS[sleeve_center.atlas], sleeve_center.pos)
+    else
+        return Sprite(x, y, w, h, G.ASSET_ATLAS["casl_sleeve_atlas"], {x=0, y=3})  -- string in case modded sleeve has custom atlas
     end
 end
 
@@ -1300,7 +1304,8 @@ end
 local old_FUNCS_can_start_run = G.FUNCS.can_start_run
 function G.FUNCS.can_start_run(e)
     old_FUNCS_can_start_run(e)
-    if CardSleeves.Sleeve:get_obj(G.viewed_sleeve) == nil or CardSleeves.Sleeve:get_obj(G.viewed_sleeve).unlocked == false then
+    local sleeve_center = CardSleeves.Sleeve:get_obj(G.viewed_sleeve)
+    if sleeve_center == nil or (not sleeve_center.unlocked and not CardSleeves.config.allow_any_sleeve_selection) then
         e.config.colour = G.C.UI.BACKGROUND_INACTIVE
         e.config.button = nil
     end
@@ -1423,7 +1428,7 @@ function CardArea:align_cards(...)
     old_CardArea_align_cards(self, ...)
 
     if (self == G.hand or self == G.deck or self == G.discard or self == G.play) and G.view_deck and G.view_deck[1] and G.view_deck[1].cards then return end
-    if self.config.type == 'deck' and self == G.deck and config.adjust_deck_alignment then
+    if self.config.type == 'deck' and self == G.deck and CardSleeves.config.adjust_deck_alignment then
         local total_cards = 0
         for _, card in ipairs(self.cards) do
             if card.states.visible and not card.states.drag.is then
@@ -1518,7 +1523,7 @@ create_UIBox_celestial_pack = booster_pack_size_fix_wrapper(create_UIBox_celesti
 
 local old_create_UIBox_card_unlock = create_UIBox_card_unlock
 function create_UIBox_card_unlock(card_center)
-    if card_center.set == "Sleeve" then
+    if card_center.set == "Sleeve" and not CardSleeves.config.allow_any_sleeve_selection then
         return create_UIBox_sleeve_unlock(card_center)
     end
     return old_create_UIBox_card_unlock(card_center)
@@ -1838,7 +1843,7 @@ if Galdur then
         local random
         local random_sleeve_opts = {}
         for i=1, #G.P_CENTER_POOLS.Sleeve do
-            if G.P_CENTER_POOLS.Sleeve[i].unlocked then
+            if G.P_CENTER_POOLS.Sleeve[i].unlocked or CardSleeves.config.allow_any_sleeve_selection then
                 random_sleeve_opts[#random_sleeve_opts + 1] = i
             end
         end
@@ -1904,7 +1909,7 @@ if Galdur then
 
     local old_Card_click = Card.click
     function Card:click()
-        if self.sleeve_select_position and self.config.center.unlocked and not in_collection then
+        if self.sleeve_select_position and (self.config.center.unlocked or CardSleeves.config.allow_any_sleeve_selection) and not in_collection then
             local nr = (self.sleeve_select_position.page - 1) * sleeve_count_page + self.sleeve_select_position.count
             G.FUNCS.change_sleeve{to_key = nr}
             set_new_sleeve(self.config.center)
@@ -1945,20 +1950,16 @@ end
 -- SMODS UI funcs (additions, config, collection)
 
 SMODS.current_mod.config_tab = function()
-    return {n=G.UIT.ROOT, config = {align = "cl", minw = G.ROOM.T.w*0.6, padding = 0.0, r = 0.1, colour = {G.C.GREY[1], G.C.GREY[2], G.C.GREY[3],0.7}}, nodes = {
-        {n=G.UIT.C, config={align = "c", padding = 0, minw = 5, minh = 3}, nodes = {
-            {n = G.UIT.R, config = { padding = 0, align = "tl", minw = 9, bg_colour = G.C.CLEAR, colour = G.C.CLEAR }, nodes = {
-                {n = G.UIT.ROOT, config = {r = 0.1, align = "t", padding = 0.0, colour = G.C.CLEAR, minw = 8.5, minh = 6}, nodes ={
-                    {n = G.UIT.R, config = {align = "c", padding = 0}, nodes = {
-                        {n = G.UIT.C, config = { align = "c", padding = 0 }, nodes = {
-                            { n = G.UIT.T, config = { text = localize("adjust_deck_alignment"), scale = 0.35, colour = G.C.UI.TEXT_LIGHT }},
-                        }},
-                        {n = G.UIT.C, config = { align = "cr", padding = 0.05 }, nodes = {
-                            create_toggle{ col = true, label = "", scale = 0.70, w = 0, shadow = true, ref_table = config, ref_value = "adjust_deck_alignment" },
-                        }},
-                    }}
-                }}
-            }}
+    return {n=G.UIT.ROOT, config = {align = "cl", minh = G.ROOM.T.h*0.25, padding = 0.0, r = 0.1, colour = {G.C.GREY[1], G.C.GREY[2], G.C.GREY[3],0.7}}, nodes = {
+        {n = G.UIT.R, config = { padding = 0.05 }, nodes = {
+            {n = G.UIT.C, config = { minw = G.ROOM.T.w*0.25, padding = 0.05 }, nodes = {
+                {n=G.UIT.R, config={minh=0.001}},
+                create_toggle{ label = localize("adjust_deck_alignment"), info = localize("adjust_deck_alignment_desc"), active_colour = CardSleeves.badge_colour, ref_table = CardSleeves.config, ref_value = "adjust_deck_alignment" },
+            }},
+            {n = G.UIT.C, config = { align = "ri", minw = G.ROOM.T.w*0.25, padding = 0.05 }, nodes = {
+                {n=G.UIT.R, config={minh=0.001}},
+                create_toggle{ label = localize("allow_any_sleeve_selection"), info = localize("allow_any_sleeve_selection_desc"), active_colour = CardSleeves.badge_colour, ref_table = CardSleeves.config, ref_value = "allow_any_sleeve_selection" },
+            }},
         }}
     }}
 end
@@ -1966,7 +1967,7 @@ end
 SMODS.current_mod.custom_collection_tabs = function()
     local tally = 0
     for _, v in pairs(G.P_CENTER_POOLS['Sleeve']) do
-        if v.unlocked then
+        if v.unlocked or CardSleeves.config.allow_any_sleeve_selection then
             tally = tally + 1
         end
     end
