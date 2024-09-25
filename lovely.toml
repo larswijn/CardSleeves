@@ -65,3 +65,18 @@ payload = """_type == 'Back' and localize('k_deck') or
 _c.set and localize('k_' .. _c.set:lower()) or
 'ERROR'
 """
+
+# adds Sleeves to the collection counter
+# set_discover_tallies()
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+pattern = """if v.set and ((v.set == 'Joker') or v.consumeable or (v.set == 'Edition') or (v.set == 'Voucher') or (v.set == 'Back') or (v.set == 'Booster')) then"""
+position = 'before'
+match_indent = true
+payload = """if v.set and v.set == 'Sleeve' then
+    G.DISCOVER_TALLIES.total.of = G.DISCOVER_TALLIES.total.of + 1
+    if v.unlocked then 
+        G.DISCOVER_TALLIES.total.tally = G.DISCOVER_TALLIES.total.tally + 1
+    end
+end"""
