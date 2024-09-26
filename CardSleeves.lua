@@ -5,7 +5,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.4.0-dev9
+--- VERSION: 1.4.0-dev10
 --- PRIORITY: -1
 --- DEPENDS: [Steamodded>=1.0.0~ALPHA-0924a]
 
@@ -144,11 +144,12 @@ CardSleeves.Sleeve = SMODS.Center:extend {
             error("Please implement custom `locked_loc_vars` or define `unlock_condition.deck` and `unlock_condition.stake` for Sleeve " .. self.key)
         end
         local deck_name = localize{type = "name_text", set = "Back", key = self.unlock_condition.deck}
+        local stake_name = localize{type = "name_text", set = "Stake", key = SMODS.stake_from_index(self.unlock_condition.stake)}
         local colours = G.C.GREY
         if self.unlock_condition.stake > 1 then
             colours = get_stake_col(self.unlock_condition.stake)
         end
-        local vars = { deck_name, G.P_CENTER_POOLS.Stake[self.unlock_condition.stake].name, colours = {colours} }
+        local vars = { deck_name, stake_name, colours = {colours} }
         return { vars = vars }
     end,
     check_for_unlock = function(self, args)
@@ -316,8 +317,13 @@ function CardSleeves.Sleeve:trigger_effect(args)
     end
 end
 
+function CardSleeves.Sleeve:is_unlocked()
+    -- Checks .unlocked, CardSleeves config, and basegame Unlock All. Use this to read .unlocked unless you know what you're doing
+    return self.unlocked or CardSleeves.config.allow_any_sleeve_selection or G.PROFILES[G.SETTINGS.profile].all_unlocked
+end
+
 function CardSleeves.Sleeve:get_name()
-    if self.unlocked or CardSleeves.config.allow_any_sleeve_selection then
+    if self:is_unlocked() then
         return localize{type = "name_text", set = self.set, key = self.key}
     else
         return localize('k_locked')
@@ -325,7 +331,7 @@ function CardSleeves.Sleeve:get_name()
 end
 
 function CardSleeves.Sleeve:generate_ui(info_queue, card, desc_nodes, specific_vars, full_UI_table)
-    if not self.unlocked and not CardSleeves.config.allow_any_sleeve_selection then
+    if not self:is_unlocked() then
         local target = {
             type = 'descriptions',
             key = self.class_prefix .. "_locked",
@@ -890,7 +896,7 @@ end
 
 local function create_sleeve_sprite(x, y, w, h, sleeve_center)
     -- uses locked sprite if sleeve is locked - assumes the locked sprite is at (x=0, y=3)
-    if sleeve_center.unlocked or CardSleeves.config.allow_any_sleeve_selection then
+    if sleeve_center:is_unlocked() then
         return Sprite(x, y, w, h, G.ASSET_ATLAS[sleeve_center.atlas], sleeve_center.pos)
     else
         return Sprite(x, y, w, h, G.ASSET_ATLAS["casl_sleeve_atlas"], {x=0, y=3})  -- string in case modded sleeve has custom atlas
@@ -898,7 +904,7 @@ local function create_sleeve_sprite(x, y, w, h, sleeve_center)
 end
 
 local function replace_sleeve_sprite(card, sleeve_center, offset)
-    offset = offset or {x=0, y=0.35}
+    offset = offset or {x=0, y=0.3}
     if card.children.back then
         card.children.back:remove()
     end
@@ -1305,7 +1311,7 @@ local old_FUNCS_can_start_run = G.FUNCS.can_start_run
 function G.FUNCS.can_start_run(e)
     old_FUNCS_can_start_run(e)
     local sleeve_center = CardSleeves.Sleeve:get_obj(G.viewed_sleeve)
-    if sleeve_center == nil or (not sleeve_center.unlocked and not CardSleeves.config.allow_any_sleeve_selection) then
+    if sleeve_center == nil or not sleeve_center:is_unlocked() then
         e.config.colour = G.C.UI.BACKGROUND_INACTIVE
         e.config.button = nil
     end
@@ -1523,7 +1529,7 @@ create_UIBox_celestial_pack = booster_pack_size_fix_wrapper(create_UIBox_celesti
 
 local old_create_UIBox_card_unlock = create_UIBox_card_unlock
 function create_UIBox_card_unlock(card_center)
-    if card_center.set == "Sleeve" and not CardSleeves.config.allow_any_sleeve_selection then
+    if card_center.set == "Sleeve" and not CardSleeves.config.allow_any_sleeve_selection and not G.PROFILES[G.SETTINGS.profile].all_unlocked then
         return create_UIBox_sleeve_unlock(card_center)
     end
     return old_create_UIBox_card_unlock(card_center)
@@ -1843,7 +1849,7 @@ if Galdur then
         local random
         local random_sleeve_opts = {}
         for i=1, #G.P_CENTER_POOLS.Sleeve do
-            if G.P_CENTER_POOLS.Sleeve[i].unlocked or CardSleeves.config.allow_any_sleeve_selection then
+            if G.P_CENTER_POOLS.Sleeve[i]:is_unlocked() then
                 random_sleeve_opts[#random_sleeve_opts + 1] = i
             end
         end
@@ -1909,7 +1915,7 @@ if Galdur then
 
     local old_Card_click = Card.click
     function Card:click()
-        if self.sleeve_select_position and (self.config.center.unlocked or CardSleeves.config.allow_any_sleeve_selection) and not in_collection then
+        if self.sleeve_select_position and self.config.center:is_unlocked() and not in_collection then
             local nr = (self.sleeve_select_position.page - 1) * sleeve_count_page + self.sleeve_select_position.count
             G.FUNCS.change_sleeve{to_key = nr}
             set_new_sleeve(self.config.center)
@@ -1967,7 +1973,7 @@ end
 SMODS.current_mod.custom_collection_tabs = function()
     local tally = 0
     for _, v in pairs(G.P_CENTER_POOLS['Sleeve']) do
-        if v.unlocked or CardSleeves.config.allow_any_sleeve_selection then
+        if v:is_unlocked() then
             tally = tally + 1
         end
     end
