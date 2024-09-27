@@ -5,7 +5,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.4.0-dev10
+--- VERSION: 1.4.0-dev11
 --- PRIORITY: -1
 --- DEPENDS: [Steamodded>=1.0.0~ALPHA-0924a]
 
@@ -1408,8 +1408,8 @@ function CardArea:draw(...)
         end
         local width = x2 - x
         x = x > 1000000 and self.T.x + 0.1 or x
-        y = (y < 0 and self.T.y or y) + 0.05
-        width = width <= 0 and self.T.w - 0.2 or width
+        y = (y < 0 and self.T.y or y) + (CardSleeves.config.adjust_deck_alignment and 0.05 or -0.05)
+        width = width <= 0 and self.T.w - 0.2 or width + 0.01
         height = height <= 0 and self.T.h or height
         if self.sleeve_sprite == nil then
             self.sleeve_sprite = create_sleeve_sprite(x, y, width, height, sleeve_center)
