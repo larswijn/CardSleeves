@@ -1,38 +1,41 @@
 --- STEAMODDED HEADER
 --- MOD_NAME: Card Sleeves
 --- MOD_ID: CardSleeves
+--- BADGE_COLOR: 0047AA
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.3.10
+--- VERSION: 1.4.0-dev13
 --- PRIORITY: -1
---- LOADER_VERSION_GEQ: 1.0.0
+--- DEPENDS: [Steamodded>=1.0.0~ALPHA-0924a]
 
 ----------------------------------------------
 ------------MOD CODE -------------------------
 
 --[[
 
-KNOWN ISSUES/IDEAS:
+KNOWN ISSUES/TODO IDEAS:
 
-* tags on zodiac deck + zodiac sleeve still say "of 5" (e.g. charm tag)
-* see if people want stake stickers on sleeves?
+* Minor Issue: Tags for booster packs have wrong description when using double zodiac/ghost
 
-* unlocks:
-** do not work between restarts
-** pop-ups says the completely wrong stuff
 * API:
 ** add optional shaders
-** support unlocks
+* See if people want to select their own sleeves in challenges instead of adhering to the challenge?
 
 --]]
 
 -- GLOBALS (in this mod)
 
-CardSleeves = {}
-local config = SMODS.current_mod.config
-local in_collection_deck = false
+CardSleeves = SMODS.current_mod
+
+local in_collection = false
 local is_in_run_info_tab = false
+local game_args = {}
+
+local sleeve_count_horizontal = 6
+local sleeve_count_vertical = 2
+local sleeve_count_page = sleeve_count_horizontal * sleeve_count_vertical
+local sleeve_card_areas = {}
 
 -- DEBUG FUNCS
 
@@ -83,7 +86,6 @@ local function tprint(tbl, max_indent, _indent)
 
     return toprint .. string.rep(" ", _indent - 2) .. "}"
 end
-
 local function tablesize(tbl)
     local count = 0
     for _ in pairs(tbl) do
@@ -130,32 +132,8 @@ CardSleeves.Sleeve = SMODS.Center:extend {
         if key == nil then
             return nil
         end
-        return self.obj_table[key] or SMODS.Center.get_obj(self, key)
-    end,
-    locked_loc_vars = function(self, info_queue, card)
-        if not self.unlock_condition then
-            error("Please implement custom `locked_loc_vars` or define `unlock_condition` for Sleeve " .. self.name)
-        elseif not self.unlock_condition.deck or not self.unlock_condition.stake then
-            error("Please implement custom `locked_loc_vars` or define `unlock_condition.deck` and `unlock_condition.stake` for Sleeve " .. self.name)
-        end
-        local colours = G.C.BLACK
-        if self.unlock_condition.stake > 1 then
-            colours = get_stake_col(self.unlock_condition.stake)
-        end
-        local vars = { self.unlock_condition.deck, G.P_CENTER_POOLS.Stake[self.unlock_condition.stake].name, colours = {colours} }
-        return { vars = vars }
-    end,
-    check_for_unlock = function(self, args)
-        if not self.unlock_condition then
-            error("Please implement custom `check_for_unlock` or define `unlock_condition` for Sleeve " .. self.name)
-        elseif not self.unlock_condition.deck or not self.unlock_condition.stake then
-            error("Please implement custom `check_for_unlock` or define `unlock_condition.deck` and `unlock_condition.stake` for Sleeve " .. self.name)
-        end
-        local deck_center = get_deck_from_name(self.unlock_condition.deck)
-        if args.type == 'win_deck' and get_deck_win_stake(deck_center.key) >= self.unlock_condition.stake then
-            return true
-        end
-    end,
+        return self.obj_table[key] or SMODS.Center:get_obj(key)
+    end
 }
 
 function CardSleeves.Sleeve:apply()
@@ -171,7 +149,7 @@ function CardSleeves.Sleeve:apply()
         delay(0.4)
         G.E_MANAGER:add_event(Event({
             func = function()
-                for k, v in ipairs(self.config.consumables) do
+                for _, v in ipairs(self.config.consumables) do
                     local card = SMODS.create_card{key=v}
                     card:add_to_deck()
                     G.consumeables:emplace(card)
@@ -213,7 +191,7 @@ function CardSleeves.Sleeve:apply()
         }))
     end
     if self.config.vouchers then
-        for k, v in pairs(self.config.vouchers) do
+        for _, v in pairs(self.config.vouchers) do
             G.GAME.used_vouchers[v] = true
             G.GAME.starting_voucher_count = (G.GAME.starting_voucher_count or 0) + 1
             Card.apply_to_run(nil, G.P_CENTERS[v])
@@ -311,12 +289,48 @@ function CardSleeves.Sleeve:trigger_effect(args)
     end
 end
 
+function CardSleeves.Sleeve:locked_loc_vars(info_queue, card)
+    if not self.unlock_condition then
+        error("Please implement custom `locked_loc_vars` or define `unlock_condition` for Sleeve " .. self.key)
+    elseif not self.unlock_condition.deck or not self.unlock_condition.stake then
+        error("Please implement custom `locked_loc_vars` or define `unlock_condition.deck` and `unlock_condition.stake` for Sleeve " .. self.key)
+    end
+    local deck_name = localize{type = "name_text", set = "Back", key = self.unlock_condition.deck}
+    local stake_name = localize{type = "name_text", set = "Stake", key = SMODS.stake_from_index(self.unlock_condition.stake)}
+    local colours = G.C.GREY
+    if self.unlock_condition.stake > 1 then
+        colours = get_stake_col(self.unlock_condition.stake)
+    end
+    local vars = { deck_name, stake_name, colours = {colours} }
+    return { vars = vars }
+end
+
+function CardSleeves.Sleeve:check_for_unlock(args)
+    if not self.unlock_condition then
+        error("Please implement custom `check_for_unlock` or define `unlock_condition` for Sleeve " .. self.key)
+    elseif not self.unlock_condition.deck or not self.unlock_condition.stake then
+        error("Please implement custom `check_for_unlock` or define `unlock_condition.deck` and `unlock_condition.stake` for Sleeve " .. self.key)
+    end
+    if args.type == 'win_deck' and get_deck_win_stake(self.unlock_condition.deck) >= self.unlock_condition.stake then
+        return true
+    end
+end
+
+function CardSleeves.Sleeve:is_unlocked()
+    -- Checks self.unlocked, CardSleeves config, and basegame Unlock All. Use this to read self.unlocked unless you know what you're doing
+    return self.unlocked or CardSleeves.config.allow_any_sleeve_selection or G.PROFILES[G.SETTINGS.profile].all_unlocked
+end
+
 function CardSleeves.Sleeve:get_name()
-    if self.unlocked then return localize{type = "name_text", set = self.set, key = self.key} else return localize('k_locked') end
+    if self:is_unlocked() then
+        return localize{type = "name_text", set = self.set, key = self.key}
+    else
+        return localize('k_locked')
+    end
 end
 
 function CardSleeves.Sleeve:generate_ui(info_queue, card, desc_nodes, specific_vars, full_UI_table)
-    if not self.unlocked then
+    if not self:is_unlocked() then
         local target = {
             type = 'descriptions',
             key = self.class_prefix .. "_locked",
@@ -334,11 +348,23 @@ function CardSleeves.Sleeve:generate_ui(info_queue, card, desc_nodes, specific_v
     end
 end
 
+function CardSleeves.Sleeve.get_current_deck_key()
+    if Galdur and Galdur.config.use and Galdur.run_setup.choices.deck then
+        return Galdur.run_setup.choices.deck.effect.center.key
+    elseif G.GAME.viewed_back then
+        return G.GAME.viewed_back.effect.center.key
+    elseif G.GAME.selected_back then
+        return G.GAME.selected_back.effect.center.key
+    end
+    return "b_red"
+end
+
 function CardSleeves.Sleeve.get_current_deck_name()
+    print_debug("DEPRECATED: `get_current_deck_name` will be removed in a future version, use `get_current_deck_key` instead")
     return (Galdur and Galdur.config.use and Galdur.run_setup.choices.deck) and Galdur.run_setup.choices.deck.name or
-           G.GAME.viewed_back and G.GAME.viewed_back.name or
-           G.GAME.selected_back and G.GAME.selected_back.name or
-           "Red Deck"
+            G.GAME.viewed_back and G.GAME.viewed_back.name or
+            G.GAME.selected_back and G.GAME.selected_back.name or
+            "Red Deck"
 end
 
 -- SLEEVE INSTANCES
@@ -357,8 +383,8 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 0 },
     config = { discards = 1 },
-    unlocked = true,
-    unlock_condition = { deck = "Red Deck", stake = 1 },
+    unlocked = false,
+    unlock_condition = { deck = "b_red", stake = 2 },
     loc_vars = function(self)
         return { vars = { self.config.discards } }
     end,
@@ -370,8 +396,8 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 0 },
     config = { hands = 1 },
-    unlocked = true,
-    unlock_condition = { deck = "Blue Deck", stake = 2 },
+    unlocked = false,
+    unlock_condition = { deck = "b_blue", stake = 3 },
     loc_vars = function(self)
         return { vars = { self.config.hands } }
     end,
@@ -383,8 +409,8 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 0 },
     config = { dollars = 10 },
-    unlocked = true,
-    unlock_condition = { deck = "Yellow Deck", stake = 3 },
+    unlocked = false,
+    unlock_condition = { deck = "b_yellow", stake = 3 },
     loc_vars = function(self)
         return { vars = { self.config.dollars } }
     end,
@@ -396,8 +422,8 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 0 },
     config = { extra_hand_bonus = 1, extra_discard_bonus = 1, no_interest = true },
-    unlocked = true,
-    unlock_condition = { deck = "Green Deck", stake = 3 },
+    unlocked = false,
+    unlock_condition = { deck = "b_green", stake = 3 },
     loc_vars = function(self)
         return { vars = { self.config.extra_hand_bonus, self.config.extra_discard_bonus, self.config.no_interest } }
     end,
@@ -408,11 +434,11 @@ CardSleeves.Sleeve {
     name = "Black Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 0 },
-    unlocked = true,
-    unlock_condition = { deck = "Black Deck", stake = 3 },
+    unlocked = false,
+    unlock_condition = { deck = "b_black", stake = 3 },
     loc_vars = function(self)
         local key, vars
-        if self.get_current_deck_name() ~= "Black Deck" then
+        if self.get_current_deck_key() ~= "b_black" then
             key = self.key
             self.config = { hands = -1, joker_slot = 1 }
             vars = { self.config.joker_slot, -self.config.hands }
@@ -430,11 +456,11 @@ CardSleeves.Sleeve {
     name = "Magic Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 1 },
-    unlocked = true,
-    unlock_condition = { deck = "Magic Deck", stake = 3 },
+    unlocked = false,
+    unlock_condition = { deck = "b_magic", stake = 4 },
     loc_vars = function(self)
         local key
-        if self.get_current_deck_name() ~= "Magic Deck" then
+        if self.get_current_deck_key() ~= "b_magic" then
             key = self.key
             self.config = { voucher = 'v_crystal_ball', consumables = { 'c_fool', 'c_fool' } }
         else
@@ -454,11 +480,11 @@ CardSleeves.Sleeve {
     name = "Nebula Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 1 },
-    unlocked = true,
-    unlock_condition = { deck = "Nebula Deck", stake = 3 },
+    unlocked = false,
+    unlock_condition = { deck = "b_nebula", stake = 4 },
     loc_vars = function(self)
         local key
-        if self.get_current_deck_name() ~= "Nebula Deck" then
+        if self.get_current_deck_key() ~= "b_nebula" then
             key = self.key
             self.config = { voucher = 'v_telescope', consumable_slot = -1 }
         else
@@ -478,12 +504,12 @@ CardSleeves.Sleeve {
     name = "Ghost Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 1 },
-    unlocked = true,
-    unlock_condition = { deck = "Ghost Deck", stake = 3 },
+    unlocked = false,
+    unlock_condition = { deck = "b_ghost", stake = 4 },
     loc_vars = function(self)
         local key
         local vars = {}
-        if self.get_current_deck_name() ~= "Ghost Deck" then
+        if self.get_current_deck_key() ~= "b_ghost" then
             key = self.key
             self.config = { spectral_rate = 2, consumables = { 'c_hex' } }
             vars[#vars+1] = localize{type = 'name_text', key = self.config.consumables[1], set = 'Tarot'}
@@ -510,11 +536,11 @@ CardSleeves.Sleeve {
     name = "Abandoned Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 1 },
-    unlocked = true,
-    unlock_condition = { deck = "Abandoned Deck", stake = 3 },
+    unlocked = false,
+    unlock_condition = { deck = "b_abandoned", stake = 4 },
     loc_vars = function(self)
         local key = self.key
-        if self.get_current_deck_name() ~= "Abandoned Deck" then
+        if self.get_current_deck_key() ~= "b_abandoned" then
             key = self.key
             self.config = { remove_faces = true }
         else
@@ -596,11 +622,11 @@ CardSleeves.Sleeve {
     name = "Checkered Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 1 },
-    unlocked = true,
-    unlock_condition = { deck = "Checkered Deck", stake = 3 },
+    unlocked = false,
+    unlock_condition = { deck = "b_checkered", stake = 4 },
     loc_vars = function(self)
         local key
-        if self.get_current_deck_name() ~= "Checkered Deck" then
+        if self.get_current_deck_key() ~= "b_checkered" then
             key = self.key
             self.config = {}
         else
@@ -633,12 +659,12 @@ CardSleeves.Sleeve {
     name = "Zodiac Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 2 },
-    unlocked = true,
-    unlock_condition = { deck = "Zodiac Deck", stake = 3 },
+    unlocked = false,
+    unlock_condition = { deck = "b_zodiac", stake = 5 },
     loc_vars = function(self)
         local key
         local vars = {}
-        if self.get_current_deck_name() ~= "Zodiac Deck" then
+        if self.get_current_deck_key() ~= "b_zodiac" then
             key = self.key
             self.config = { vouchers = {'v_tarot_merchant', 'v_planet_merchant', 'v_overstock_norm'} }
             for _, voucher in pairs(self.config.vouchers) do
@@ -672,8 +698,8 @@ CardSleeves.Sleeve {
     name = "Painted Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 2 },
-    unlocked = true,
-    unlock_condition = { deck = "Painted Deck", stake = 3 },
+    unlocked = false,
+    unlock_condition = { deck = "b_painted", stake = 5 },
     config = {hand_size = 2, joker_slot = -1},
     loc_vars = function(self)
         return { vars = { self.config.hand_size, self.config.joker_slot } }
@@ -685,12 +711,12 @@ CardSleeves.Sleeve {
     name = "Anaglyph Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 2 },
-    unlocked = true,
-    unlock_condition = { deck = "Anaglyph Deck", stake = 3 },
+    unlocked = false,
+    unlock_condition = { deck = "b_anaglyph", stake = 5 },
     config = {},
     loc_vars = function(self)
         local key
-        if self.get_current_deck_name() ~= "Anaglyph Deck" then
+        if self.get_current_deck_key() ~= "b_anaglyph" then
             key = self.key
         else
             key = self.key .. "_alt"
@@ -709,9 +735,9 @@ CardSleeves.Sleeve {
                 return true
             end)
         })
-        if self.name == 'Anaglyph Sleeve' and self.get_current_deck_name() ~= "Anaglyph Deck" and args.context == 'eval' and G.GAME.last_blind and G.GAME.last_blind.boss then
+        if self.name == 'Anaglyph Sleeve' and self.get_current_deck_key() ~= "b_anaglyph" and args.context == 'eval' and G.GAME.last_blind and G.GAME.last_blind.boss then
             G.E_MANAGER:add_event(add_double_tag_event)
-        elseif self.name == 'Anaglyph Sleeve' and self.get_current_deck_name() == "Anaglyph Deck" and args.context == 'eval' and G.GAME.last_blind and not G.GAME.last_blind.boss then
+        elseif self.name == 'Anaglyph Sleeve' and self.get_current_deck_key() == "b_anaglyph" and args.context == 'eval' and G.GAME.last_blind and not G.GAME.last_blind.boss then
             G.E_MANAGER:add_event(add_double_tag_event)
         end
     end,
@@ -722,12 +748,12 @@ CardSleeves.Sleeve {
     name = "Plasma Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 2 },
-    unlocked = true,
-    unlock_condition = { deck = "Plasma Deck", stake = 3 },
+    unlocked = false,
+    unlock_condition = { deck = "b_plasma", stake = 6 },
     config = {ante_scaling = 2},
     loc_vars = function(self)
         local key
-        if self.get_current_deck_name() ~= "Plasma Deck" then
+        if self.get_current_deck_key() ~= "b_plasma" then
             key = self.key
         else
             key = self.key .. "_alt"
@@ -739,7 +765,7 @@ CardSleeves.Sleeve {
         -- TODO: don't balance chips/mult twice for no reason?
         CardSleeves.Sleeve.trigger_effect(self, args)
         -- TODO: this isn't API friendly?
-        if G.GAME.selected_back.name == "Plasma Deck" and self.name == 'Plasma Sleeve' and args.context == "shop_final_pass" then
+        if G.GAME.selected_back.name == "b_plasma" and self.name == 'Plasma Sleeve' and args.context == "shop_final_pass" then
             local cardareas = {}
             for _, obj in pairs(G) do
                 if type(obj) == "table" and obj["is"] and obj:is(CardArea) and obj.config.type == "shop" then
@@ -796,19 +822,19 @@ CardSleeves.Sleeve {
     name = "Erratic Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 2 },
-    unlocked = true,
-    unlock_condition = { deck = "Erratic Deck", stake = 3 },
+    unlocked = false,
+    unlock_condition = { deck = "b_erratic", stake = 7 },
     config = {randomize_rank_suit = true},
     loc_vars = function(self)
         local key
-        if self.get_current_deck_name() ~= "Erratic Deck" then
+        if self.get_current_deck_key() ~= "b_erratic" then
             key = self.key
             self.config = {randomize_rank_suit = true}
         else
             key = self.key .. "_alt"
             self.config = {randomize_rank_suit = true,
                            randomize_start = true,
-                           random_lb = 2,
+                           random_lb = 3,
                            random_ub = 6}
         end
         local vars = {}
@@ -833,7 +859,22 @@ CardSleeves.Sleeve {
     end,
 }
 
--- UI FUNCS
+-- LOCAL FUNCS
+
+local function get_sleeve_win_sticker(sleeve_key)
+    local profile = G.PROFILES[G.SETTINGS.profile]
+    if profile.sleeve_usage and profile.sleeve_usage[sleeve_key] and profile.sleeve_usage[sleeve_key].wins_by_key then
+        local _stake = nil
+		for key, _ in pairs(profile.sleeve_usage[sleeve_key].wins_by_key) do
+			if (G.P_STAKES[key] and G.P_STAKES[key].stake_level or 0) > (_stake and G.P_STAKES[_stake].stake_level or 0) then
+				_stake = key
+			end
+		end
+		if _stake then
+            return G.sticker_map[_stake]
+        end
+    end
+end
 
 local function find_sleeve_card(area)
     -- return (index, card) or nil
@@ -857,19 +898,24 @@ end
 
 local function create_sleeve_sprite(x, y, w, h, sleeve_center)
     -- uses locked sprite if sleeve is locked - assumes the locked sprite is at (x=0, y=3)
-    if sleeve_center.unlocked == false then
-        return Sprite(x, y, w, h, G.ASSET_ATLAS[CardSleeves.Sleeve.atlas], {x=0, y=3})
-    else
+    if sleeve_center:is_unlocked() then
         return Sprite(x, y, w, h, G.ASSET_ATLAS[sleeve_center.atlas], sleeve_center.pos)
+    else
+        return Sprite(x, y, w, h, G.ASSET_ATLAS["casl_sleeve_atlas"], {x=0, y=3})  -- string in case modded sleeve has custom atlas
     end
 end
 
-local function replace_sleeve_sprite(card, sleeve_center)
+local function replace_sleeve_sprite(card, sleeve_center, offset)
+    offset = offset or {x=0, y=0.35}
     if card.children.back then
         card.children.back:remove()
     end
     card.children.back = create_sleeve_sprite(card.T.x, card.T.y, card.T.w, card.T.h, sleeve_center)
-    card.children.back:set_role({major = card, role_type = 'Minor', draw_major = card, offset = {x=0, y=0.25}})
+    card.children.back:set_role{major = card, role_type = 'Minor', draw_major = card, offset = offset}
+    if sleeve_center.key ~= "sleeve_casl_none" then
+        card.sticker = get_sleeve_win_sticker(sleeve_center.key)
+        card.sticker_rotation = math.pi
+    end
 end
 
 local function insert_sleeve_card(area, sleeve_center)
@@ -879,9 +925,11 @@ local function insert_sleeve_card(area, sleeve_center)
             local new_card = create_sleeve_card(area, sleeve_center)
             replace_sleeve_sprite(new_card, sleeve_center)
             area:emplace(new_card)
+            return new_card
         else
             sleeve_card.config.center = sleeve_center
             replace_sleeve_sprite(sleeve_card, sleeve_center)
+            return sleeve_card
         end
     elseif sleeve_center.name == "No Sleeve" and sleeve_card then
         sleeve_card:remove()
@@ -889,6 +937,59 @@ local function insert_sleeve_card(area, sleeve_center)
         print_warning("Unexpected sleeve_card properties!")
     end
 end
+
+local function create_sleeve_badges(sleeve_center)
+    local restore_dependencies = false
+    if sleeve_center.mod.id ~= "CardSleeves" and not sleeve_center.dependencies then
+        sleeve_center.dependencies = {"CardSleeves"}
+        restore_dependencies = true
+    end
+    local badges = {}
+    SMODS.create_mod_badges(sleeve_center, badges)
+    if restore_dependencies then
+        sleeve_center.dependencies = nil
+    end
+    if badges then
+        local nodes = {}
+        for k, v in ipairs(badges) do
+            nodes[k] = v
+        end
+        return {
+            n = G.UIT.R,
+            config = {align = "cm", padding = 0.1},
+            nodes = nodes
+        }
+    end
+    return {n=G.UIT.R}
+end
+
+local function booster_pack_size_fix_wrapper(func)
+    -- fix the cardarea for these booster packs growing way too big
+    local function wrapper(...)
+        local old_pack_size = G.GAME.pack_size
+        G.GAME.pack_size = math.min(G.GAME.pack_size, 5)  -- 6 is fine for tarot packs, but not for celestial packs
+        local output = func(...)
+        G.GAME.pack_size = old_pack_size
+        return output
+    end
+    return wrapper
+end
+
+local function set_sleeve_usage()
+    if G.GAME.selected_sleeve then
+        local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve)
+        if sleeve_center then
+            if not G.PROFILES[G.SETTINGS.profile].sleeve_usage then
+                G.PROFILES[G.SETTINGS.profile].sleeve_usage = {}
+            end
+            if not G.PROFILES[G.SETTINGS.profile].sleeve_usage[G.GAME.selected_sleeve] then
+                G.PROFILES[G.SETTINGS.profile].sleeve_usage[G.GAME.selected_sleeve] = {count = 1, wins = {}, losses = {}, wins_by_key = {}, losses_by_key = {}}
+            end
+        end
+    end
+end
+
+-- GLOBAL (UI) FUNCS
 
 function G.FUNCS.change_sleeve(args)
     local sleeve_center = G.P_CENTER_POOLS.Sleeve[args.to_key]
@@ -900,7 +1001,7 @@ function G.FUNCS.change_sleeve(args)
 end
 
 function G.FUNCS.change_viewed_sleeve()
-    if in_collection_deck then
+    if in_collection then
         return
     end
     local area = G.sticker_card.area
@@ -1048,8 +1149,9 @@ end
 function G.UIDEF.current_sleeve(_scale)
     _scale = _scale or 1
     local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
-    local sleeve_sprite = create_sleeve_sprite(0, 0, _scale*1, _scale*(95/71), sleeve_center)
+    local sleeve_sprite = create_sleeve_sprite(0, 0, _scale*1.5, _scale*(95/71)*1.5, sleeve_center)
     sleeve_sprite.states.drag.can = false
+    local mod_badges = create_sleeve_badges(sleeve_center)
     return {
         n = G.UIT.ROOT,
         config = { align = "cm", colour = G.C.BLACK, r = 0.1, padding = 0.1},
@@ -1059,7 +1161,7 @@ function G.UIDEF.current_sleeve(_scale)
                 config = { align = "cm", colour = G.C.BLACK, padding = 0.1, minw = 4 },
                 nodes = {
                     { n = G.UIT.O, config = { colour = G.C.BLACK, object = sleeve_sprite, hover = true, can_collide = false } },
-                    { n = G.UIT.T, config = { text = "Sleeve", scale = 0.5, colour = G.C.WHITE } }
+                    { n = G.UIT.T, config = { text = "Sleeve", scale = _scale / 2, colour = G.C.WHITE } }
                 }
             },
             {
@@ -1068,29 +1170,54 @@ function G.UIDEF.current_sleeve(_scale)
                 nodes = {
                     G.UIDEF.sleeve_description(G.GAME.selected_sleeve)
                 }
-            }
+            },
+            mod_badges
         }
     }
 end
 
-SMODS.current_mod.config_tab = function()
-    return {n=G.UIT.ROOT, config = {align = "cl", minw = G.ROOM.T.w*0.6, padding = 0.0, r = 0.1, colour = {G.C.GREY[1], G.C.GREY[2], G.C.GREY[3],0.7}}, nodes = {
-        {n=G.UIT.C, config={align = "c", padding = 0, minw = 5, minh = 3}, nodes = {
-            {n = G.UIT.R, config = { padding = 0, align = "tl", minw = 9, bg_colour = G.C.CLEAR, colour = G.C.CLEAR }, nodes = {
-                {n = G.UIT.ROOT, config = {r = 0.1, align = "t", padding = 0.0, colour = G.C.CLEAR, minw = 8.5, minh = 6}, nodes ={
-                    {n = G.UIT.R, config = {align = "c", padding = 0}, nodes = {
-                        {n = G.UIT.C, config = { align = "c", padding = 0 }, nodes = {
-                            { n = G.UIT.T, config = { text = localize("adjust_deck_alignment"), scale = 0.35, colour = G.C.UI.TEXT_LIGHT }},
-                        }},
-                        {n = G.UIT.C, config = { align = "cr", padding = 0.05 }, nodes = {
-                            create_toggle{ col = true, label = "", scale = 0.70, w = 0, shadow = true, ref_table = config, ref_value = "adjust_deck_alignment" },
-                        }},
-                    }}
-                }}
-            }}
+function create_UIBox_sleeve_unlock(sleeve_center)
+    local area = CardArea(G.ROOM.T.x - 100, G.ROOM.T.h, 1.2*G.CARD_W, 1.2*G.CARD_H,
+                          {card_limit = 52, type = 'deck', highlight_limit = 0})
+    local card = Card(G.ROOM.T.x + 0.2*G.ROOM.T.w/2,G.ROOM.T.h, G.CARD_W*1.2, G.CARD_H*1.2, pseudorandom_element(G.P_CARDS), G.P_CENTERS.c_base, {viewed_back = true})
+    card.sprite_facing = 'back'
+    card.facing = 'back'
+    area:emplace(card)
+    local sleeve_card = create_sleeve_card(area, sleeve_center)
+    replace_sleeve_sprite(sleeve_card, sleeve_center, {x=0, y=0.2})
+    area:emplace(sleeve_card)
+
+    local sleeve_criteria = {}
+    localize{type = 'descriptions', set = "Sleeve", key = 'sleeve_locked', nodes = sleeve_criteria, vars = sleeve_center:locked_loc_vars().vars, default_col = G.C.WHITE, shadow = true}
+    local sleeve_criteria_cols = {}
+    for k, v in ipairs(sleeve_criteria) do
+        if k > 1 then sleeve_criteria_cols[#sleeve_criteria_cols+1] = {n=G.UIT.C, config={align = "cm", padding = 0, minw = 0.1}, nodes={}} end
+        sleeve_criteria_cols[#sleeve_criteria_cols+1] = {n=G.UIT.C, config={align = "cm", padding = 0}, nodes=v}
+    end
+
+    local sleeve_description = {}
+    sleeve_center:generate_ui({}, nil, sleeve_description, nil, {name = {}})
+    local sleeve_description_cols = {}
+    for _, v in ipairs(sleeve_description) do
+        sleeve_description_cols[#sleeve_description_cols + 1] = { n = G.UIT.R, config = { align = "cm"}, nodes = v }
+    end
+
+    local t = create_UIBox_generic_options({ back_label = localize('b_continue'), no_pip = true, snap_back = true, back_func = 'continue_unlock', minw = 7, contents = {
+      {n=G.UIT.R, config={align = "cm", padding = 0}, nodes={
+        {n=G.UIT.O, config={object = DynaText({string = {{string = localize{type = 'name_text', set = 'Sleeve', key = sleeve_center.key}, suffix = ' '..localize('k_unlocked_ex'), outer_colour = G.C.UI.TEXT_LIGHT}}, colours = {G.C.BLUE},shadow = true, rotate = true, float = true, scale = 0.7, pop_in = 0.1})}}
+      }},
+      {n=G.UIT.R, config={align = "cm", padding = 0}, nodes=sleeve_criteria_cols},
+      {n=G.UIT.R, config={align = "cm", padding = 0.2, colour = G.C.BLACK, r = 0.2}, nodes={
+          {n=G.UIT.C, config={align = "cm", padding = 0}, nodes={
+            {n=G.UIT.O, config={object = area}}
+          }},
+          {n=G.UIT.C, config={align = "cm", r = 0.2, colour = G.C.WHITE, emboss = 0.05, padding = 0.2, minw = 4}, nodes={
+            {n=G.UIT.R, config={align = "cm", padding = 0}, nodes=sleeve_description_cols}
+          }}
         }}
-    }}
-end
+    }})
+    return t
+  end
 
 --[[ HOOKING / WRAPPING FUNCS
 
@@ -1116,9 +1243,9 @@ end
 --]]
 
 local old_uidef_run_info = G.UIDEF.run_info
-function G.UIDEF.run_info()
+function G.UIDEF.run_info(...)
     is_in_run_info_tab = true
-    local output = old_uidef_run_info()
+    local output = old_uidef_run_info(...)
     is_in_run_info_tab = false
     return output
 end
@@ -1172,6 +1299,33 @@ function G.UIDEF.run_setup_option(_type)
     return output
 end
 
+local old_uidef_challenge_description_tab = G.UIDEF.challenge_description_tab
+function G.UIDEF.challenge_description_tab(args)
+    local output = old_uidef_challenge_description_tab(args)
+
+    if args._tab == "Rules" then
+        local challenge = G.CHALLENGES[args._id]
+        if challenge.sleeve then
+            local sleeve_center = CardSleeves.Sleeve:get_obj(challenge.sleeve)
+            local UI_node = {
+                n = G.UIT.R,
+                config = {align = "cl", maxw = 3.5},
+                nodes = localize {
+                    type = "text",
+                    key = "ch_m_sleeve",
+                    vars = {sleeve_center:get_name()},
+                    default_col = G.C.L_BLACK
+                }
+            }
+            -- output.nodes[1].nodes[2].nodes[2].nodes ?
+            table.insert(output.nodes[1].nodes[2].nodes[2].nodes, 1,  -- I love UI stuff
+                         UI_node)
+        end
+    end
+
+    return output
+end
+
 local old_FUNCS_change_viewed_back = G.FUNCS.change_viewed_back
 function G.FUNCS.change_viewed_back(args)
     local area = G.sticker_card.area
@@ -1188,34 +1342,60 @@ end
 local old_FUNCS_can_start_run = G.FUNCS.can_start_run
 function G.FUNCS.can_start_run(e)
     old_FUNCS_can_start_run(e)
-    if CardSleeves.Sleeve:get_obj(G.viewed_sleeve) == nil or CardSleeves.Sleeve:get_obj(G.viewed_sleeve).unlocked == false then
+    local sleeve_center = CardSleeves.Sleeve:get_obj(G.viewed_sleeve)
+    if sleeve_center == nil or not sleeve_center:is_unlocked() then
         e.config.colour = G.C.UI.BACKGROUND_INACTIVE
         e.config.button = nil
     end
 end
 
-local old_FUNCS_your_collection_decks = G.FUNCS.your_collection_decks
-function G.FUNCS.your_collection_decks(...)
-    in_collection_deck = true
-    return old_FUNCS_your_collection_decks(...)
-end
 local old_FUNCS_your_collection = G.FUNCS.your_collection
 function G.FUNCS.your_collection(...)
-    in_collection_deck = false
+    in_collection = true
     return old_FUNCS_your_collection(...)
+end
+local old_buildAdditionsTab = buildAdditionsTab
+function buildAdditionsTab(...)
+    -- from steamodded
+    in_collection = true
+    return old_buildAdditionsTab(...)
+end
+local old_FUNCS_exit_overlay_menu = G.FUNCS.exit_overlay_menu
+function G.FUNCS.exit_overlay_menu(...)
+    in_collection = false
+    return old_FUNCS_exit_overlay_menu(...)
+end
+local old_FUNCS_mods_button = G.FUNCS.mods_button
+function G.FUNCS.mods_button(...)
+    -- from steamodded
+    in_collection = false
+    return old_FUNCS_mods_button(...)
+end
+
+local old_Game_start_run = Game.start_run
+function Game:start_run(args)
+    -- because G.GAME.challenge only gets defined _after_ `:init_game_object`
+    game_args = args
+    old_Game_start_run(self, args)
 end
 
 local old_Game_init_game_object = Game.init_game_object
-function Game:init_game_object()
-    local output = old_Game_init_game_object(self)
-    output.selected_sleeve = G.viewed_sleeve or "sleeve_casl_none"
+function Game:init_game_object(...)
+    local output = old_Game_init_game_object(self, ...)
+    if not game_args.challenge then
+        output.selected_sleeve = G.viewed_sleeve or "sleeve_casl_none"
+    elseif game_args.challenge and game_args.challenge.sleeve then
+        output.selected_sleeve = game_args.challenge.sleeve
+    else
+        output.selected_sleeve = "sleeve_casl_none"
+    end
     return output
 end
 
 local old_Back_apply_to_run = Back.apply_to_run
-function Back:apply_to_run()
+function Back:apply_to_run(...)
     local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
-    old_Back_apply_to_run(self)
+    old_Back_apply_to_run(self, ...)
     sleeve_center:apply()
 end
 
@@ -1234,7 +1414,7 @@ function Back:trigger_effect(args)
 end
 
 local old_CardArea_draw = CardArea.draw
-function CardArea:draw()
+function CardArea:draw(...)
     if not self.states.visible then return end
     if G.VIEWING_DECK and (self==G.deck or self==G.hand or self==G.play) then return end
 
@@ -1247,7 +1427,7 @@ function CardArea:draw()
         self.children.view_deck.draw = function() end
     end
 
-    old_CardArea_draw(self)
+    old_CardArea_draw(self, ...)
 
     if draw_sleeve then
         local x, y = 999999999, -1
@@ -1264,8 +1444,8 @@ function CardArea:draw()
         end
         local width = x2 - x
         x = x > 1000000 and self.T.x + 0.1 or x
-        y = (y < 0 and self.T.y or y) + 0.05
-        width = width <= 0 and self.T.w - 0.2 or width
+        y = (y < 0 and self.T.y or y) + (CardSleeves.config.adjust_deck_alignment and 0.05 or -0.05)
+        width = width <= 0 and self.T.w - 0.2 or width + 0.01
         height = height <= 0 and self.T.h or height
         if self.sleeve_sprite == nil then
             self.sleeve_sprite = create_sleeve_sprite(x, y, width, height, sleeve_center)
@@ -1286,11 +1466,11 @@ function CardArea:draw()
 end
 
 local old_CardArea_align_cards = CardArea.align_cards
-function CardArea:align_cards()
-    old_CardArea_align_cards(self)
+function CardArea:align_cards(...)
+    old_CardArea_align_cards(self, ...)
 
     if (self == G.hand or self == G.deck or self == G.discard or self == G.play) and G.view_deck and G.view_deck[1] and G.view_deck[1].cards then return end
-    if self.config.type == 'deck' and self == G.deck and config.adjust_deck_alignment then
+    if self.config.type == 'deck' and self == G.deck and CardSleeves.config.adjust_deck_alignment then
         local total_cards = 0
         for _, card in ipairs(self.cards) do
             if card.states.visible and not card.states.drag.is then
@@ -1368,58 +1548,274 @@ end
 local old_create_tabs = create_tabs
 function create_tabs(args)
     if args["tabs"] and is_in_run_info_tab and G.GAME.selected_sleeve and G.GAME.selected_sleeve ~= "sleeve_casl_none" then
-        args.tabs[#args.tabs+1] = {
+        table.insert(args.tabs, 4, {
             label = "Sleeve",
             tab_definition_function = G.UIDEF.current_sleeve
-        }
+        })
     end
 
     return old_create_tabs(args)
 end
 
-local function booster_pack_size_fix_wrapper(func)
-    -- fix the cardarea for these booster packs growing way too big
-    local function wrapper(...)
-        local old_pack_size = G.GAME.pack_size
-        G.GAME.pack_size = math.min(G.GAME.pack_size, 5)  -- 6 is fine for tarot packs, but not for celestial packs
-        local output = func()
-        G.GAME.pack_size = old_pack_size
-        return output
-    end
-    return wrapper
-end
 create_UIBox_arcana_pack = booster_pack_size_fix_wrapper(create_UIBox_arcana_pack)
 create_UIBox_spectral_pack = booster_pack_size_fix_wrapper(create_UIBox_spectral_pack)
 create_UIBox_standard_pack = booster_pack_size_fix_wrapper(create_UIBox_standard_pack)
 create_UIBox_buffoon_pack = booster_pack_size_fix_wrapper(create_UIBox_buffoon_pack)
 create_UIBox_celestial_pack = booster_pack_size_fix_wrapper(create_UIBox_celestial_pack)
 
+local old_create_UIBox_card_unlock = create_UIBox_card_unlock
+function create_UIBox_card_unlock(card_center)
+    if card_center.set == "Sleeve" and not CardSleeves.config.allow_any_sleeve_selection and not G.PROFILES[G.SETTINGS.profile].all_unlocked then
+        return create_UIBox_sleeve_unlock(card_center)
+    end
+    return old_create_UIBox_card_unlock(card_center)
+end
+
 local old_smods_save_unlocks = SMODS.SAVE_UNLOCKS
-function SMODS.SAVE_UNLOCKS()
-    -- TODO: create PR to fix SMODS.SAVE_UNLOCKS itself?
-    -- TODO: also, unlock menu says the completely wrong stuff ("joker unlocked" etc)
+function SMODS.SAVE_UNLOCKS(...)
+    old_smods_save_unlocks(...)
+end
 
-    old_smods_save_unlocks()
-
-    if G.P_CENTER_POOLS.Sleeve then
-        -- some IDIOTIC mods call SMODS.SAVE_UNLOCKS() when initiating, even though steamodded does it for them once loaded
-        -- so do this quick check to prevent a crash
-        for _, v in pairs(G.P_CENTER_POOLS.Sleeve) do
-            if v.unlocked == false then
-                G.P_LOCKED[#G.P_LOCKED+1] = v
+local old_set_deck_win = set_deck_win
+function set_deck_win(...)
+    -- basically set_sleeve_win()
+    if G.GAME.selected_sleeve then
+        local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve)
+        if sleeve_center then
+            set_sleeve_usage()
+            local sleeve_usage = G.PROFILES[G.SETTINGS.profile].sleeve_usage[G.GAME.selected_sleeve]
+            sleeve_usage.wins_by_key[SMODS.stake_from_index(G.GAME.stake)] = (sleeve_usage.wins_by_key[SMODS.stake_from_index(G.GAME.stake)] or 0) + 1
+            local applied =  SMODS.build_stake_chain(G.P_STAKES[SMODS.stake_from_index(G.GAME.stake)]) or {}
+            for i, _ in ipairs(G.P_CENTER_POOLS.Stake) do
+                if applied[i] then
+                    sleeve_usage.wins_by_key[SMODS.stake_from_index(G.GAME.stake)] = sleeve_usage.wins_by_key[SMODS.stake_from_index(G.GAME.stake)] or 1
+                end
             end
+            G.PROFILES[G.SETTINGS.profile].sleeve_usage[G.GAME.selected_sleeve] = sleeve_usage
         end
     end
+    old_set_deck_win(...)  -- at end to let old func call `G:save_settings()`
+end
+
+local old_set_deck_loss = set_deck_loss
+function set_deck_loss(...)
+    -- basically set_sleeve_loss()
+    if G.GAME.selected_sleeve then
+        local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve)
+        if sleeve_center then
+            set_sleeve_usage()
+            local sleeve_usage = G.PROFILES[G.SETTINGS.profile].sleeve_usage[G.GAME.selected_sleeve]
+            if not sleeve_usage then
+                sleeve_usage = {count = 1, wins = {}, losses = {}, wins_by_key = {}, losses_by_key = {}}
+            end
+            sleeve_usage.losses_by_key[SMODS.stake_from_index(G.GAME.stake)] = (sleeve_usage.losses_by_key[SMODS.stake_from_index(G.GAME.stake)] or 0) + 1
+            G.PROFILES[G.SETTINGS.profile].sleeve_usage[G.GAME.selected_sleeve] = sleeve_usage
+        end
+    end
+    old_set_deck_loss(...)  -- at end to let old func call `G:save_settings()`
 end
 
 -- GALDUR (1.1.1) COMPATIBILITY
 
+local function populate_info_queue(set, key)
+    -- direct copy from galdur, but I need it outside of galdur
+    local info_queue = {}
+    local loc_target = G.localization.descriptions[set][key]
+    for _, lines in ipairs(loc_target.text_parsed) do
+        for _, part in ipairs(lines) do
+            if part.control.T then info_queue[#info_queue+1] = G.P_CENTERS[part.control.T] or G.P_TAGS[part.control.T] end
+        end
+    end
+    return info_queue
+end
+
+local function generate_sleeve_card_areas()
+    if sleeve_card_areas then
+        for i=1, #sleeve_card_areas do
+            for j=1, #G.I.CARDAREA do
+                if sleeve_card_areas[i] == G.I.CARDAREA[j] then
+                    table.remove(G.I.CARDAREA, j)
+                    sleeve_card_areas[i] = nil
+                end
+            end
+        end
+    end
+    sleeve_card_areas = {}
+    for i=1, sleeve_count_page do
+        sleeve_card_areas[i] = CardArea(G.ROOM.T.x + 0.2*G.ROOM.T.w/2,G.ROOM.T.h, 0.95*G.CARD_W, 0.945*G.CARD_H,
+        {card_limit = 5, type = 'deck', highlight_limit = 0, deck_height = 0.35, thin_draw = 1, index = i})
+    end
+end
+
+local function populate_sleeve_card_areas(page)
+    local count = 1 + (page - 1) * sleeve_count_page
+    for i=1, sleeve_count_page do
+        if count > #G.P_CENTER_POOLS.Sleeve then return end
+        local area = sleeve_card_areas[i]
+        if not area.cards then area.cards = {} end
+        local card_number = 1
+        if Galdur and not Galdur.config.reduce then
+            card_number = 10
+        end
+        local selected_deck_center = in_collection and G.P_CENTERS.b_red or Galdur.run_setup.choices.deck.effect.center
+        for index = 1, card_number do
+            local card = Card(area.T.x, area.T.y, area.T.w, area.T.h, selected_deck_center, selected_deck_center,
+                {galdur_back = Back(selected_deck_center)})
+            card.sprite_facing = 'back'
+            card.facing = 'back'
+            card.children.back = Sprite(card.T.x, card.T.y, card.T.w, card.T.h, G.ASSET_ATLAS[selected_deck_center.atlas or 'centers'], selected_deck_center.pos)
+            card.children.back.states.hover = card.states.hover
+            card.children.back.states.click = card.states.click
+            card.children.back.states.drag = card.states.drag
+            card.children.back.states.collide.can = false
+            card.children.back:set_role({major = card, role_type = 'Glued', draw_major = card})
+            area:emplace(card)
+            if index == card_number then
+                card.sticker = get_deck_win_sticker(selected_deck_center)
+            end
+        end
+        local card = create_sleeve_card(area, G.P_CENTER_POOLS.Sleeve[count])
+        card.params["sleeve_select"] = i
+        card.sleeve_select_position = {page = page, count = i}
+        replace_sleeve_sprite(card, G.P_CENTER_POOLS.Sleeve[count])
+        area:emplace(card)
+        count = count + 1
+    end
+end
+
+local function generate_sleeve_card_areas_ui()
+    local deck_ui_element = {}
+    local count = 1
+    for _ = 1, sleeve_count_vertical do
+        local row = {n = G.UIT.R, config = {colour = G.C.LIGHT, padding = 0.075}, nodes = {}}  -- padding is this because size of cardareas isn't 100% => same total
+        for _ = 1, sleeve_count_horizontal do
+            if count > #G.P_CENTER_POOLS.Sleeve then return end
+            table.insert(row.nodes, {n = G.UIT.O, config = {object = sleeve_card_areas[count], r = 0.1, id = "sleeve_select_"..count}})
+            count = count + 1
+        end
+        table.insert(deck_ui_element, row)
+    end
+
+    populate_sleeve_card_areas(1)
+
+    return {n=G.UIT.R, config={align = "cm", minh = 3.3, minw = 5, colour = G.C.BLACK, padding = 0.15, r = 0.1, emboss = 0.05}, nodes=deck_ui_element}
+end
+
+local function clean_sleeve_areas()
+    if not sleeve_card_areas then return end
+    for j = 1, #sleeve_card_areas do
+        if sleeve_card_areas[j].cards then
+            remove_all(sleeve_card_areas[j].cards)
+            sleeve_card_areas[j].cards = {}
+        end
+    end
+end
+
+local function create_sleeve_page_cycle()
+    local options = {}
+    local cycle
+    if #G.P_CENTER_POOLS.Sleeve > sleeve_count_page then
+        local total_pages = math.ceil(#G.P_CENTER_POOLS.Sleeve / sleeve_count_page)
+        for i=1, total_pages do
+            table.insert(options, localize('k_page')..' '..i..' / '..total_pages)
+        end
+        cycle = create_option_cycle({
+            options = options,
+            w = 4.5,
+            cycle_shoulders = true,
+            opt_callback = 'change_sleeve_page',
+            focus_args = { snap_to = true, nav = 'wide' },
+            current_option = 1,
+            colour = G.C.RED,
+            no_pips = true
+        })
+    end
+    return {n = G.UIT.R, config = {align = "cm"}, nodes = {cycle}}
+end
+
+local old_Card_hover = Card.hover
+function Card:hover()
+    if self.params.sleeve_select and (not self.states.drag.is or G.CONTROLLER.HID.touch) and not self.no_ui and not G.debug_tooltip_toggle then
+        self:juice_up(0.05, 0.03)
+        play_sound('paper1', math.random()*0.2 + 0.9, 0.35)
+        if self.children.alert and not self.config.center.alerted then
+            self.config.center.alerted = true
+            G:save_progress()
+        end
+
+        local col = self.params.deck_preview and G.UIT.C or G.UIT.R
+        local info_col = self.params.deck_preview and G.UIT.R or G.UIT.C
+        local sleeve = self.config.center
+        local sleeve_localvars = sleeve["loc_vars"] and sleeve:loc_vars()
+        local sleeve_localkey = sleeve_localvars and sleeve_localvars.key or sleeve.key
+
+        local status, result = pcall(populate_info_queue, 'Sleeve', sleeve_localkey)
+        if not status then
+            -- exception
+            if result:find("'loc_target'") then
+                error("Incorrect or missing localization for '" .. sleeve_localkey .. "'")
+            end
+            populate_info_queue('Sleeve', sleeve_localkey)
+        end
+        local info_queue = result
+        local tooltips = {}
+        for _, center in pairs(info_queue) do
+            local desc = generate_card_ui(center, {main = {},info = {},type = {},name = 'done'}, nil, center.set, nil)
+            tooltips[#tooltips + 1] =
+            {n=info_col, config={align = "tm"}, nodes={
+                {n=G.UIT.R, config={align = "cm", colour = lighten(G.C.JOKER_GREY, 0.5), r = 0.1, padding = 0.05, emboss = 0.05}, nodes={
+                info_tip_from_rows(desc.info[1], desc.info[1].name),
+                }}
+            }}
+        end
+
+        local ret_nodes = {}
+        sleeve:generate_ui({}, nil, ret_nodes, nil, {name = {}})
+        local desc_t = {}
+        for _, v in ipairs(ret_nodes) do
+            desc_t[#desc_t + 1] = { n = G.UIT.R, config = { align = "cm"}, nodes = v }
+        end
+        local sleeve_name_colour = G.C.WHITE
+        if sleeve_localkey ~= sleeve.key then
+            sleeve_name_colour = G.C.DARK_EDITION
+        end
+        self.config.h_popup = {n=G.UIT.C, config={align = "cm", padding=0.1}, nodes={
+            (self.params.sleeve_select > sleeve_count_horizontal and {n=col, config={align='cm', padding=0.1}, nodes = tooltips} or {n=G.UIT.R}),
+            {n=col, config={align=(self.params.deck_preview and 'bm' or 'cm')}, nodes = {
+                {n=G.UIT.C, config={align = "cm", minh = 1.5, r = 0.1, colour = G.C.L_BLACK, padding = 0.1, outline=1}, nodes={
+                    {n=G.UIT.R, config={align = "cm", r = 0.1, minw = 3, maxw = 4, minh = 0.4}, nodes={
+                        {n=G.UIT.O, config={object = UIBox{definition =
+                            {n=G.UIT.ROOT, config={align = "cm", colour = G.C.CLEAR}, nodes={
+                                {n=G.UIT.O, config={object = DynaText({string = sleeve:get_name(), maxw = 4, colours = {sleeve_name_colour}, shadow = true, bump = true, scale = 0.5, pop_in = 0, silent = true})}},
+                            }},
+                        config = {offset = {x=0,y=0}, align = 'cm'}}}
+                        },
+                    }},
+                    {n=G.UIT.R, config={align = "cm", colour = G.C.WHITE, minh = 1.3, maxh = 3, minw = 3, maxw = 4, r = 0.1}, nodes={
+                        {n=G.UIT.R, config = { align = "cm", padding = 0.03, colour = G.C.WHITE, r = 0.1}, nodes = desc_t }
+                    }},
+                    create_sleeve_badges(sleeve)
+                }}
+            }},
+            (self.params.sleeve_select <= sleeve_count_horizontal and {n=col, config={align=(self.params.deck_preview and 'bm' or 'cm'), padding=0.1}, nodes = tooltips} or {n=G.UIT.R})
+
+        }}
+        self.config.h_popup_config = self:align_h_popup()
+
+        Node.hover(self)
+    else
+        old_Card_hover(self)
+    end
+end
+
+G.FUNCS.change_sleeve_page = function(args)
+    clean_sleeve_areas()
+    populate_sleeve_card_areas(args.cycle_config.current_option)
+end
+
 if Galdur then
     local min_galdur_version = '1.1.1'
 
-    local sleeve_count_horizontal = 6
-    local sleeve_count_vertical = 2
-    local sleeve_count_total = sleeve_count_horizontal * sleeve_count_vertical
     local galdur_page_index = 2  -- page that our sleeves appear on - only start drawing information from this page onward
 
     local function modify_sleeve_text(ui_nodes, sleeve_center)
@@ -1441,6 +1837,7 @@ if Galdur then
             local area, sleeve_center = Galdur.run_setup.selected_deck_area, CardSleeves.Sleeve:get_obj(G.viewed_sleeve)
             local card = create_sleeve_card(area, sleeve_center)
             card.params["sleeve_select"] = 1
+            card.params["deck_preview"] = true
             replace_sleeve_sprite(card, sleeve_center)
             area:emplace(card)
         end
@@ -1455,112 +1852,6 @@ if Galdur then
         return output
     end
 
-    local function generate_sleeve_card_areas()
-        if Galdur.run_setup.sleeve_select_areas then
-            for i=1, #Galdur.run_setup.sleeve_select_areas do
-                for j=1, #G.I.CARDAREA do
-                    if Galdur.run_setup.sleeve_select_areas[i] == G.I.CARDAREA[j] then
-                        table.remove(G.I.CARDAREA, j)
-                        Galdur.run_setup.sleeve_select_areas[i] = nil
-                    end
-                end
-            end
-        end
-        Galdur.run_setup.sleeve_select_areas = {}
-        for i=1, 12 do
-            Galdur.run_setup.sleeve_select_areas[i] = CardArea(G.ROOM.T.x + 0.2*G.ROOM.T.w/2,G.ROOM.T.h, 0.95*G.CARD_W, 0.945*G.CARD_H,
-            {card_limit = 5, type = 'deck', highlight_limit = 0, deck_height = 0.15, thin_draw = 1, index = i})
-        end
-    end
-
-    local function populate_sleeve_card_areas(page)
-        local count = 1 + (page - 1) * sleeve_count_total
-        for i=1, sleeve_count_total do
-            if count > #G.P_CENTER_POOLS.Sleeve then return end
-            local area = Galdur.run_setup.sleeve_select_areas[i]
-            if not area.cards then area.cards = {} end
-            local card_number = math.min(10, #Galdur.run_setup.selected_deck_area.cards)
-            local selected_deck_center = Galdur.run_setup.choices.deck.effect.center
-            for index = 1, card_number do
-                local card = Card(area.T.x, area.T.y, area.T.w, area.T.h, selected_deck_center, selected_deck_center,
-                    {galdur_back = Back(selected_deck_center)})
-                card.sprite_facing = 'back'
-                card.facing = 'back'
-                card.children.back = Sprite(card.T.x, card.T.y, card.T.w, card.T.h, G.ASSET_ATLAS[selected_deck_center.atlas or 'centers'], selected_deck_center.pos)
-                card.children.back.states.hover = card.states.hover
-                card.children.back.states.click = card.states.click
-                card.children.back.states.drag = card.states.drag
-                card.children.back.states.collide.can = false
-                card.children.back:set_role({major = card, role_type = 'Glued', draw_major = card})
-                area:emplace(card)
-                if index == card_number then
-                    card.sticker = get_deck_win_sticker(selected_deck_center)
-                end
-            end
-            local card = create_sleeve_card(area, G.P_CENTER_POOLS.Sleeve[count])
-            card.params["sleeve_select"] = i
-            card.sleeve_select_position = {page = page, count = i}
-            replace_sleeve_sprite(card, G.P_CENTER_POOLS.Sleeve[count])
-            area:emplace(card)
-            count = count + 1
-        end
-    end
-
-    local function generate_sleeve_card_areas_ui()
-        local deck_ui_element = {}
-        local count = 1
-        for _ = 1, sleeve_count_vertical do
-            local row = {n = G.UIT.R, config = {colour = G.C.LIGHT, padding = 0.075}, nodes = {}}  -- padding is this because size of cardareas isn't 100% => same total
-            for _ = 1, sleeve_count_horizontal do
-                if count > #G.P_CENTER_POOLS.Sleeve then return end
-                table.insert(row.nodes, {n = G.UIT.O, config = {object = Galdur.run_setup.sleeve_select_areas[count], r = 0.1, id = "sleeve_select_"..count}})
-                count = count + 1
-            end
-            table.insert(deck_ui_element, row)
-        end
-
-        populate_sleeve_card_areas(1)
-
-        return {n=G.UIT.R, config={align = "cm", minh = 3.3, minw = 5, colour = G.C.BLACK, padding = 0.15, r = 0.1, emboss = 0.05}, nodes=deck_ui_element}
-    end
-
-    local function clean_sleeve_areas()
-        if not Galdur.run_setup.sleeve_select_areas then return end
-        for j = 1, #Galdur.run_setup.sleeve_select_areas do
-            if Galdur.run_setup.sleeve_select_areas[j].cards then
-                remove_all(Galdur.run_setup.sleeve_select_areas[j].cards)
-                Galdur.run_setup.sleeve_select_areas[j].cards = {}
-            end
-        end
-    end
-
-    local function create_sleeve_page_cycle()
-        local options = {}
-        local cycle
-        if #G.P_CENTER_POOLS.Sleeve > sleeve_count_total then
-            local total_pages = math.ceil(#G.P_CENTER_POOLS.Sleeve / sleeve_count_total)
-            for i=1, total_pages do
-                table.insert(options, localize('k_page')..' '..i..' / '..total_pages)
-            end
-            cycle = create_option_cycle({
-                options = options,
-                w = 4.5,
-                cycle_shoulders = true,
-                opt_callback = 'change_sleeve_page',
-                focus_args = { snap_to = true, nav = 'wide' },
-                current_option = 1,
-                colour = G.C.RED,
-                no_pips = true
-            })
-        end
-        return {n = G.UIT.R, config = {align = "cm"}, nodes = {cycle}}
-    end
-
-    G.FUNCS.change_sleeve_page = function(args)
-        clean_sleeve_areas()
-        populate_sleeve_card_areas(args.cycle_config.current_option)
-    end
-
     local function set_new_sleeve(sleeve_center, silent)
         -- visual only - use G.FUNCS.change_sleeve to change the actual value
         G.E_MANAGER:clear_queue('galdur')
@@ -1568,6 +1859,7 @@ if Galdur then
         local _, card = find_sleeve_card(Galdur.run_setup.selected_deck_area)
         if card then
             card.params["sleeve_select"] = 1
+            card.params["deck_preview"] = true
         end
 
         local texts = split_string_2(sleeve_center:get_name())
@@ -1594,7 +1886,7 @@ if Galdur then
         local random
         local random_sleeve_opts = {}
         for i=1, #G.P_CENTER_POOLS.Sleeve do
-            if G.P_CENTER_POOLS.Sleeve[i].unlocked then
+            if G.P_CENTER_POOLS.Sleeve[i]:is_unlocked() then
                 random_sleeve_opts[#random_sleeve_opts + 1] = i
             end
         end
@@ -1647,7 +1939,10 @@ if Galdur then
     end
 
     local function quick_start_text()
-        local sleeve_center = CardSleeves.Sleeve:get_obj(G.viewed_sleeve or "sleeve_casl_none")
+        if not G.viewed_sleeve then
+            G.viewed_sleeve = G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve or "sleeve_casl_none"
+        end
+        local sleeve_center = CardSleeves.Sleeve:get_obj(G.viewed_sleeve)
         if sleeve_center then
             return sleeve_center:get_name()
         else
@@ -1657,8 +1952,8 @@ if Galdur then
 
     local old_Card_click = Card.click
     function Card:click()
-        if self.sleeve_select_position and self.config.center.unlocked then
-            local nr = (self.sleeve_select_position.page - 1) * sleeve_count_total + self.sleeve_select_position.count
+        if self.sleeve_select_position and self.config.center:is_unlocked() and not in_collection then
+            local nr = (self.sleeve_select_position.page - 1) * sleeve_count_page + self.sleeve_select_position.count
             G.FUNCS.change_sleeve{to_key = nr}
             set_new_sleeve(self.config.center)
         else
@@ -1666,79 +1961,12 @@ if Galdur then
         end
     end
 
-    local old_Card_hover = Card.hover
-    function Card:hover()
-        if self.params.sleeve_select and (not self.states.drag.is or G.CONTROLLER.HID.touch) and not self.no_ui and not G.debug_tooltip_toggle then
-            self:juice_up(0.05, 0.03)
-            play_sound('paper1', math.random()*0.2 + 0.9, 0.35)
-            if self.children.alert and not self.config.center.alerted then
-                self.config.center.alerted = true
-                G:save_progress()
-            end
-
-            local col = self.params.deck_preview and G.UIT.C or G.UIT.R
-            local info_col = self.params.deck_preview and G.UIT.R or G.UIT.C
-            local sleeve = self.config.center
-
-            local status, result = pcall(populate_info_queue, 'Sleeve', sleeve.key)
-            if not status then
-                -- exception
-                if result:find("'loc_target'") then
-                    error("Incorrect or missing localization for '" .. sleeve.key .. "'")
-                end
-                populate_info_queue('Sleeve', sleeve.key)
-            end
-            local info_queue = result
-            local tooltips = {}
-            for _, center in pairs(info_queue) do
-                local desc = generate_card_ui(center, {main = {},info = {},type = {},name = 'done'}, nil, center.set, nil)
-                tooltips[#tooltips + 1] =
-                {n=info_col, config={align = "tm"}, nodes={
-                    {n=G.UIT.R, config={align = "cm", colour = lighten(G.C.JOKER_GREY, 0.5), r = 0.1, padding = 0.05, emboss = 0.05}, nodes={
-                    info_tip_from_rows(desc.info[1], desc.info[1].name),
-                    }}
-                }}
-            end
-
-            local ret_nodes = {}
-            sleeve:generate_ui({}, nil, ret_nodes, nil, {name = {}})
-            local desc_t = {}
-            for k, v in ipairs(ret_nodes) do
-                desc_t[#desc_t + 1] = { n = G.UIT.R, config = { align = "cm"}, nodes = v }
-            end
-            self.config.h_popup = {n=G.UIT.C, config={align = "cm", padding=0.1}, nodes={
-                (self.params.sleeve_select > 6 and {n=col, config={align='cm', padding=0.1}, nodes = tooltips} or {n=G.UIT.R}),
-                {n=col, config={align=(self.params.deck_preview and 'bm' or 'cm')}, nodes = {
-                    {n=G.UIT.C, config={align = "cm", minh = 1.5, r = 0.1, colour = G.C.L_BLACK, padding = 0.1, outline=1}, nodes={
-                        {n=G.UIT.R, config={align = "cm", r = 0.1, minw = 3, maxw = 4, minh = 0.4}, nodes={
-                            {n=G.UIT.O, config={object = UIBox{definition =
-                                {n=G.UIT.ROOT, config={align = "cm", colour = G.C.CLEAR}, nodes={
-                                    {n=G.UIT.O, config={object = DynaText({string = sleeve:get_name(), maxw = 4, colours = {G.C.WHITE}, shadow = true, bump = true, scale = 0.5, pop_in = 0, silent = true})}},
-                                }},
-                            config = {offset = {x=0,y=0}, align = 'cm'}}}
-                            },
-                        }},
-                        {n=G.UIT.R, config={align = "cm", colour = G.C.WHITE, minh = 1.3, maxh = 3, minw = 3, maxw = 4, r = 0.1}, nodes={
-                            {n=G.UIT.R, config = { align = "cm", padding = 0.03, colour = G.C.WHITE, r = 0.1}, nodes = desc_t }
-                        }}
-                    }}
-                }},
-                (self.params.sleeve_select < 7 and {n=col, config={align=(self.params.deck_preview and 'bm' or 'cm'), padding=0.1}, nodes = tooltips} or {n=G.UIT.R})
-
-            }}
-            self.config.h_popup_config = self:align_h_popup()
-
-            Node.hover(self)
-        else
-            old_Card_hover(self)
-        end
-    end
-
     Galdur.add_new_page({
         definition = galdur_sleeve_page,
         name = 'gald_sleeves',
         page = galdur_page_index,
-        quick_start_text = quick_start_text
+        quick_start_text = quick_start_text,
+        confirm = clean_sleeve_areas
     })
 end
 
@@ -1762,8 +1990,64 @@ if DV and DV.SIM then
     end
 end
 
+-- SMODS UI funcs (additions, config, collection)
+
+SMODS.current_mod.config_tab = function()
+    return {n=G.UIT.ROOT, config = {align = "cl", minh = G.ROOM.T.h*0.25, padding = 0.0, r = 0.1, colour = {G.C.GREY[1], G.C.GREY[2], G.C.GREY[3],0.7}}, nodes = {
+        {n = G.UIT.R, config = { padding = 0.05 }, nodes = {
+            {n = G.UIT.C, config = { minw = G.ROOM.T.w*0.25, padding = 0.05 }, nodes = {
+                {n=G.UIT.R, config={minh=0.001}},
+                create_toggle{ label = localize("adjust_deck_alignment"), info = localize("adjust_deck_alignment_desc"), active_colour = CardSleeves.badge_colour, ref_table = CardSleeves.config, ref_value = "adjust_deck_alignment" },
+            }},
+            {n = G.UIT.C, config = { align = "ri", minw = G.ROOM.T.w*0.25, padding = 0.05 }, nodes = {
+                {n=G.UIT.R, config={minh=0.001}},
+                create_toggle{ label = localize("allow_any_sleeve_selection"), info = localize("allow_any_sleeve_selection_desc"), active_colour = CardSleeves.badge_colour, ref_table = CardSleeves.config, ref_value = "allow_any_sleeve_selection" },
+            }},
+        }}
+    }}
+end
+
+SMODS.current_mod.custom_collection_tabs = function()
+    local tally = 0
+    for _, v in pairs(G.P_CENTER_POOLS['Sleeve']) do
+        if v:is_unlocked() then
+            tally = tally + 1
+        end
+    end
+    return { UIBox_button {
+        count = {tally = tally, of = #G.P_CENTER_POOLS['Sleeve']},
+        button = 'your_collection_sleeves', label = {"Sleeves"}, minw = 5, id = 'your_collection_sleeves'
+    }}
+end
+
+local function create_UI_alt_description()
+    return {n = G.UIT.R, config = {align = "cm"}, nodes = {
+        {n=G.UIT.O, config={object = DynaText({string = localize("sleeve_unique_effect_desc"), shadow = true, bump = true, scale = 0.5, pop_in = 0, silent = true})}},
+    }}
+end
+
+local function create_UIBox_sleeves()
+    generate_sleeve_card_areas()
+    local sleeve_pages = {n=G.UIT.C, config = {padding = 0.15}, nodes ={
+        generate_sleeve_card_areas_ui(),
+        create_sleeve_page_cycle(),
+        create_UI_alt_description(),
+    }}
+    return create_UIBox_generic_options{
+        back_func = G.ACTIVE_MOD_UI and "openModUI_"..G.ACTIVE_MOD_UI.id or 'your_collection',
+        contents = {sleeve_pages}
+    }
+end
+
+G.FUNCS.your_collection_sleeves = function()
+	G.SETTINGS.paused = true
+	G.FUNCS.overlay_menu{
+	  definition = create_UIBox_sleeves(),
+	}
+end
+
 print_trace("Trace logging level enabled")
-print_info("CardSleeves loaded~!")
+print_info("CardSleeves v" .. SMODS.Mods.CardSleeves.version .. " loaded~!")
 
 ----------------------------------------------
 ------------MOD CODE END----------------------

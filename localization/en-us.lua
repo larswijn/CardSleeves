@@ -176,10 +176,27 @@ return {
     },
     misc = {
         dictionary = {
+            k_sleeve = "Sleeve",
             gald_sleeves = "Select Sleeve",
             gald_random_sleeve = "Random Sleeve",
+            sleeve_unique_effect_desc = "Some sleeves have unique effects when combined with specific decks",
             adjust_deck_alignment = "Stack deck pile",
+            adjust_deck_alignment_desc = {
+                "Stacks the deck pile much more closely",
+                "while in a run (visual only)"
+            },
+            allow_any_sleeve_selection = "Unlock all sleeves",
+            allow_any_sleeve_selection_desc = {
+                "Allows any sleeve to be selected",
+                "in the new run menu, as if unlocked"
+            },
             sleeve_not_found_error = "Sleeve could not be found! Did you remove its mod?"
+        },
+        v_text = {
+            -- for challenges
+            ch_m_sleeve = {
+                "Start with {C:attention}#1#{}"
+            }
         }
     }
 }

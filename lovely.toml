@@ -3,10 +3,9 @@ version = "1.0.0"
 dump_lua = true
 priority = 0
 
-# stupid implementation because steamodded didn't accept my PR
-# (could possibly rewrite using events instead)
+# stupid implementation because steamodded didn't accept my PR (could possibly rewrite using events instead)
 # Move seed generation to be before Back:apply and Stake.modifiers() so that both methods can use the seed and true pseudorandom numbers
-# in Game:start_run (both patches)
+# Game:start_run (both patches)
 [[patches]]
 [patches.regex]
 target = "game.lua"
@@ -42,3 +41,42 @@ target = 'card.lua'
 pattern = '''self.params.viewed_back and G.GAME.viewed_back or G.GAME.selected_back'''
 position = 'before'
 payload = ''' type(self.params.viewed_back) == 'table' and self.params.viewed_back or '''
+
+# allow stake sticker to have rotation and positional offset
+# Card:draw()
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = '''G.shared_stickers[self.sticker]:draw_shader('dissolve', nil, nil, true, self.children.center)'''
+position = 'at'
+match_indent = true
+payload = '''local sticker_offset = self.sticker_offset or {}
+G.shared_stickers[self.sticker]:draw_shader('dissolve', nil, nil, true, self.children.center, nil, self.sticker_rotation, sticker_offset.x, sticker_offset.y)'''
+
+# allow custom subtext in notify alert (the pop-up on the right side of the screen)
+# create_UIBox_notify_alert(...)
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = """_type == 'Back' and localize('k_deck') or 'ERROR'"""
+position = 'at'
+match_indent = true
+payload = """_type == 'Back' and localize('k_deck') or
+_c.set and localize('k_' .. _c.set:lower()) or
+'ERROR'
+"""
+
+# adds Sleeves to the collection counter
+# set_discover_tallies()
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+pattern = """if v.set and ((v.set == 'Joker') or v.consumeable or (v.set == 'Edition') or (v.set == 'Voucher') or (v.set == 'Back') or (v.set == 'Booster')) then"""
+position = 'before'
+match_indent = true
+payload = """if v.set and v.set == 'Sleeve' then
+    G.DISCOVER_TALLIES.total.of = G.DISCOVER_TALLIES.total.of + 1
+    if v.unlocked then 
+        G.DISCOVER_TALLIES.total.tally = G.DISCOVER_TALLIES.total.tally + 1
+    end
+end"""

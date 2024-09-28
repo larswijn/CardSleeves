@@ -34,12 +34,13 @@ CardSleeves adds 15 Sleeves by default, some of which have an unique and differe
 | Painted Sleeve   | +2 hand size, -1 joker slots                           | none                                                                   |
 | Anaglyph Sleeve  | Double Tag after each Boss Blind                       | Double Tag after each Small/Big Blind                                  |
 | Plasma Sleeve    | Balance chips/mult, X2 base Blind size                 | Balance prices in shop                                                 |
-| Erratic Sleeve   | All ranks/suits in starting deck are randomized        | Starting Hands/Discards/Dollars/Joker slots are randomized between 2-6 |
+| Erratic Sleeve   | All ranks/suits in starting deck are randomized        | Starting Hands/Discards/Dollars/Joker slots are randomized between 3-6 |
 
 Other mods have the ability to add their own Sleeves! Some of these mods include:
 + Cryptid
 + Familiar
 + SDM_0's Stuff
++ MoreFluff
 
 CardSleeves has support for [Galdur](https://github.com/Eremel/Galdur)'s improved new run menu!
 
