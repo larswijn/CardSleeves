@@ -5,7 +5,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.4.0-dev11
+--- VERSION: 1.4.0-dev12
 --- PRIORITY: -1
 --- DEPENDS: [Steamodded>=1.0.0~ALPHA-0924a]
 
@@ -16,7 +16,7 @@
 
 KNOWN ISSUES/TODO IDEAS:
 
-* Tags on zodiac deck + zodiac sleeve still say "of 5" (e.g. charm tag)
+* Minor Issue: Tags for booster packs have wrong description when using double zodiac/ghost
 
 * API:
 ** add optional shaders
@@ -88,7 +88,6 @@ local function tprint(tbl, max_indent, _indent)
 
     return toprint .. string.rep(" ", _indent - 2) .. "}"
 end
-
 local function tablesize(tbl)
     local count = 0
     for _ in pairs(tbl) do
@@ -136,32 +135,7 @@ CardSleeves.Sleeve = SMODS.Center:extend {
             return nil
         end
         return self.obj_table[key] or SMODS.Center:get_obj(key)
-    end,
-    locked_loc_vars = function(self, info_queue, card)
-        if not self.unlock_condition then
-            error("Please implement custom `locked_loc_vars` or define `unlock_condition` for Sleeve " .. self.key)
-        elseif not self.unlock_condition.deck or not self.unlock_condition.stake then
-            error("Please implement custom `locked_loc_vars` or define `unlock_condition.deck` and `unlock_condition.stake` for Sleeve " .. self.key)
-        end
-        local deck_name = localize{type = "name_text", set = "Back", key = self.unlock_condition.deck}
-        local stake_name = localize{type = "name_text", set = "Stake", key = SMODS.stake_from_index(self.unlock_condition.stake)}
-        local colours = G.C.GREY
-        if self.unlock_condition.stake > 1 then
-            colours = get_stake_col(self.unlock_condition.stake)
-        end
-        local vars = { deck_name, stake_name, colours = {colours} }
-        return { vars = vars }
-    end,
-    check_for_unlock = function(self, args)
-        if not self.unlock_condition then
-            error("Please implement custom `check_for_unlock` or define `unlock_condition` for Sleeve " .. self.key)
-        elseif not self.unlock_condition.deck or not self.unlock_condition.stake then
-            error("Please implement custom `check_for_unlock` or define `unlock_condition.deck` and `unlock_condition.stake` for Sleeve " .. self.key)
-        end
-        if args.type == 'win_deck' and get_deck_win_stake(self.unlock_condition.deck) >= self.unlock_condition.stake then
-            return true
-        end
-    end,
+    end
 }
 
 function CardSleeves.Sleeve:apply()
@@ -317,8 +291,35 @@ function CardSleeves.Sleeve:trigger_effect(args)
     end
 end
 
+function CardSleeves.Sleeve:locked_loc_vars(info_queue, card)
+    if not self.unlock_condition then
+        error("Please implement custom `locked_loc_vars` or define `unlock_condition` for Sleeve " .. self.key)
+    elseif not self.unlock_condition.deck or not self.unlock_condition.stake then
+        error("Please implement custom `locked_loc_vars` or define `unlock_condition.deck` and `unlock_condition.stake` for Sleeve " .. self.key)
+    end
+    local deck_name = localize{type = "name_text", set = "Back", key = self.unlock_condition.deck}
+    local stake_name = localize{type = "name_text", set = "Stake", key = SMODS.stake_from_index(self.unlock_condition.stake)}
+    local colours = G.C.GREY
+    if self.unlock_condition.stake > 1 then
+        colours = get_stake_col(self.unlock_condition.stake)
+    end
+    local vars = { deck_name, stake_name, colours = {colours} }
+    return { vars = vars }
+end
+
+function CardSleeves.Sleeve:check_for_unlock(args)
+    if not self.unlock_condition then
+        error("Please implement custom `check_for_unlock` or define `unlock_condition` for Sleeve " .. self.key)
+    elseif not self.unlock_condition.deck or not self.unlock_condition.stake then
+        error("Please implement custom `check_for_unlock` or define `unlock_condition.deck` and `unlock_condition.stake` for Sleeve " .. self.key)
+    end
+    if args.type == 'win_deck' and get_deck_win_stake(self.unlock_condition.deck) >= self.unlock_condition.stake then
+        return true
+    end
+end
+
 function CardSleeves.Sleeve:is_unlocked()
-    -- Checks .unlocked, CardSleeves config, and basegame Unlock All. Use this to read .unlocked unless you know what you're doing
+    -- Checks self.unlocked, CardSleeves config, and basegame Unlock All. Use this to read self.unlocked unless you know what you're doing
     return self.unlocked or CardSleeves.config.allow_any_sleeve_selection or G.PROFILES[G.SETTINGS.profile].all_unlocked
 end
 
@@ -361,8 +362,11 @@ function CardSleeves.Sleeve.get_current_deck_key()
 end
 
 function CardSleeves.Sleeve.get_current_deck_name()
-    -- REMOVE on 1.4.2 full release?
-    return CardSleeves.Sleeve.get_current_deck_key()
+    print_debug("DEPRECATED: `get_current_deck_name` will be removed in a future version, use `get_current_deck_key` instead")
+    return (Galdur and Galdur.config.use and Galdur.run_setup.choices.deck) and Galdur.run_setup.choices.deck.name or
+            G.GAME.viewed_back and G.GAME.viewed_back.name or
+            G.GAME.selected_back and G.GAME.selected_back.name or
+            "Red Deck"
 end
 
 -- SLEEVE INSTANCES
@@ -455,7 +459,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 1 },
     unlocked = false,
-    unlock_condition = { deck = "b_magic", stake = 3 },
+    unlock_condition = { deck = "b_magic", stake = 4 },
     loc_vars = function(self)
         local key
         if self.get_current_deck_key() ~= "b_magic" then
@@ -479,7 +483,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 1 },
     unlocked = false,
-    unlock_condition = { deck = "b_nebula", stake = 3 },
+    unlock_condition = { deck = "b_nebula", stake = 4 },
     loc_vars = function(self)
         local key
         if self.get_current_deck_key() ~= "b_nebula" then
@@ -503,7 +507,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 1 },
     unlocked = false,
-    unlock_condition = { deck = "b_ghost", stake = 3 },
+    unlock_condition = { deck = "b_ghost", stake = 4 },
     loc_vars = function(self)
         local key
         local vars = {}
@@ -535,7 +539,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 1 },
     unlocked = false,
-    unlock_condition = { deck = "b_abandoned", stake = 3 },
+    unlock_condition = { deck = "b_abandoned", stake = 4 },
     loc_vars = function(self)
         local key = self.key
         if self.get_current_deck_key() ~= "b_abandoned" then
@@ -621,7 +625,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 1 },
     unlocked = false,
-    unlock_condition = { deck = "b_checkered", stake = 3 },
+    unlock_condition = { deck = "b_checkered", stake = 4 },
     loc_vars = function(self)
         local key
         if self.get_current_deck_key() ~= "b_checkered" then
@@ -658,7 +662,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 2 },
     unlocked = false,
-    unlock_condition = { deck = "b_zodiac", stake = 3 },
+    unlock_condition = { deck = "b_zodiac", stake = 5 },
     loc_vars = function(self)
         local key
         local vars = {}
@@ -697,7 +701,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 2 },
     unlocked = false,
-    unlock_condition = { deck = "b_painted", stake = 3 },
+    unlock_condition = { deck = "b_painted", stake = 5 },
     config = {hand_size = 2, joker_slot = -1},
     loc_vars = function(self)
         return { vars = { self.config.hand_size, self.config.joker_slot } }
@@ -710,7 +714,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 2 },
     unlocked = false,
-    unlock_condition = { deck = "b_anaglyph", stake = 4 },
+    unlock_condition = { deck = "b_anaglyph", stake = 5 },
     config = {},
     loc_vars = function(self)
         local key
@@ -747,7 +751,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 2 },
     unlocked = false,
-    unlock_condition = { deck = "b_plasma", stake = 5 },
+    unlock_condition = { deck = "b_plasma", stake = 6 },
     config = {ante_scaling = 2},
     loc_vars = function(self)
         local key
@@ -832,7 +836,7 @@ CardSleeves.Sleeve {
             key = self.key .. "_alt"
             self.config = {randomize_rank_suit = true,
                            randomize_start = true,
-                           random_lb = 2,
+                           random_lb = 3,
                            random_ub = 6}
         end
         local vars = {}
@@ -904,7 +908,7 @@ local function create_sleeve_sprite(x, y, w, h, sleeve_center)
 end
 
 local function replace_sleeve_sprite(card, sleeve_center, offset)
-    offset = offset or {x=0, y=0.3}
+    offset = offset or {x=0, y=0.35}
     if card.children.back then
         card.children.back:remove()
     end
@@ -1710,14 +1714,16 @@ function Card:hover()
         local col = self.params.deck_preview and G.UIT.C or G.UIT.R
         local info_col = self.params.deck_preview and G.UIT.R or G.UIT.C
         local sleeve = self.config.center
+        local sleeve_localvars = sleeve["loc_vars"] and sleeve:loc_vars()
+        local sleeve_localkey = sleeve_localvars and sleeve_localvars.key or sleeve.key
 
-        local status, result = pcall(populate_info_queue, 'Sleeve', sleeve.key)
+        local status, result = pcall(populate_info_queue, 'Sleeve', sleeve_localkey)
         if not status then
             -- exception
             if result:find("'loc_target'") then
-                error("Incorrect or missing localization for '" .. sleeve.key .. "'")
+                error("Incorrect or missing localization for '" .. sleeve_localkey .. "'")
             end
-            populate_info_queue('Sleeve', sleeve.key)
+            populate_info_queue('Sleeve', sleeve_localkey)
         end
         local info_queue = result
         local tooltips = {}
@@ -1738,8 +1744,7 @@ function Card:hover()
             desc_t[#desc_t + 1] = { n = G.UIT.R, config = { align = "cm"}, nodes = v }
         end
         local sleeve_name_colour = G.C.WHITE
-        local sleeve_localvars = sleeve["loc_vars"] and sleeve:loc_vars()
-        if sleeve_localvars and sleeve_localvars["key"] and sleeve_localvars["key"] ~= sleeve.key then
+        if sleeve_localkey ~= sleeve.key then
             sleeve_name_colour = G.C.DARK_EDITION
         end
         self.config.h_popup = {n=G.UIT.C, config={align = "cm", padding=0.1}, nodes={
