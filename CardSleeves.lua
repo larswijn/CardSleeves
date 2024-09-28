@@ -5,7 +5,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.4.1
+--- VERSION: 1.4.2
 --- PRIORITY: -1
 --- DEPENDS: [Steamodded>=1.0.0~ALPHA-0924a]
 
@@ -16,11 +16,16 @@
 
 KNOWN ISSUES/TODO IDEAS:
 
+* Issue: What if locked sleeves in challenge?
 * Minor Issue: Tags for booster packs have wrong description when using double zodiac/ghost
 
 * API:
 ** add optional shaders
-* See if people want to select their own sleeves in challenges instead of adhering to the challenge?
+
+* IDEAS:
+** See if people want to select their own sleeves in challenges instead of adhering to the challenge?
+** Yellow deck+sleeve has unique interest mechanic?
+** See if people want unique sleeves?
 
 --]]
 
@@ -58,7 +63,7 @@ end
 local function tprint(tbl, max_indent, _indent)
     if type(tbl) ~= "table" then return tostring(tbl) end
 
-    max_indent = max_indent or 32
+    max_indent = max_indent or 16
     _indent = _indent or 0
     local toprint = string.rep(" ", _indent) .. "{\r\n"
 
@@ -340,6 +345,7 @@ function CardSleeves.Sleeve:generate_ui(info_queue, card, desc_nodes, specific_v
         }
         if self.locked_loc_vars and type(self.locked_loc_vars) == 'function' then
             local res = self:locked_loc_vars(info_queue, card) or {}
+            target.key = res.key or target.key
             target.vars = res.vars or target.vars
         end
         localize(target)
@@ -1382,9 +1388,10 @@ end
 local old_Game_init_game_object = Game.init_game_object
 function Game:init_game_object(...)
     local output = old_Game_init_game_object(self, ...)
-    if not game_args.challenge then
+    local is_challenge = game_args.challenge and game_args.challenge.id  -- HouseRules compat
+    if not is_challenge then
         output.selected_sleeve = G.viewed_sleeve or "sleeve_casl_none"
-    elseif game_args.challenge and game_args.challenge.sleeve then
+    elseif is_challenge and game_args.challenge.sleeve then
         output.selected_sleeve = game_args.challenge.sleeve
     else
         output.selected_sleeve = "sleeve_casl_none"
