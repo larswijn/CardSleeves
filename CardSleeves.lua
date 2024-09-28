@@ -5,7 +5,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.4.0-dev12
+--- VERSION: 1.4.0-dev13
 --- PRIORITY: -1
 --- DEPENDS: [Steamodded>=1.0.0~ALPHA-0924a]
 
@@ -20,9 +20,7 @@ KNOWN ISSUES/TODO IDEAS:
 
 * API:
 ** add optional shaders
-** support unlocks
-* See if people want selectable sleeves in challenges or challenge support for sleeves?
-* See want conditions people want for unlockable sleeves
+* See if people want to select their own sleeves in challenges instead of adhering to the challenge?
 
 --]]
 
@@ -1148,7 +1146,7 @@ end
 function G.UIDEF.current_sleeve(_scale)
     _scale = _scale or 1
     local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
-    local sleeve_sprite = create_sleeve_sprite(0, 0, _scale*1, _scale*(95/71), sleeve_center)
+    local sleeve_sprite = create_sleeve_sprite(0, 0, _scale*1.5, _scale*(95/71)*1.5, sleeve_center)
     sleeve_sprite.states.drag.can = false
     local mod_badges = create_sleeve_badges(sleeve_center)
     return {
@@ -1298,6 +1296,33 @@ function G.UIDEF.run_setup_option(_type)
     return output
 end
 
+local old_uidef_challenge_description_tab = G.UIDEF.challenge_description_tab
+function G.UIDEF.challenge_description_tab(args)
+    local output = old_uidef_challenge_description_tab(args)
+
+    if args._tab == "Rules" then
+        local challenge = G.CHALLENGES[args._id]
+        if challenge.sleeve then
+            local sleeve_center = CardSleeves.Sleeve:get_obj(challenge.sleeve)
+            local UI_node = {
+                n = G.UIT.R,
+                config = {align = "cl", maxw = 3.5},
+                nodes = localize {
+                    type = "text",
+                    key = "ch_m_sleeve",
+                    vars = {sleeve_center:get_name()},
+                    default_col = G.C.L_BLACK
+                }
+            }
+            -- output.nodes[1].nodes[2].nodes[2].nodes ?
+            table.insert(output.nodes[1].nodes[2].nodes[2].nodes, 1,  -- I love UI stuff
+                         UI_node)
+        end
+    end
+
+    return output
+end
+
 local old_FUNCS_change_viewed_back = G.FUNCS.change_viewed_back
 function G.FUNCS.change_viewed_back(args)
     local area = G.sticker_card.area
@@ -1356,6 +1381,10 @@ function Game:init_game_object(...)
     local output = old_Game_init_game_object(self, ...)
     if not game_args.challenge then
         output.selected_sleeve = G.viewed_sleeve or "sleeve_casl_none"
+    elseif game_args.challenge and game_args.challenge.sleeve then
+        output.selected_sleeve = game_args.challenge.sleeve
+    else
+        output.selected_sleeve = "sleeve_casl_none"
     end
     return output
 end

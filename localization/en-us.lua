@@ -191,6 +191,12 @@ return {
                 "in the new run menu, as if unlocked"
             },
             sleeve_not_found_error = "Sleeve could not be found! Did you remove its mod?"
+        },
+        v_text = {
+            -- for challenges
+            ch_m_sleeve = {
+                "Start with {C:attention}#1#{}"
+            }
         }
     }
 }
