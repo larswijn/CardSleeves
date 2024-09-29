@@ -1899,7 +1899,7 @@ if Galdur then
         end
         while not random do
             random = pseudorandom_element(random_sleeve_opts, pseudoseed(os.time()))
-            if G.P_CENTER_POOLS.Sleeve[random_sleeve_opts[random]].key == G.viewed_sleeve and #random_sleeve_opts > 1 then
+            if G.P_CENTER_POOLS.Sleeve[random].key == G.viewed_sleeve and #random_sleeve_opts > 1 then
                 random = false
             end
         end
