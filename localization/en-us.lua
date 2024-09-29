@@ -190,6 +190,18 @@ return {
                 "Allows any sleeve to be selected",
                 "in the new run menu, as if unlocked"
             },
+            sleeve_info_location = "Sleeve info location",
+            sleeve_info_location_desc = {
+                "In which menu the name and description",
+                "of the currently used sleeve will be shown",
+                "(visual only)"
+            },
+            sleeve_info_location_options = {
+                "Only in deck view",
+                "Only in run info",
+                "Show in both",
+                "Hide sleeve info"
+            },
             sleeve_not_found_error = "Sleeve could not be found! Did you remove its mod?"
         },
         v_text = {

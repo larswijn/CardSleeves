@@ -1041,7 +1041,8 @@ G.FUNCS.RUN_SETUP_check_sleeve2 = function(e)
     end
 end
 
-function G.UIDEF.sleeve_description(sleeve_key)
+function G.UIDEF.sleeve_description(sleeve_key, minw)
+    minw = minw or 5.5
     local sleeve_center = CardSleeves.Sleeve:get_obj(sleeve_key)
     local ret_nodes = {}
     local sleeve_name = ""
@@ -1063,7 +1064,7 @@ function G.UIDEF.sleeve_description(sleeve_key)
     end
 
     local desc_t = {}
-    for k, v in ipairs(ret_nodes) do
+    for _, v in ipairs(ret_nodes) do
         for k2, v2 in pairs(v) do
             if v2["config"] ~= nil and v2["config"]["scale"] ~= nil then
                 v[k2].config.scale = v[k2].config.scale / 1.2
@@ -1080,13 +1081,12 @@ function G.UIDEF.sleeve_description(sleeve_key)
                 n = G.UIT.R,
                 config = { align = "cm", padding = 0 },
                 nodes = {
-                    { n = G.UIT.T, config = { text = sleeve_name,
-                      scale = 0.35, colour = G.C.WHITE } }
+                    { n = G.UIT.T, config = { text = sleeve_name, scale = 0.35, colour = G.C.WHITE } }
                 }
             },
             {
                 n = G.UIT.R,
-                config = { align = "cm", padding = 0.03, colour = G.C.WHITE, r = 0.1, minh = 1, minw = 5.5 },
+                config = { align = "cm", padding = 0.03, colour = G.C.WHITE, r = 0.1, minh = 1, minw = minw },
                 nodes = desc_t
             }
         }
@@ -1145,7 +1145,7 @@ function G.UIDEF.viewed_sleeve_option()
                 n = G.UIT.C,
                 config = { align = "cm", padding = 0.1 },
                 nodes = {
-                    G.UIDEF.sleeve_description(G.viewed_sleeve)
+                    G.UIDEF.sleeve_description(G.viewed_sleeve, 5.5)
                 }
             }
         }
@@ -1153,6 +1153,7 @@ function G.UIDEF.viewed_sleeve_option()
 end
 
 function G.UIDEF.current_sleeve(_scale)
+    -- create a UI node with sleeve image, sleeve name, description, and mod badges
     _scale = _scale or 1
     local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
     local sleeve_sprite = create_sleeve_sprite(0, 0, _scale*1.5, _scale*(95/71)*1.5, sleeve_center)
@@ -1174,7 +1175,7 @@ function G.UIDEF.current_sleeve(_scale)
                 n = G.UIT.R,
                 config = { align = "cm", padding = 0.1 },
                 nodes = {
-                    G.UIDEF.sleeve_description(G.GAME.selected_sleeve)
+                    G.UIDEF.sleeve_description(G.GAME.selected_sleeve, 5.5)
                 }
             },
             mod_badges
@@ -1323,10 +1324,41 @@ function G.UIDEF.challenge_description_tab(args)
                     default_col = G.C.L_BLACK
                 }
             }
-            -- output.nodes[1].nodes[2].nodes[2].nodes ?
-            table.insert(output.nodes[1].nodes[2].nodes[2].nodes, 1,  -- I love UI stuff
-                         UI_node)
+            table.insert(output.nodes[1].nodes[2].nodes[2].nodes, 1, UI_node)  -- I love UI stuff
         end
+    end
+
+    return output
+end
+
+local old_uidef_view_deck = G.UIDEF.view_deck
+function G.UIDEF.view_deck(...)
+    local output = old_uidef_view_deck(...)
+
+    local config_in_view_deck = CardSleeves.config.sleeve_info_location == 1 or CardSleeves.config.sleeve_info_location == 3
+    if G.GAME.selected_sleeve and G.GAME.selected_sleeve ~= "sleeve_casl_none" and config_in_view_deck then
+        -- combine suit_tallies into 1 row instead of 2, to save on horizontal space
+        local suit_tallies = output.nodes[2].nodes[1].nodes[1].nodes[2].nodes[3].nodes
+        suit_tallies[3] = output.nodes[2].nodes[1].nodes[1].nodes[2].nodes[4].nodes[1]
+        suit_tallies[4] = output.nodes[2].nodes[1].nodes[1].nodes[2].nodes[4].nodes[2]
+        output.nodes[2].nodes[1].nodes[1].nodes[2].nodes[4] = nil
+
+        -- insert sleeve description UI element
+        local minw = 2.5
+        local UI_node = {
+            n = G.UIT.R,
+            config = {align = "cm", r = 0.1, colour = G.C.L_BLACK, emboss = 0.05, padding = 0.05},
+            nodes = {
+                {
+                    n = G.UIT.R,
+                    config = {align = "cm", r = 0.1, minw = minw, maxw = 4, minh = 1, colour = G.C.CLEAR},
+                    nodes = {
+                        G.UIDEF.sleeve_description(G.GAME.selected_sleeve, minw),
+                    }
+                }
+            }
+        }
+        table.insert(output.nodes[2].nodes[1].nodes[1].nodes, 2, UI_node)
     end
 
     return output
@@ -1554,7 +1586,9 @@ end
 
 local old_create_tabs = create_tabs
 function create_tabs(args)
-    if args["tabs"] and is_in_run_info_tab and G.GAME.selected_sleeve and G.GAME.selected_sleeve ~= "sleeve_casl_none" then
+    local sleeve_exists = G.GAME.selected_sleeve and G.GAME.selected_sleeve ~= "sleeve_casl_none"
+    local config_in_run_info = CardSleeves.config.sleeve_info_location == 2 or CardSleeves.config.sleeve_info_location == 3
+    if args["tabs"] and is_in_run_info_tab and sleeve_exists and config_in_run_info then
         table.insert(args.tabs, 4, {
             label = "Sleeve",
             tab_definition_function = G.UIDEF.current_sleeve
@@ -2000,14 +2034,27 @@ end
 -- SMODS UI funcs (additions, config, collection)
 
 SMODS.current_mod.config_tab = function()
-    return {n=G.UIT.ROOT, config = {align = "cl", minh = G.ROOM.T.h*0.25, padding = 0.0, r = 0.1, colour = {G.C.GREY[1], G.C.GREY[2], G.C.GREY[3],0.7}}, nodes = {
+    local scale = 5/6
+    return {n=G.UIT.ROOT, config = {align = "cl", minh = G.ROOM.T.h*0.25, padding = 0.0, r = 0.1, colour = G.C.GREY}, nodes = {
         {n = G.UIT.R, config = { padding = 0.05 }, nodes = {
             {n = G.UIT.C, config = { minw = G.ROOM.T.w*0.25, padding = 0.05 }, nodes = {
-                {n=G.UIT.R, config={minh=0.001}},
                 create_toggle{ label = localize("adjust_deck_alignment"), info = localize("adjust_deck_alignment_desc"), active_colour = CardSleeves.badge_colour, ref_table = CardSleeves.config, ref_value = "adjust_deck_alignment" },
+                {n=G.UIT.R, config={minh=0.25}},
+                create_option_cycle{
+                    label = localize("sleeve_info_location"),
+                    info = localize("sleeve_info_location_desc"),
+                    options = localize("sleeve_info_location_options"),
+                    current_option = CardSleeves.config.sleeve_info_location,
+                    colour = CardSleeves.badge_colour,
+                    w = 4.5,
+                    text_scale = 0.4,
+                    scale = scale,
+                    ref_table = CardSleeves.config,
+                    ref_value = "sleeve_info_location",
+                    opt_callback = 'cycle_update',
+                }
             }},
-            {n = G.UIT.C, config = { align = "ri", minw = G.ROOM.T.w*0.25, padding = 0.05 }, nodes = {
-                {n=G.UIT.R, config={minh=0.001}},
+            {n = G.UIT.C, config = { align = "cr", minw = G.ROOM.T.w*0.25, padding = 0.05 }, nodes = {
                 create_toggle{ label = localize("allow_any_sleeve_selection"), info = localize("allow_any_sleeve_selection_desc"), active_colour = CardSleeves.badge_colour, ref_table = CardSleeves.config, ref_value = "allow_any_sleeve_selection" },
             }},
         }}
