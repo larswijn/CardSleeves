@@ -5,7 +5,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.4.3
+--- VERSION: 1.4.4
 --- PRIORITY: -1
 --- DEPENDS: [Steamodded>=1.0.0~ALPHA-0924a]
 
@@ -771,7 +771,7 @@ CardSleeves.Sleeve {
         -- TODO: don't balance chips/mult twice for no reason?
         CardSleeves.Sleeve.trigger_effect(self, args)
         -- TODO: this isn't API friendly?
-        if G.GAME.selected_back.name == "b_plasma" and self.name == 'Plasma Sleeve' and args.context == "shop_final_pass" then
+        if self.get_current_deck_key() == "b_plasma" and self.name == 'Plasma Sleeve' and args.context == "shop_final_pass" then
             local cardareas = {}
             for _, obj in pairs(G) do
                 if type(obj) == "table" and obj["is"] and obj:is(CardArea) and obj.config.type == "shop" then
