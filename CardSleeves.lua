@@ -1863,19 +1863,24 @@ G.FUNCS.cycle_options = function(args)
 end
 
 if Galdur then
-    local min_galdur_version = '1.1.1'
+    local min_galdur_version = '1.1.4'
 
     local galdur_page_index = 2  -- page that our sleeves appear on - only start drawing information from this page onward
 
-    local function modify_sleeve_text(ui_nodes, sleeve_center)
+    local function set_sleeve_text(sleeve_center)
+        -- sets deck name to sleeve name in Galdur's deck preview
         local texts = split_string_2(sleeve_center:get_name())
-        local text = ui_nodes.nodes[1].nodes[1].nodes[1]
-        text.config.text = texts[1]
-        text.config.scale = 0.7/math.max(1,string.len(texts[1])/8)
-        text = ui_nodes.nodes[1].nodes[2].nodes[1]
-        text.config.text = texts[2]
-        text.config.scale = 0.75/math.max(1,string.len(texts[2])/8)
-        return ui_nodes
+        if Galdur.deck_preview_texts then
+            Galdur.deck_preview_texts.deck_preview_1 = texts[1]
+            Galdur.deck_preview_texts.deck_preview_2 = texts[2]
+            for i=1, 2 do
+                local dyna_text_uinode = G.OVERLAY_MENU:get_UIE_by_ID('deck_name_'..i)
+                if dyna_text_uinode then
+                    dyna_text_uinode.config.object.scale = 0.7/math.max(1, string.len(Galdur.deck_preview_texts['deck_preview_'..i])/8)
+                    dyna_text_uinode.config.object.config.non_recalc = true
+                end
+            end
+        end
     end
 
     local old_Galdur_populate_deck_preview = Galdur.populate_deck_preview
@@ -1894,11 +1899,10 @@ if Galdur then
 
     local old_Galdur_display_deck_preview = Galdur.display_deck_preview
     function Galdur.display_deck_preview()
-        local output = old_Galdur_display_deck_preview()
         if CardSleeves.Sleeve:get_obj(G.viewed_sleeve) and Galdur.run_setup.current_page >= galdur_page_index then
-            output = modify_sleeve_text(output, CardSleeves.Sleeve:get_obj(G.viewed_sleeve))
+            set_sleeve_text(CardSleeves.Sleeve:get_obj(G.viewed_sleeve))
         end
-        return output
+        return old_Galdur_display_deck_preview()
     end
 
     local function set_new_sleeve(sleeve_center, silent)
@@ -1911,15 +1915,7 @@ if Galdur then
             card.params["deck_preview"] = true
         end
 
-        local texts = split_string_2(sleeve_center:get_name())
-        local text = G.OVERLAY_MENU:get_UIE_by_ID('selected_deck_name')
-        text.config.text = texts[1]
-        text.config.scale = 0.7/math.max(1,string.len(texts[1])/8)
-        text.UIBox:recalculate()
-        text = G.OVERLAY_MENU:get_UIE_by_ID('selected_deck_name_2')
-        text.config.text = texts[2]
-        text.config.scale = 0.75/math.max(1,string.len(texts[2])/8)
-        text.UIBox:recalculate()
+        set_sleeve_text(sleeve_center)
     end
 
     local old_quick_start = G.FUNCS.quick_start
