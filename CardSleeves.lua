@@ -1854,6 +1854,14 @@ G.FUNCS.change_sleeve_page = function(args)
     populate_sleeve_card_areas(args.cycle_config.current_option)
 end
 
+G.FUNCS.cycle_options = function(args)
+    -- G.FUNCS.cycle_update from Galdur
+    args = args or {}
+    if args.cycle_config and args.cycle_config.ref_table and args.cycle_config.ref_value then
+        args.cycle_config.ref_table[args.cycle_config.ref_value] = args.to_key
+    end
+end
+
 if Galdur then
     local min_galdur_version = '1.1.1'
 
@@ -2051,7 +2059,7 @@ SMODS.current_mod.config_tab = function()
                     scale = scale,
                     ref_table = CardSleeves.config,
                     ref_value = "sleeve_info_location",
-                    opt_callback = 'cycle_update',
+                    opt_callback = 'cycle_options',
                 }
             }},
             {n = G.UIT.C, config = { align = "cr", minw = G.ROOM.T.w*0.25, padding = 0.05 }, nodes = {
