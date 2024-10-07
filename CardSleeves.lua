@@ -916,7 +916,7 @@ local function replace_sleeve_sprite(card, sleeve_center, offset)
     if card.children.back then
         card.children.back:remove()
     end
-    card.children.back = create_sleeve_sprite(card.T.x, card.T.y, card.T.w, card.T.h, sleeve_center)
+    card.children.back = create_sleeve_sprite(card.T.x + offset.x, card.T.y + offset.y, card.T.w, card.T.h, sleeve_center)
     card.children.back:set_role{major = card, role_type = 'Minor', draw_major = card, offset = offset}
     if sleeve_center.key ~= "sleeve_casl_none" then
         card.sticker = get_sleeve_win_sticker(sleeve_center.key)
