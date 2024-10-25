@@ -1,10 +1,10 @@
 # ![icon](assets/1x/icon.png) CardSleeves
-A Steamodded+lovely Balatro Mod that adds Sleeves. This mod is still being worked on and might change some functionality in the future.
+A Steamodded+lovely Balatro Mod that adds Sleeves.
 
 ![Balatro_Card_Sleeves](Balatro_Card_Sleeves.png)
 
 # Requirements
-Requires `steamodded >= 1.0.0` - [link](https://github.com/Steamopollys/Steamodded/wiki/01.-Getting-started)
+Requires `steamodded >= 1.0.0~ALPHA-0924a` - [link](https://github.com/Steamopollys/Steamodded/wiki/01.-Getting-started)
 
 Requires `Lovely`, but this should already be installed as part of steamodded's installation process. If you do not have this, make sure you installed steamodded 1.0.0+ correctly.
 
@@ -27,7 +27,7 @@ CardSleeves adds 15 Sleeves by default, some of which have an unique and differe
 | Black Sleeve     | +1 joker slots, -1 hands                               | +1 joker slots, -1 discards                                            |
 | Magic Sleeve     | Crystal Ball Voucher, 2 Fools                          | Omen Globe Voucher                                                     |
 | Nebula Sleeve    | Telescope Voucher, -1 consumable slot                  | Observatory Voucher                                                    |
-| Ghost Sleeve     | Spectral cards appear in shop, Hex card                | Spectral pack size increases by 2                                      |
+| Ghost Sleeve     | Spectral cards appear in shop, Hex card                | Spectrals appear more often in shop, Spectral pack size increases by 2 |
 | Abandoned Sleeve | No Face Cards in starting deck                         | Face Cards never appear                                                |
 | Checkered Sleeve | 26 Spades and 26 Hearts in starting deck               | Only Spades and Hearts appear                                          |
 | Zodiac Sleeve    | Tarot Merchant, Planet Merchant and Overstock Vouchers | Arcana/Celestial pack size increases by 2                              |
@@ -37,12 +37,13 @@ CardSleeves adds 15 Sleeves by default, some of which have an unique and differe
 | Erratic Sleeve   | All ranks/suits in starting deck are randomized        | Starting Hands/Discards/Dollars/Joker slots are randomized between 3-6 |
 
 Other mods have the ability to add their own Sleeves! Some of these mods include:
-+ Cryptid
-+ Familiar
-+ SDM_0's Stuff
-+ MoreFluff
++ [Cryptid](https://github.com/MathIsFun0/Cryptid)
++ [Familiar](https://github.com/RattlingSnow353/Familiar)
++ [SDM_0's Stuff](https://github.com/SDM0/SDM_0-s-Stuff)
++ [MoreFluff](https://github.com/notmario/MoreFluff)
++ [Reverie](https://github.com/dvrp0/reverie)
 
-CardSleeves has support for [Galdur](https://github.com/Eremel/Galdur)'s improved new run menu!
+CardSleeves also has support for [Galdur](https://github.com/Eremel/Galdur)'s improved new run menu!
 
 # API (for mod developers)
 Any other mod can create new sleeves. See [the wiki](https://github.com/larswijn/CardSleeves/wiki) for more information.
