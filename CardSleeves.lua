@@ -1337,11 +1337,15 @@ function G.UIDEF.view_deck(...)
 
     local config_in_view_deck = CardSleeves.config.sleeve_info_location == 1 or CardSleeves.config.sleeve_info_location == 3
     if G.GAME.selected_sleeve and G.GAME.selected_sleeve ~= "sleeve_casl_none" and config_in_view_deck then
-        -- combine suit_tallies into 1 row instead of 2, to save on horizontal space
-        local suit_tallies = output.nodes[2].nodes[1].nodes[1].nodes[2].nodes[3].nodes
-        suit_tallies[3] = output.nodes[2].nodes[1].nodes[1].nodes[2].nodes[4].nodes[1]
-        suit_tallies[4] = output.nodes[2].nodes[1].nodes[1].nodes[2].nodes[4].nodes[2]
-        output.nodes[2].nodes[1].nodes[1].nodes[2].nodes[4] = nil
+        -- combine suit_tallies into 1x4 if only 2x2, to save on horizontal space (yes this looks bad with mods that add suits)
+        local base_cards_area = output.nodes[2].nodes[1].nodes[1].nodes[2]
+        local suit_tallies = base_cards_area.nodes[3].nodes
+        if #suit_tallies <= 2 and not base_cards_area.nodes[5] then
+            for _, suit_element in ipairs(base_cards_area.nodes[4].nodes) do
+                table.insert(suit_tallies, suit_element)
+            end
+            table.remove(base_cards_area.nodes, 4)
+        end
 
         -- insert sleeve description UI element
         local minw = 2.5
@@ -1691,12 +1695,16 @@ end
 local function populate_sleeve_card_areas(page)
     local count = 1 + (page - 1) * sleeve_count_page
     for i=1, sleeve_count_page do
-        if count > #G.P_CENTER_POOLS.Sleeve then return end
+        if count > #G.P_CENTER_POOLS.Sleeve then
+            return
+        end
         local area = sleeve_card_areas[i]
-        if not area.cards then area.cards = {} end
-        local card_number = 1
-        if Galdur and not Galdur.config.reduce then
-            card_number = 10
+        if not area.cards then
+            area.cards = {}
+        end
+        local card_number = 10
+        if Galdur and Galdur.config.reduce then
+            card_number = 1
         end
         local selected_deck_center = in_collection and G.P_CENTERS.b_red or Galdur.run_setup.choices.deck.effect.center
         for index = 1, card_number do
@@ -1864,7 +1872,6 @@ end
 
 if Galdur then
     local min_galdur_version = '1.1.4'
-
     local galdur_page_index = 2  -- page that our sleeves appear on - only start drawing information from this page onward
 
     local function set_sleeve_text(sleeve_center)
