@@ -2082,7 +2082,7 @@ SMODS.current_mod.custom_collection_tabs = function()
     end
     return { UIBox_button {
         count = {tally = tally, of = #G.P_CENTER_POOLS['Sleeve']},
-        button = 'your_collection_sleeves', label = {"Sleeves"}, minw = 5, id = 'your_collection_sleeves'
+        button = 'your_collection_sleeves', label = {localize("k_sleeve")}, minw = 5, id = 'your_collection_sleeves'
     }}
 end
 
