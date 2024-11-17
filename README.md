@@ -42,6 +42,11 @@ Other mods have the ability to add their own Sleeves! Some of these mods include
 + [SDM_0's Stuff](https://github.com/SDM0/SDM_0-s-Stuff)
 + [MoreFluff](https://github.com/notmario/MoreFluff)
 + [Reverie](https://github.com/dvrp0/reverie)
++ [Pokermon](https://github.com/InertSteak/Pokermon)
++ [Buffoonery](https://github.com/pinkmaggit-hub/Buffoonery)
++ [Themed Jokers](https://github.com/cerloCasa/Themed-Jokers)
++ [Jimbo's Pack](https://github.com/art-muncher/Jimbo-s-Pack)
++ [10Spades](https://github.com/TamerSoup625/balatro-ten-spades)
 
 CardSleeves also has support for [Galdur](https://github.com/Eremel/Galdur)'s improved new run menu!
 
