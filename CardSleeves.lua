@@ -8,7 +8,7 @@
 --- VERSION: 1.4.7
 --- PRIORITY: -1
 --- DEPENDS: [Steamodded>=1.0.0~ALPHA-0924a]
---- CONFLICTS: [Grim<=0.9.5]
+--- CONFLICTS: [GRM<=0.9.5]
 
 ----------------------------------------------
 ------------MOD CODE -------------------------
@@ -98,12 +98,6 @@ local function tablesize(tbl)
         count = count + 1
     end
     return count
-end
-
--- LOCALIZATION
-
-function SMODS.current_mod.process_loc_text()
-    G.localization.descriptions.Sleeve = G.localization.descriptions.Sleeve or {}
 end
 
 -- ATLAS
