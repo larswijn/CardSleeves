@@ -100,6 +100,13 @@ local function tablesize(tbl)
     return count
 end
 
+-- LOCALIZATION
+
+function SMODS.current_mod.process_loc_text()
+    -- will crash the game if removed
+    G.localization.descriptions.Sleeve = G.localization.descriptions.Sleeve or {}
+end
+
 -- ATLAS
 
 SMODS.Atlas {
