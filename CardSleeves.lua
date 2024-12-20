@@ -960,7 +960,7 @@ end
 
 local function create_sleeve_card(area, sleeve_center)
     local viewed_back = G.GAME.viewed_back ~= nil and {effect = {config = {}}} or false  -- cryptid compat
-    local new_card = Card(area.T.x, area.T.y, area.T.w + 0.1, area.T.h,
+    local new_card = Card(area.T.x, area.T.y, area.T.w + 0.2, area.T.h,
                           nil, sleeve_center or G.P_CENTERS.c_base,
                           {playing_card = 11, viewed_back = viewed_back, galdur_selector = true, sleeve_card = true})
     new_card.sprite_facing = 'back'
@@ -1222,7 +1222,7 @@ function G.UIDEF.current_sleeve(_scale)
     -- create a UI node with sleeve image, sleeve name, description, and mod badges
     _scale = _scale or 1
     local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
-    local sleeve_sprite = create_sleeve_sprite(0, 0, _scale*1.5, _scale*(95/71)*1.5, sleeve_center)
+    local sleeve_sprite = create_sleeve_sprite(0, 0, _scale*1.5, _scale*(95/73)*1.5, sleeve_center)
     sleeve_sprite.states.drag.can = false
     local mod_badges = create_sleeve_badges(sleeve_center)
     return {
