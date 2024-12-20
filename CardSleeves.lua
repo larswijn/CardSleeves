@@ -112,7 +112,7 @@ end
 SMODS.Atlas {
     key = "sleeve_atlas",
     path = "sleeves.png",
-    px = 71,
+    px = 73,
     py = 95
 }
 
@@ -302,7 +302,10 @@ function CardSleeves.Sleeve:locked_loc_vars(info_queue, card)
     elseif not self.unlock_condition.deck or not self.unlock_condition.stake then
         error("Please implement custom `locked_loc_vars` or define `unlock_condition.deck` and `unlock_condition.stake` for Sleeve " .. self.key)
     end
-    local deck_name = localize{type = "name_text", set = "Back", key = self.unlock_condition.deck}
+    local deck_name = localize('k_unknown')
+    if G.P_CENTERS[self.unlock_condition.deck].unlocked then 
+        deck_name = localize{type = "name_text", set = "Back", key = self.unlock_condition.deck}
+    end
     local stake_name = localize{type = "name_text", set = "Stake", key = SMODS.stake_from_index(self.unlock_condition.stake)}
     local colours = G.C.GREY
     if self.unlock_condition.stake > 1 then
@@ -457,6 +460,14 @@ CardSleeves.Sleeve {
         end
         return { key = key, vars = vars }
     end,
+    apply = function(self, args)
+        if self.get_current_deck_key() ~= "b_black" then
+            self.config = { hands = -1, joker_slot = 1 }
+        else
+            self.config = { discards = -1, joker_slot = 1 }
+        end
+        CardSleeves.Sleeve.apply(self)
+    end,
 }
 
 CardSleeves.Sleeve {
@@ -480,6 +491,14 @@ CardSleeves.Sleeve {
             vars[#vars+1] = localize{type = 'name_text', key = self.config.consumables[1], set = 'Tarot'}
         end
         return { key = key, vars = vars }
+    end,
+    apply = function(self, args)
+        if self.get_current_deck_key() ~= "b_magic" then
+            self.config = { voucher = 'v_crystal_ball', consumables = { 'c_fool', 'c_fool' } }
+        else
+            self.config = { voucher = "v_omen_globe" }
+        end
+        CardSleeves.Sleeve.apply(self)
     end,
 }
 
@@ -505,6 +524,14 @@ CardSleeves.Sleeve {
         end
         return { key = key, vars = vars }
     end,
+    apply = function(self, args)
+        if self.get_current_deck_key() ~= "b_nebula" then
+            self.config = { voucher = 'v_telescope', consumable_slot = -1 }
+        else
+            self.config = { voucher = 'v_observatory' }
+        end
+        CardSleeves.Sleeve.apply(self)
+    end,
 }
 
 CardSleeves.Sleeve {
@@ -527,6 +554,14 @@ CardSleeves.Sleeve {
             vars[#vars+1] = self.config.spectral_more_options
         end
         return { key = key, vars = vars }
+    end,
+    apply = function(self, args)
+        if self.get_current_deck_key() ~= "b_ghost" then
+            self.config = { spectral_rate = 2, consumables = { 'c_hex' } }
+        else
+            self.config = { spectral_rate = 4, spectral_more_options = 2 }
+        end
+        CardSleeves.Sleeve.apply(self)
     end,
     trigger_effect = function(self, args)
         if args.context.create_card and args.context.card then
@@ -558,6 +593,11 @@ CardSleeves.Sleeve {
         return { key = key }
     end,
     apply = function(self)
+        if self.get_current_deck_key() ~= "b_abandoned" then
+            self.config = { remove_faces = true }
+        else
+            self.config = { prevent_faces = true }
+        end
         CardSleeves.Sleeve.apply(self)
         if self.config.prevent_faces and self.allowed_card_centers == nil then
             self.allowed_card_centers = {}
@@ -643,6 +683,14 @@ CardSleeves.Sleeve {
         end
         return { key = key }
     end,
+    apply = function(self, args)
+        if self.get_current_deck_key() ~= "b_checkered" then
+            self.config = {}
+        else
+            self.config = { force_suits = {["Clubs"] = "Spades", ["Diamonds"] = "Hearts"} }
+        end
+        CardSleeves.Sleeve.apply(self)
+    end,
     trigger_effect = function(self, args)
         if not self.config.force_suits then
             return
@@ -685,6 +733,14 @@ CardSleeves.Sleeve {
             vars[#vars+1] = self.config.celestial_more_options
         end
         return { key = key, vars = vars }
+    end,
+    apply = function(self, args)
+        if self.get_current_deck_key() ~= "b_zodiac" then
+            self.config = { vouchers = {'v_tarot_merchant', 'v_planet_merchant', 'v_overstock_norm'} }
+        else
+            self.config = { arcana_more_options = 2, celestial_more_options = 2 }
+        end
+        CardSleeves.Sleeve.apply(self)
     end,
     trigger_effect = function(self, args)
         if args.context.create_card and args.context.card then
@@ -853,6 +909,14 @@ CardSleeves.Sleeve {
         return { key = key, vars = vars }
     end,
     apply = function(self)
+        if self.get_current_deck_key() ~= "b_erratic" then
+            self.config = {randomize_rank_suit = true}
+        else
+            self.config = {randomize_rank_suit = true,
+                           randomize_start = true,
+                           random_lb = 3,
+                           random_ub = 6}
+        end
         CardSleeves.Sleeve.apply(self)
         if self.config.randomize_start then
             local function get_random()
@@ -896,7 +960,7 @@ end
 
 local function create_sleeve_card(area, sleeve_center)
     local viewed_back = G.GAME.viewed_back ~= nil and {effect = {config = {}}} or false  -- cryptid compat
-    local new_card = Card(area.T.x, area.T.y, area.T.w + 0.1, area.T.h,
+    local new_card = Card(area.T.x, area.T.y, area.T.w + 0.2, area.T.h,
                           nil, sleeve_center or G.P_CENTERS.c_base,
                           {playing_card = 11, viewed_back = viewed_back, galdur_selector = true, sleeve_card = true})
     new_card.sprite_facing = 'back'
@@ -1158,7 +1222,7 @@ function G.UIDEF.current_sleeve(_scale)
     -- create a UI node with sleeve image, sleeve name, description, and mod badges
     _scale = _scale or 1
     local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
-    local sleeve_sprite = create_sleeve_sprite(0, 0, _scale*1.5, _scale*(95/71)*1.5, sleeve_center)
+    local sleeve_sprite = create_sleeve_sprite(0, 0, _scale*1.5, _scale*(95/73)*1.5, sleeve_center)
     sleeve_sprite.states.drag.can = false
     local mod_badges = create_sleeve_badges(sleeve_center)
     return {
@@ -1800,24 +1864,26 @@ function Card:hover()
         local sleeve_localvars = sleeve["loc_vars"] and sleeve:loc_vars()
         local sleeve_localkey = sleeve_localvars and sleeve_localvars.key or sleeve.key
 
-        local status, result = pcall(populate_info_queue, 'Sleeve', sleeve_localkey)
-        if not status then
-            -- exception
-            if result:find("'loc_target'") then
-                error("Incorrect or missing localization for '" .. sleeve_localkey .. "'")
-            end
-            populate_info_queue('Sleeve', sleeve_localkey)
-        end
-        local info_queue = result
         local tooltips = {}
-        for _, center in pairs(info_queue) do
-            local desc = generate_card_ui(center, {main = {},info = {},type = {},name = 'done'}, nil, center.set, nil)
-            tooltips[#tooltips + 1] =
-            {n=info_col, config={align = "tm"}, nodes={
-                {n=G.UIT.R, config={align = "cm", colour = lighten(G.C.JOKER_GREY, 0.5), r = 0.1, padding = 0.05, emboss = 0.05}, nodes={
-                info_tip_from_rows(desc.info[1], desc.info[1].name),
+        if sleeve:is_unlocked() then
+            local status, result = pcall(populate_info_queue, 'Sleeve', sleeve_localkey)
+            if not status then
+                -- exception
+                if result:find("'loc_target'") then
+                    error("Incorrect or missing localization for '" .. sleeve_localkey .. "'")
+                end
+                populate_info_queue('Sleeve', sleeve_localkey)
+            end
+            local info_queue = result
+            for _, center in pairs(info_queue) do
+                local desc = generate_card_ui(center, {main = {},info = {},type = {},name = 'done'}, nil, center.set, nil)
+                tooltips[#tooltips + 1] =
+                {n=info_col, config={align = "tm"}, nodes={
+                    {n=G.UIT.R, config={align = "cm", colour = lighten(G.C.JOKER_GREY, 0.5), r = 0.1, padding = 0.05, emboss = 0.05}, nodes={
+                    info_tip_from_rows(desc.info[1], desc.info[1].name),
+                    }}
                 }}
-            }}
+            end
         end
 
         local ret_nodes = {}
