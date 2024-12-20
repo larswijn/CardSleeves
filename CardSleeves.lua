@@ -460,6 +460,14 @@ CardSleeves.Sleeve {
         end
         return { key = key, vars = vars }
     end,
+    apply = function(self, args)
+        if self.get_current_deck_key() ~= "b_black" then
+            self.config = { hands = -1, joker_slot = 1 }
+        else
+            self.config = { discards = -1, joker_slot = 1 }
+        end
+        CardSleeves.Sleeve.apply(self)
+    end,
 }
 
 CardSleeves.Sleeve {
@@ -483,6 +491,14 @@ CardSleeves.Sleeve {
             vars[#vars+1] = localize{type = 'name_text', key = self.config.consumables[1], set = 'Tarot'}
         end
         return { key = key, vars = vars }
+    end,
+    apply = function(self, args)
+        if self.get_current_deck_key() ~= "b_magic" then
+            self.config = { voucher = 'v_crystal_ball', consumables = { 'c_fool', 'c_fool' } }
+        else
+            self.config = { voucher = "v_omen_globe" }
+        end
+        CardSleeves.Sleeve.apply(self)
     end,
 }
 
@@ -508,6 +524,14 @@ CardSleeves.Sleeve {
         end
         return { key = key, vars = vars }
     end,
+    apply = function(self, args)
+        if self.get_current_deck_key() ~= "b_nebula" then
+            self.config = { voucher = 'v_telescope', consumable_slot = -1 }
+        else
+            self.config = { voucher = 'v_observatory' }
+        end
+        CardSleeves.Sleeve.apply(self)
+    end,
 }
 
 CardSleeves.Sleeve {
@@ -530,6 +554,14 @@ CardSleeves.Sleeve {
             vars[#vars+1] = self.config.spectral_more_options
         end
         return { key = key, vars = vars }
+    end,
+    apply = function(self, args)
+        if self.get_current_deck_key() ~= "b_ghost" then
+            self.config = { spectral_rate = 2, consumables = { 'c_hex' } }
+        else
+            self.config = { spectral_rate = 4, spectral_more_options = 2 }
+        end
+        CardSleeves.Sleeve.apply(self)
     end,
     trigger_effect = function(self, args)
         if args.context.create_card and args.context.card then
@@ -561,6 +593,11 @@ CardSleeves.Sleeve {
         return { key = key }
     end,
     apply = function(self)
+        if self.get_current_deck_key() ~= "b_abandoned" then
+            self.config = { remove_faces = true }
+        else
+            self.config = { prevent_faces = true }
+        end
         CardSleeves.Sleeve.apply(self)
         if self.config.prevent_faces and self.allowed_card_centers == nil then
             self.allowed_card_centers = {}
@@ -646,6 +683,14 @@ CardSleeves.Sleeve {
         end
         return { key = key }
     end,
+    apply = function(self, args)
+        if self.get_current_deck_key() ~= "b_checkered" then
+            self.config = {}
+        else
+            self.config = { force_suits = {["Clubs"] = "Spades", ["Diamonds"] = "Hearts"} }
+        end
+        CardSleeves.Sleeve.apply(self)
+    end,
     trigger_effect = function(self, args)
         if not self.config.force_suits then
             return
@@ -688,6 +733,14 @@ CardSleeves.Sleeve {
             vars[#vars+1] = self.config.celestial_more_options
         end
         return { key = key, vars = vars }
+    end,
+    apply = function(self, args)
+        if self.get_current_deck_key() ~= "b_zodiac" then
+            self.config = { vouchers = {'v_tarot_merchant', 'v_planet_merchant', 'v_overstock_norm'} }
+        else
+            self.config = { arcana_more_options = 2, celestial_more_options = 2 }
+        end
+        CardSleeves.Sleeve.apply(self)
     end,
     trigger_effect = function(self, args)
         if args.context.create_card and args.context.card then
@@ -856,6 +909,14 @@ CardSleeves.Sleeve {
         return { key = key, vars = vars }
     end,
     apply = function(self)
+        if self.get_current_deck_key() ~= "b_erratic" then
+            self.config = {randomize_rank_suit = true}
+        else
+            self.config = {randomize_rank_suit = true,
+                           randomize_start = true,
+                           random_lb = 3,
+                           random_ub = 6}
+        end
         CardSleeves.Sleeve.apply(self)
         if self.config.randomize_start then
             local function get_random()
