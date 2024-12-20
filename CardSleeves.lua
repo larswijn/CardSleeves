@@ -1864,7 +1864,8 @@ function Card:hover()
         local sleeve_localvars = sleeve["loc_vars"] and sleeve:loc_vars()
         local sleeve_localkey = sleeve_localvars and sleeve_localvars.key or sleeve.key
 
-        if sleeve.unlocked then
+        local tooltips = {}
+        if sleeve:is_unlocked() then
             local status, result = pcall(populate_info_queue, 'Sleeve', sleeve_localkey)
             if not status then
                 -- exception
@@ -1874,7 +1875,6 @@ function Card:hover()
                 populate_info_queue('Sleeve', sleeve_localkey)
             end
             local info_queue = result
-            local tooltips = {}
             for _, center in pairs(info_queue) do
                 local desc = generate_card_ui(center, {main = {},info = {},type = {},name = 'done'}, nil, center.set, nil)
                 tooltips[#tooltips + 1] =
