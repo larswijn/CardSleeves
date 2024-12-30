@@ -302,7 +302,10 @@ function CardSleeves.Sleeve:locked_loc_vars(info_queue, card)
     elseif not self.unlock_condition.deck or not self.unlock_condition.stake then
         error("Please implement custom `locked_loc_vars` or define `unlock_condition.deck` and `unlock_condition.stake` for Sleeve " .. self.key)
     end
-    local deck_name = localize{type = "name_text", set = "Back", key = self.unlock_condition.deck}
+    local deck_name = localize('k_unknown')
+    if G.P_CENTERS[self.unlock_condition.deck].unlocked then
+        deck_name = localize{type = "name_text", set = "Back", key = self.unlock_condition.deck}
+    end
     local stake_name = localize{type = "name_text", set = "Stake", key = SMODS.stake_from_index(self.unlock_condition.stake)}
     local colours = G.C.GREY
     if self.unlock_condition.stake > 1 then
