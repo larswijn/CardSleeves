@@ -1802,25 +1802,27 @@ function Card:hover()
         local sleeve = self.config.center
         local sleeve_localvars = sleeve["loc_vars"] and sleeve:loc_vars()
         local sleeve_localkey = sleeve_localvars and sleeve_localvars.key or sleeve.key
-
-        local status, result = pcall(populate_info_queue, 'Sleeve', sleeve_localkey)
-        if not status then
-            -- exception
-            if result:find("'loc_target'") then
-                error("Incorrect or missing localization for '" .. sleeve_localkey .. "'")
-            end
-            populate_info_queue('Sleeve', sleeve_localkey)
-        end
-        local info_queue = result
+        
         local tooltips = {}
-        for _, center in pairs(info_queue) do
-            local desc = generate_card_ui(center, {main = {},info = {},type = {},name = 'done'}, nil, center.set, nil)
-            tooltips[#tooltips + 1] =
-            {n=info_col, config={align = "tm"}, nodes={
-                {n=G.UIT.R, config={align = "cm", colour = lighten(G.C.JOKER_GREY, 0.5), r = 0.1, padding = 0.05, emboss = 0.05}, nodes={
-                info_tip_from_rows(desc.info[1], desc.info[1].name),
+        if sleeve:is_unlocked() then
+            local status, result = pcall(populate_info_queue, 'Sleeve', sleeve_localkey)
+            if not status then
+                -- exception
+                if result:find("'loc_target'") then
+                    error("Incorrect or missing localization for '" .. sleeve_localkey .. "'")
+                end
+                populate_info_queue('Sleeve', sleeve_localkey)
+            end
+            local info_queue = result
+            for _, center in pairs(info_queue) do
+                local desc = generate_card_ui(center, {main = {},info = {},type = {},name = 'done'}, nil, center.set, nil)
+                tooltips[#tooltips + 1] =
+                {n=info_col, config={align = "tm"}, nodes={
+                    {n=G.UIT.R, config={align = "cm", colour = lighten(G.C.JOKER_GREY, 0.5), r = 0.1, padding = 0.05, emboss = 0.05}, nodes={
+                    info_tip_from_rows(desc.info[1], desc.info[1].name),
+                    }}
                 }}
-            }}
+            end
         end
 
         local ret_nodes = {}
