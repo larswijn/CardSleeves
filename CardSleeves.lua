@@ -2008,6 +2008,15 @@ if Galdur then
             return "ERROR"
         end
     end
+    
+    local function confirm()
+        clean_sleeve_areas()
+        
+        local sleeve_center = CardSleeves.Sleeve:get_obj(G.viewed_sleeve)
+        if sleeve_center["loc_vars"] then
+            sleeve_center:loc_vars()
+        end
+    end
 
     local old_Card_click = Card.click
     function Card:click()
@@ -2025,7 +2034,7 @@ if Galdur then
         name = 'gald_sleeves',
         page = galdur_page_index,
         quick_start_text = quick_start_text,
-        confirm = clean_sleeve_areas
+        confirm = confirm
     })
 end
 
