@@ -1744,7 +1744,7 @@ local function generate_sleeve_card_areas_ui()
         local row = {n = G.UIT.R, config = {colour = G.C.LIGHT, padding = 0.075}, nodes = {}}  -- padding is this because size of cardareas isn't 100% => same total
         for _ = 1, sleeve_count_horizontal do
             if count > #G.P_CENTER_POOLS.Sleeve then return end
-            table.insert(row.nodes, {n = G.UIT.O, config = {object = sleeve_card_areas[count], r = 0.1, id = "sleeve_select_"..count}})
+            table.insert(row.nodes, {n = G.UIT.O, config = {object = sleeve_card_areas[count], r = 0.1, id = "sleeve_select_"..count, focus_args = {snap_to = true}}})
             count = count + 1
         end
         table.insert(deck_ui_element, row)
@@ -1776,7 +1776,6 @@ local function create_sleeve_page_cycle()
         cycle = create_option_cycle({
             options = options,
             w = 4.5,
-            cycle_shoulders = true,
             opt_callback = 'change_sleeve_page',
             focus_args = { snap_to = true, nav = 'wide' },
             current_option = 1,
@@ -1967,8 +1966,9 @@ if Galdur then
 
             local deck_preview = Galdur.display_deck_preview()
             deck_preview.nodes[#deck_preview.nodes+1] = {n = G.UIT.R, config={align = 'cm', padding = 0.15}, nodes = {
-                {n=G.UIT.R, config = {maxw = 2.5, minw = 2.5, minh = 0.8, r = 0.1, hover = true, ref_value = 1, button = 'random_sleeve', colour = Galdur.badge_colour, align = "cm", emboss = 0.1}, nodes = {
-                    {n=G.UIT.T, config={text = localize("gald_random_sleeve"), scale = 0.4, colour = G.C.WHITE}}
+                {n=G.UIT.C, config = {maxw = 2.5, minw = 2.5, minh = 0.8, r = 0.1, hover = true, ref_value = 1, button = 'random_sleeve', colour = Galdur.badge_colour, align = "cm", emboss = 0.1}, nodes = {
+                    {n=G.UIT.R, config = {align = 'cm'}, nodes = {{n=G.UIT.T, config={text = localize("gald_random_sleeve"), scale = 0.4, colour = G.C.WHITE}}}},
+                    {n=G.UIT.R, config = {align = 'cm'}, nodes = {{n=G.UIT.C, config={func = 'set_button_pip', focus_args = { button = 'triggerright', set_button_pip = true, offset = {x=-0.2, y = 0.3}}}}}}
                 }}
             }}
 
