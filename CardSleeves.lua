@@ -1621,11 +1621,6 @@ function create_UIBox_card_unlock(card_center)
     return old_create_UIBox_card_unlock(card_center)
 end
 
-local old_smods_save_unlocks = SMODS.SAVE_UNLOCKS
-function SMODS.SAVE_UNLOCKS(...)
-    old_smods_save_unlocks(...)
-end
-
 local old_set_deck_win = set_deck_win
 function set_deck_win(...)
     -- basically set_sleeve_win()
@@ -1665,7 +1660,7 @@ function set_deck_loss(...)
     old_set_deck_loss(...)  -- at end to let old func call `G:save_settings()`
 end
 
--- GALDUR (1.1.1) COMPATIBILITY
+-- GALDUR (1.1.4+) COMPATIBILITY
 
 local function populate_info_queue(set, key)
     -- direct copy from galdur, but I need it outside of galdur
@@ -1717,6 +1712,7 @@ local function populate_sleeve_card_areas(page)
                 {galdur_back = Back(selected_deck_center)})
             card.sprite_facing = 'back'
             card.facing = 'back'
+            card.children.back:remove()
             card.children.back = Sprite(card.T.x, card.T.y, card.T.w, card.T.h, G.ASSET_ATLAS[selected_deck_center.atlas or 'centers'], selected_deck_center.pos)
             card.children.back.states.hover = card.states.hover
             card.children.back.states.click = card.states.click
@@ -1757,7 +1753,7 @@ end
 
 local function clean_sleeve_areas()
     if not sleeve_card_areas then return end
-    for j = 1, #sleeve_card_areas do
+    for j = #sleeve_card_areas, 1, -1 do
         if sleeve_card_areas[j].cards then
             remove_all(sleeve_card_areas[j].cards)
             sleeve_card_areas[j].cards = {}
