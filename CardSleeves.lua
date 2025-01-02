@@ -5,7 +5,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.4.8
+--- VERSION: 1.5.0
 --- PRIORITY: -1
 --- DEPENDS: [Steamodded>=1.0.0~ALPHA-0924a]
 --- CONFLICTS: [GRM<=0.9.5]
@@ -17,6 +17,7 @@
 
 KNOWN ISSUES/TODO IDEAS:
 
+* TODO: use metadata json instead of file header
 * Issue: What if locked sleeves in challenge?
 * Minor Issue: Tags for booster packs have wrong description when using double zodiac/ghost
 
@@ -26,7 +27,8 @@ KNOWN ISSUES/TODO IDEAS:
 * IDEAS:
 ** See if people want to select their own sleeves in challenges instead of adhering to the challenge?
 ** Yellow deck+sleeve has unique interest mechanic?
-** See if people want unique sleeves?
+** See if people want some unique/custom sleeves by CardSleeves?
+** See if people want a nerfed/balanced version of sleeves?
 
 --]]
 
