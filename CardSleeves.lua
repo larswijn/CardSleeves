@@ -112,7 +112,7 @@ end
 SMODS.Atlas {
     key = "sleeve_atlas",
     path = "sleeves.png",
-    px = 71,
+    px = 73,
     py = 95
 }
 
@@ -899,7 +899,7 @@ end
 
 local function create_sleeve_card(area, sleeve_center)
     local viewed_back = G.GAME.viewed_back ~= nil and {effect = {config = {}}} or false  -- cryptid compat
-    local new_card = Card(area.T.x, area.T.y, area.T.w + 0.1, area.T.h,
+    local new_card = Card(area.T.x, area.T.y, area.T.w + 0.2, area.T.h,
                           nil, sleeve_center or G.P_CENTERS.c_base,
                           {playing_card = 11, viewed_back = viewed_back, galdur_selector = true, sleeve_card = true})
     new_card.sprite_facing = 'back'
@@ -1161,7 +1161,10 @@ function G.UIDEF.current_sleeve(_scale)
     -- create a UI node with sleeve image, sleeve name, description, and mod badges
     _scale = _scale or 1
     local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
-    local sleeve_sprite = create_sleeve_sprite(0, 0, _scale*1.5, _scale*(95/71)*1.5, sleeve_center)
+    local sleeve_atlas = SMODS.Atlases[sleeve_center.atlas]
+    local sleeve_size = {px = sleeve_atlas.px or 71, py = sleeve_atlas.py or 95}
+    print_debug("sleeve_size = " .. tprint(sleeve_size))
+    local sleeve_sprite = create_sleeve_sprite(0, 0, _scale*1.5, _scale*(sleeve_size.py/sleeve_size.px)*1.5, sleeve_center)
     sleeve_sprite.states.drag.can = false
     local mod_badges = create_sleeve_badges(sleeve_center)
     return {
@@ -1463,6 +1466,7 @@ end
 
 local old_CardArea_draw = CardArea.draw
 function CardArea:draw(...)
+    -- very invasive
     if not self.states.visible then return end
     if G.VIEWING_DECK and (self==G.deck or self==G.hand or self==G.play) then return end
 
@@ -1491,9 +1495,9 @@ function CardArea:draw(...)
             end
         end
         local width = x2 - x
-        x = x > 1000000 and self.T.x + 0.1 or x
+        x = x > 1000000 and self.T.x + 0.1 or x - 0.03
         y = (y < 0 and self.T.y or y) + (CardSleeves.config.adjust_deck_alignment and 0.05 or -0.05)
-        width = width <= 0 and self.T.w - 0.2 or width + 0.01
+        width = width <= 0 and self.T.w - 0.2 or width + 0.06
         height = height <= 0 and self.T.h or height
         if self.sleeve_sprite == nil then
             self.sleeve_sprite = create_sleeve_sprite(x, y, width, height, sleeve_center)
