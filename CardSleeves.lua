@@ -534,7 +534,7 @@ CardSleeves.Sleeve {
         return { key = key, vars = vars }
     end,
     trigger_effect = function(self, args)
-        if args.context.create_card and args.context.card then
+        if args.context and args.context.create_card and args.context.card then
             local card = args.context.card
             local is_spectral_pack = card.ability.set == "Booster" and card.ability.name:find("Spectral")
             if is_spectral_pack and self.config.spectral_more_options then
@@ -591,9 +591,9 @@ CardSleeves.Sleeve {
         end
 
         -- handle Strength and Ouija
-        local card = args.context.card
+        local card = args.context and args.context.card
         local is_playing_card = card and (card.ability.set == "Default" or card.ability.set == "Enhanced") and card.config.card_key
-        if args.context.before_use_consumable and card then
+        if args.context and args.context.before_use_consumable and card then
             if card.ability.name == 'Strength' then
                 self.in_strength = true
             elseif card.ability.name == "Ouija" then
@@ -602,11 +602,11 @@ CardSleeves.Sleeve {
             if self.in_strength and self.in_ouija then
                 print_warning("cannot be in both strength and ouija!")
             end
-        elseif args.context.after_use_consumable then
+        elseif args.context and args.context.after_use_consumable then
             self.in_strength = nil
             self.in_ouija = nil
             self.ouija_rank = nil
-        elseif (args.context.create_card or args.context.modify_playing_card) and card and is_playing_card then
+        elseif args.context and (args.context.create_card or args.context.modify_playing_card) and card and is_playing_card then
             if SMODS.Ranks[card.base.value].face then
                 local initial = G.GAME.blind == nil or args.context.create_card
                 if self.in_strength then
@@ -653,9 +653,9 @@ CardSleeves.Sleeve {
             return
         end
 
-        local card = args.context.card
+        local card = args.context and args.context.card
         local is_playing_card = card and (card.ability.set == "Default" or card.ability.set == "Enhanced") and card.config.card_key
-        if (args.context.create_card or args.context.modify_playing_card) and card and is_playing_card then
+        if args.context and (args.context.create_card or args.context.modify_playing_card) and card and is_playing_card then
             for from_suit, to_suit in pairs(self.config.force_suits) do
                 if card.base.suit == from_suit then
                     local base = SMODS.Suits[to_suit].card_key .. "_" .. SMODS.Ranks[card.base.value].card_key
@@ -692,7 +692,7 @@ CardSleeves.Sleeve {
         return { key = key, vars = vars }
     end,
     trigger_effect = function(self, args)
-        if args.context.create_card and args.context.card then
+        if args.context and args.context.create_card and args.context.card then
             local card = args.context.card
             local is_booster_pack = card.ability.set == "Booster"
             local is_arcana_pack = is_booster_pack and card.ability.name:find("Arcana")
