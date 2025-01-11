@@ -5,7 +5,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.5.1
+--- VERSION: 1.5.2
 --- PRIORITY: -1
 --- DEPENDS: [Steamodded>=1.0.0~ALPHA-0924a]
 --- CONFLICTS: [GRM<=0.9.5]
@@ -305,7 +305,10 @@ function CardSleeves.Sleeve:locked_loc_vars(info_queue, card)
         error("Please implement custom `locked_loc_vars` or define `unlock_condition.deck` and `unlock_condition.stake` for Sleeve " .. self.key)
     end
     local deck_name = localize('k_unknown')
-    if G.P_CENTERS[self.unlock_condition.deck].unlocked then
+    if not G.P_CENTERS[self.unlock_condition.deck] then
+        print_warning("G.P_CENTERS[" .. tprint(self.unlock_condition.deck, 2) .. "] was not found!")
+        deck_name = "[UI ERROR]"
+    elseif G.P_CENTERS[self.unlock_condition.deck].unlocked then
         deck_name = localize{type = "name_text", set = "Back", key = self.unlock_condition.deck}
     end
     local stake_name = localize{type = "name_text", set = "Stake", key = SMODS.stake_from_index(self.unlock_condition.stake)}
@@ -2010,12 +2013,12 @@ if Galdur then
             return "ERROR"
         end
     end
-    
+
     local function confirm()
         clean_sleeve_areas()
-        
+
         local sleeve_center = CardSleeves.Sleeve:get_obj(G.viewed_sleeve)
-        if sleeve_center["loc_vars"] then
+        if sleeve_center and sleeve_center["loc_vars"] then
             sleeve_center:loc_vars()
         end
     end
