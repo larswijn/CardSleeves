@@ -1085,7 +1085,7 @@ function G.UIDEF.sleeve_description(sleeve_key, minw)
 
     return {
         n = G.UIT.C,
-        config = { align = "cm", padding = 0.05, r = 0.1, colour = G.C.L_BLACK },
+        config = { align = "cm", padding = 0.047, r = 0.1, colour = G.C.L_BLACK },
         nodes = {
             {
                 n = G.UIT.R,
@@ -1096,7 +1096,7 @@ function G.UIDEF.sleeve_description(sleeve_key, minw)
             },
             {
                 n = G.UIT.R,
-                config = { align = "cm", padding = 0.03, colour = G.C.WHITE, r = 0.1, minh = 1, minw = minw },
+                config = { align = "cm", colour = G.C.WHITE, r = 0.1, minh = 1, minw = minw },
                 nodes = desc_t
             }
         }
@@ -1142,18 +1142,18 @@ function G.UIDEF.viewed_sleeve_option()
 
     return {
         n = G.UIT.ROOT,
-        config = { align = "cm", colour = G.C.BLACK, r = 0.1, minw = 7.23 },
+        config = { align = "c", colour = G.C.BLACK, r = 0.1, minw = 7.23 },
         nodes = {
             {
                 n = G.UIT.C,
-                config = { align = "cm", padding = 0 },
+                config = { align = "cm", padding = 0, minw = 1.44 },  -- the align l/r do nothing, praise minw
                 nodes = {
-                    { n = G.UIT.T, config = { text = "Sleeve", scale = 0.4, colour = G.C.L_BLACK } }
+                    { n = G.UIT.T, config = { text = localize('k_sleeve'), scale = 0.4, colour = G.C.L_BLACK } }
                 }
             },
             {
                 n = G.UIT.C,
-                config = { align = "cm", padding = 0.1 },
+                config = { padding = 0.1 },
                 nodes = {
                     G.UIDEF.sleeve_description(G.viewed_sleeve, 5.5)
                 }
