@@ -1181,7 +1181,7 @@ function G.UIDEF.current_sleeve(_scale)
                 config = { align = "cm", colour = G.C.BLACK, padding = 0.1, minw = 4 },
                 nodes = {
                     { n = G.UIT.O, config = { colour = G.C.BLACK, object = sleeve_sprite, hover = true, can_collide = false } },
-                    { n = G.UIT.T, config = { text = "Sleeve", scale = _scale / 2, colour = G.C.WHITE } }
+                    { n = G.UIT.T, config = { text = localize('k_sleeve'), scale = _scale / 2, colour = G.C.WHITE } }
                 }
             },
             {
@@ -1608,7 +1608,7 @@ function create_tabs(args)
     local config_in_run_info = CardSleeves.config.sleeve_info_location == 2 or CardSleeves.config.sleeve_info_location == 3
     if args["tabs"] and is_in_run_info_tab and sleeve_exists and config_in_run_info then
         table.insert(args.tabs, 4, {
-            label = "Sleeve",
+            label = localize('k_sleeve'),
             tab_definition_function = G.UIDEF.current_sleeve
         })
     end
