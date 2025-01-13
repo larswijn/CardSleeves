@@ -1885,6 +1885,7 @@ end
 if Galdur then
     local min_galdur_version = '1.1.4'
     local galdur_page_index = 2  -- page that our sleeves appear on - only start drawing information from this page onward
+    local quick_start_sleeve = nil
 
     local function set_sleeve_text(sleeve_center)
         -- sets deck name to sleeve name in Galdur's deck preview
@@ -1899,6 +1900,18 @@ if Galdur then
                     dyna_text_uinode.config.object.config.non_recalc = true
                 end
             end
+        end
+    end
+
+    local function quick_start_text()
+        if not quick_start_sleeve then
+            quick_start_sleeve = G.viewed_sleeve or G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve or "sleeve_casl_none"
+        end
+        local sleeve_center = CardSleeves.Sleeve:get_obj(quick_start_sleeve)
+        if sleeve_center then
+            return sleeve_center:get_name()
+        else
+            return "ERROR"
         end
     end
 
@@ -1924,6 +1937,12 @@ if Galdur then
         return old_Galdur_display_deck_preview()
     end
 
+    local old_Galdur_start_run = Galdur.start_run
+    function Galdur.start_run(_quick_start)
+        quick_start_sleeve = G.viewed_sleeve
+        return old_Galdur_start_run(_quick_start)
+    end
+
     local function set_new_sleeve(sleeve_center, silent)
         -- visual only - use G.FUNCS.change_sleeve to change the actual value
         G.E_MANAGER:clear_queue('galdur')
@@ -1939,6 +1958,8 @@ if Galdur then
 
     local old_quick_start = G.FUNCS.quick_start
     function G.FUNCS.quick_start()
+        -- gets called when pressing "last run" button in galdur
+        G.viewed_sleeve = quick_start_sleeve
         if G.viewed_sleeve == nil or CardSleeves.Sleeve:get_obj(G.viewed_sleeve) == nil then
             -- make sure G.viewed_sleeve actually has a sensible definition
             G.FUNCS.change_sleeve{to_key=1}
@@ -2000,18 +2021,6 @@ if Galdur then
                     }}
                 }}
             }}
-        end
-    end
-
-    local function quick_start_text()
-        if not G.viewed_sleeve then
-            G.viewed_sleeve = G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve or "sleeve_casl_none"
-        end
-        local sleeve_center = CardSleeves.Sleeve:get_obj(G.viewed_sleeve)
-        if sleeve_center then
-            return sleeve_center:get_name()
-        else
-            return "ERROR"
         end
     end
 
