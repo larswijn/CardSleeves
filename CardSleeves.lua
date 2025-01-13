@@ -1051,8 +1051,9 @@ G.FUNCS.RUN_SETUP_check_sleeve2 = function(e)
     end
 end
 
-function G.UIDEF.sleeve_description(sleeve_key, minw)
+function G.UIDEF.sleeve_description(sleeve_key, minw, padding)
     minw = minw or 5.5
+    padding = padding or 0
     local sleeve_center = CardSleeves.Sleeve:get_obj(sleeve_key)
     local ret_nodes = {}
     local sleeve_name = ""
@@ -1067,7 +1068,7 @@ function G.UIDEF.sleeve_description(sleeve_key, minw)
                 n= 1,
             }},
             {{
-                config = { scale= 0.32, colour = G.C.BLACK, text= "(DEBUG: key = '" .. tprint(G.viewed_sleeve) .. "')", },
+                config = { scale= 0.32, colour = G.C.BLACK, text= "(DEBUG: key = '" .. tprint(sleeve_key) .. "')", },
                 n= 1,
             }},
         }
@@ -1089,14 +1090,14 @@ function G.UIDEF.sleeve_description(sleeve_key, minw)
         nodes = {
             {
                 n = G.UIT.R,
-                config = { align = "cm", padding = 0 },
+                config = { align = "cm", padding = padding },
                 nodes = {
                     { n = G.UIT.T, config = { text = sleeve_name, scale = 0.35, colour = G.C.WHITE } }
                 }
             },
             {
                 n = G.UIT.R,
-                config = { align = "cm", colour = G.C.WHITE, r = 0.1, minh = 1, minw = minw },
+                config = { align = "cm", colour = G.C.WHITE, r = 0.1, minh = 1, minw = minw, padding = padding },
                 nodes = desc_t
             }
         }
@@ -1174,21 +1175,21 @@ function G.UIDEF.current_sleeve(_scale)
     local mod_badges = create_sleeve_badges(sleeve_center)
     return {
         n = G.UIT.ROOT,
-        config = { align = "cm", colour = G.C.BLACK, r = 0.1, padding = 0.1},
+        config = { align = "cm", colour = G.C.BLACK, r = 0.1, padding = 0.15, emboss = 0.05},
         nodes = {
             {
                 n = G.UIT.R,
                 config = { align = "cm", colour = G.C.BLACK, padding = 0.1, minw = 4 },
                 nodes = {
                     { n = G.UIT.O, config = { colour = G.C.BLACK, object = sleeve_sprite, hover = true, can_collide = false } },
-                    { n = G.UIT.T, config = { text = localize('k_sleeve'), scale = _scale / 2, colour = G.C.WHITE } }
+                    { n = G.UIT.T, config = { text = localize('k_sleeve'), scale = _scale / 1.5, colour = G.C.WHITE, shadow = true } }
                 }
             },
             {
                 n = G.UIT.R,
-                config = { align = "cm", padding = 0.1 },
+                config = { align = "cm", colour = G.C.L_BLACK, r = 0.1, emboss = 0.05 },
                 nodes = {
-                    G.UIDEF.sleeve_description(G.GAME.selected_sleeve, 5.5)
+                    G.UIDEF.sleeve_description(G.GAME.selected_sleeve, 5.5, 0.1)
                 }
             },
             mod_badges
@@ -1361,16 +1362,16 @@ function G.UIDEF.view_deck(...)
         end
 
         -- insert sleeve description UI element
-        local minw = 2.5
+        local minw, padding = 2.5, 0.05
         local UI_node = {
             n = G.UIT.R,
-            config = {align = "cm", r = 0.1, colour = G.C.L_BLACK, emboss = 0.05, padding = 0.05},
+            config = {align = "cm", r = 0.1, colour = G.C.L_BLACK, emboss = 0.05},
             nodes = {
                 {
                     n = G.UIT.R,
-                    config = {align = "cm", r = 0.1, minw = minw, maxw = 4, minh = 1, colour = G.C.CLEAR},
+                    config = {align = "cm", r = 0.1, minw = minw, maxw = 4, minh = 1, colour = G.C.WHITE},
                     nodes = {
-                        G.UIDEF.sleeve_description(G.GAME.selected_sleeve, minw),
+                        G.UIDEF.sleeve_description(G.GAME.selected_sleeve, minw, padding),
                     }
                 }
             }
