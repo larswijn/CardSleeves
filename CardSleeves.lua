@@ -1169,7 +1169,6 @@ function G.UIDEF.current_sleeve(_scale)
     local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
     local sleeve_atlas = SMODS.Atlases[sleeve_center.atlas]
     local sleeve_size = {px = sleeve_atlas.px or 71, py = sleeve_atlas.py or 95}
-    print_debug("sleeve_size = " .. tprint(sleeve_size))
     local sleeve_sprite = create_sleeve_sprite(0, 0, _scale*1.5, _scale*(sleeve_size.py/sleeve_size.px)*1.5, sleeve_center)
     sleeve_sprite.states.drag.can = false
     local mod_badges = create_sleeve_badges(sleeve_center)
@@ -1245,6 +1244,7 @@ function create_UIBox_sleeve_unlock(sleeve_center)
 *List of functions we hook into and change its output or properties:
  (not a full list) (also see lovely.toml)
 **G.UIDEF.run_setup_option
+**G.UIDEF.view_deck
 **G.FUNCS.can_start_run
 **G.FUNCS.change_viewed_back
 **Game:init_game_object
@@ -2142,7 +2142,6 @@ G.FUNCS.your_collection_sleeves = function()
 	}
 end
 
-print_trace("Trace logging level enabled")
 print_info("CardSleeves v" .. SMODS.Mods.CardSleeves.version .. " loaded~!")
 
 ----------------------------------------------
