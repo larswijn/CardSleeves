@@ -5,7 +5,7 @@
 --- MOD_AUTHOR: [LarsWijn]
 --- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
 --- PREFIX: casl
---- VERSION: 1.5.3
+--- VERSION: 1.5.4
 --- PRIORITY: -1
 --- DEPENDS: [Steamodded>=1.0.0~ALPHA-0924a]
 --- CONFLICTS: [GRM<=0.9.5]
@@ -1574,9 +1574,10 @@ function Card:set_base(card, initial)
 
     if not is_in_run_info_tab then
         local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve) or CardSleeves.Sleeve:get_obj("sleeve_casl_none")
+        local is_playing_card = (self.ability.set == "Default" or self.ability.set == "Enhanced") and self.config.card_key
         if initial then
             sleeve_center:trigger_effect{context = {create_card = true, card = self}}
-        elseif not initial and self.playing_card then
+        elseif not initial and is_playing_card then
             sleeve_center:trigger_effect{context = {modify_playing_card = true, card = self}}
         end
     end
