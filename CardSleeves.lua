@@ -375,14 +375,6 @@ function CardSleeves.Sleeve.get_current_deck_key()
     return "b_red"
 end
 
-function CardSleeves.Sleeve.get_current_deck_name()
-    print_warning("DEPRECATED: `get_current_deck_name` will be removed in a future version, use `get_current_deck_key` instead")
-    return (Galdur and Galdur.config.use and Galdur.run_setup.choices.deck) and Galdur.run_setup.choices.deck.name or
-            G.GAME.viewed_back and G.GAME.viewed_back.name or
-            G.GAME.selected_back and G.GAME.selected_back.name or
-            "Red Deck"
-end
-
 -- SLEEVE INSTANCES
 
 CardSleeves.Sleeve {
