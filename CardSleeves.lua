@@ -149,7 +149,12 @@ function CardSleeves.Sleeve:apply()
     if self.config.voucher then
         G.GAME.used_vouchers[self.config.voucher] = true
         G.GAME.starting_voucher_count = (G.GAME.starting_voucher_count or 0) + 1
-        Card.apply_to_run(nil, G.P_CENTERS[self.config.voucher])
+        G.E_MANAGER:add_event(Event({
+            func = function()
+                Card.apply_to_run(nil, G.P_CENTERS[self.config.voucher])
+                return true
+            end
+        }))
     end
     if self.config.hands then
         G.GAME.starting_params.hands = G.GAME.starting_params.hands + self.config.hands
@@ -203,7 +208,12 @@ function CardSleeves.Sleeve:apply()
         for _, v in pairs(self.config.vouchers) do
             G.GAME.used_vouchers[v] = true
             G.GAME.starting_voucher_count = (G.GAME.starting_voucher_count or 0) + 1
-            Card.apply_to_run(nil, G.P_CENTERS[v])
+            G.E_MANAGER:add_event(Event({
+                func = function()
+                    Card.apply_to_run(nil, G.P_CENTERS[v])
+                    return true
+                end
+            }))
         end
     end
     if self.name == 'Checkered Sleeve' then
