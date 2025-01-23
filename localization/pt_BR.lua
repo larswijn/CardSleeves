@@ -33,10 +33,10 @@ return {
             sleeve_casl_green = {
                 name = "Capa Verde",
                 text = {
-                    "At end of each Round:",
-                    "+{C:money}$#1#{s:0.85} per remaining {C:blue}Hand",
-                    "+{C:money}$#2#{s:0.85} per remaining {C:red}Discard",
-                    "Earn no {C:attention}Interest"
+                    "No fim de cada Rodada:",
+                    "+{C:money}$#1#{s:0.85} por {C:blue}Mão restante",
+                    "+{C:money}$#2#{s:0.85} por {C:red}Descarte restante",
+                    "Sem {C:attention}Juros"
                     }
             },
 
