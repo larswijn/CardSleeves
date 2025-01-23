@@ -1,3 +1,4 @@
+-- Portuguese (Brazil) by PinkMaggit
 return {
     descriptions = {
         Sleeve = {
