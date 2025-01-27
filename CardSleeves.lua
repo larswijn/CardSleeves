@@ -316,15 +316,20 @@ function CardSleeves.Sleeve:locked_loc_vars(info_queue, card)
     end
     local deck_name = localize('k_unknown')
     if not G.P_CENTERS[self.unlock_condition.deck] then
-        print_warning("G.P_CENTERS[" .. tprint(self.unlock_condition.deck, 2) .. "] was not found!")
+        print_error("G.P_CENTERS[" .. tprint(self.unlock_condition.deck, 2) .. "] was not found!")
         deck_name = "[UI ERROR]"
     elseif G.P_CENTERS[self.unlock_condition.deck].unlocked then
         deck_name = localize{type = "name_text", set = "Back", key = self.unlock_condition.deck}
     end
-    local stake_name = localize{type = "name_text", set = "Stake", key = SMODS.stake_from_index(self.unlock_condition.stake)}
+    local stake_key = type(self.unlock_condition.stake) == "number" and SMODS.stake_from_index(self.unlock_condition.stake) or self.unlock_condition.stake
+    if type(self.unlock_condition.stake) == "number" then
+        -- uncomment this in next version of CardSleeves
+        -- print_debug(("WARNING @%s: please use the stake key (best guess: '%s') instead of index '%d'"):format(self.mod.id, stake_key, self.unlock_condition.stake))
+    end
+    local stake_name = localize{type = "name_text", set = "Stake", key = stake_key}
     local colours = G.C.GREY
-    if self.unlock_condition.stake > 1 then
-        colours = get_stake_col(self.unlock_condition.stake)
+    if stake_key ~= "stake_white" then
+        colours = get_stake_col(SMODS.Stakes[stake_key].order)
     end
     local vars = { deck_name, stake_name, colours = {colours} }
     return { vars = vars }
@@ -402,7 +407,7 @@ CardSleeves.Sleeve {
     pos = { x = 0, y = 0 },
     config = { discards = 1 },
     unlocked = false,
-    unlock_condition = { deck = "b_red", stake = 2 },
+    unlock_condition = { deck = "b_red", stake = "stake_red" },
     loc_vars = function(self)
         return { vars = { self.config.discards } }
     end,
@@ -415,7 +420,7 @@ CardSleeves.Sleeve {
     pos = { x = 1, y = 0 },
     config = { hands = 1 },
     unlocked = false,
-    unlock_condition = { deck = "b_blue", stake = 3 },
+    unlock_condition = { deck = "b_blue", stake = "stake_green" },
     loc_vars = function(self)
         return { vars = { self.config.hands } }
     end,
@@ -428,7 +433,7 @@ CardSleeves.Sleeve {
     pos = { x = 2, y = 0 },
     config = { dollars = 10 },
     unlocked = false,
-    unlock_condition = { deck = "b_yellow", stake = 3 },
+    unlock_condition = { deck = "b_yellow", stake = "stake_green" },
     loc_vars = function(self)
         return { vars = { self.config.dollars } }
     end,
@@ -441,7 +446,7 @@ CardSleeves.Sleeve {
     pos = { x = 3, y = 0 },
     config = { extra_hand_bonus = 1, extra_discard_bonus = 1, no_interest = true },
     unlocked = false,
-    unlock_condition = { deck = "b_green", stake = 3 },
+    unlock_condition = { deck = "b_green", stake = "stake_green" },
     loc_vars = function(self)
         return { vars = { self.config.extra_hand_bonus, self.config.extra_discard_bonus, self.config.no_interest } }
     end,
@@ -453,7 +458,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 0 },
     unlocked = false,
-    unlock_condition = { deck = "b_black", stake = 3 },
+    unlock_condition = { deck = "b_black", stake = "stake_green" },
     loc_vars = function(self)
         local key, vars
         if self.get_current_deck_key() ~= "b_black" then
@@ -475,7 +480,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 1 },
     unlocked = false,
-    unlock_condition = { deck = "b_magic", stake = 4 },
+    unlock_condition = { deck = "b_magic", stake = "stake_black" },
     loc_vars = function(self)
         local key
         if self.get_current_deck_key() ~= "b_magic" then
@@ -499,7 +504,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 1 },
     unlocked = false,
-    unlock_condition = { deck = "b_nebula", stake = 4 },
+    unlock_condition = { deck = "b_nebula", stake = "stake_black" },
     loc_vars = function(self)
         local key
         if self.get_current_deck_key() ~= "b_nebula" then
@@ -523,7 +528,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 1 },
     unlocked = false,
-    unlock_condition = { deck = "b_ghost", stake = 4 },
+    unlock_condition = { deck = "b_ghost", stake = "stake_black" },
     loc_vars = function(self)
         local key
         local vars = {}
@@ -555,7 +560,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 1 },
     unlocked = false,
-    unlock_condition = { deck = "b_abandoned", stake = 4 },
+    unlock_condition = { deck = "b_abandoned", stake = "stake_black" },
     loc_vars = function(self)
         local key = self.key
         if self.get_current_deck_key() ~= "b_abandoned" then
@@ -641,7 +646,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 1 },
     unlocked = false,
-    unlock_condition = { deck = "b_checkered", stake = 4 },
+    unlock_condition = { deck = "b_checkered", stake = "stake_black" },
     loc_vars = function(self)
         local key
         if self.get_current_deck_key() ~= "b_checkered" then
@@ -678,7 +683,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 2 },
     unlocked = false,
-    unlock_condition = { deck = "b_zodiac", stake = 5 },
+    unlock_condition = { deck = "b_zodiac", stake = "stake_blue" },
     loc_vars = function(self)
         local key
         local vars = {}
@@ -717,7 +722,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 2 },
     unlocked = false,
-    unlock_condition = { deck = "b_painted", stake = 5 },
+    unlock_condition = { deck = "b_painted", stake = "stake_blue" },
     config = {hand_size = 2, joker_slot = -1},
     loc_vars = function(self)
         return { vars = { self.config.hand_size, self.config.joker_slot } }
@@ -730,7 +735,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 2 },
     unlocked = false,
-    unlock_condition = { deck = "b_anaglyph", stake = 5 },
+    unlock_condition = { deck = "b_anaglyph", stake = "stake_blue" },
     config = {},
     loc_vars = function(self)
         local key
@@ -767,7 +772,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 2 },
     unlocked = false,
-    unlock_condition = { deck = "b_plasma", stake = 6 },
+    unlock_condition = { deck = "b_plasma", stake = "stake_purple" },
     config = {ante_scaling = 2},
     loc_vars = function(self)
         local key
@@ -840,7 +845,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 2 },
     unlocked = false,
-    unlock_condition = { deck = "b_erratic", stake = 7 },
+    unlock_condition = { deck = "b_erratic", stake = "stake_orange" },
     config = {randomize_rank_suit = true},
     loc_vars = function(self)
         local key
