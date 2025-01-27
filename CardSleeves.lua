@@ -260,7 +260,7 @@ end
 function CardSleeves.Sleeve:trigger_effect(args)
     if not args then return end
 
-    if self.name == 'Plasma Sleeve' and args.context == 'final_scoring_step' then
+    if self.name == 'Plasma Sleeve' and args.context == 'final_scoring_step' and self.get_current_deck_key() ~= "b_plasma" then
         local tot = args.chips + args.mult
         args.chips = math.floor(tot/2)
         args.mult = math.floor(tot/2)
@@ -780,7 +780,6 @@ CardSleeves.Sleeve {
         return { key = key, vars = vars }
     end,
     trigger_effect = function(self, args)
-        -- TODO: don't balance chips/mult twice for no reason?
         CardSleeves.Sleeve.trigger_effect(self, args)
         -- TODO: this isn't API friendly?
         if self.get_current_deck_key() == "b_plasma" and self.name == 'Plasma Sleeve' and args.context == "shop_final_pass" then
