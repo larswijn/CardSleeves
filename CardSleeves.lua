@@ -7,7 +7,7 @@
 --- PREFIX: casl
 --- VERSION: 1.5.5
 --- PRIORITY: -1
---- DEPENDS: [Steamodded>=1.0.0~ALPHA-0924a]
+--- DEPENDS: [Steamodded>=1.0.0~ALPHA-0924a, Lovely>=0.6.0]
 --- CONFLICTS: [GRM<=0.9.5]
 
 ----------------------------------------------
@@ -1254,7 +1254,6 @@ function create_UIBox_sleeve_unlock(sleeve_center)
 **Back:trigger_effect
 **CardArea:draw
 **create_tabs
-**Controller:snap_to
 **Card:set_base
 **Card:use_consumeable
 **CardArea:unhighlight_all
@@ -1547,29 +1546,6 @@ function CardArea:align_cards(...)
     end
 end
 
-local old_Controller_snap_to = Controller.snap_to
-function Controller:snap_to(args)
-    -- hooking into this might not be a good idea tbh, but I don't have a controller to test it, so...
-    -- TODO: see if there's a better way to do this (Game:update_shop?)
-    local in_shop_load = G["shop"] and args["node"] and
-                         (args.node == G.shop:get_UIE_by_ID('next_round_button') or
-                          args.node["area"] and args.node.area["config"] and args.node.area.config.type == "shop")
-    if in_shop_load then
-        -- shop has been loaded/rerolled/etc
-        local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve) or CardSleeves.Sleeve:get_obj("sleeve_casl_none")
-        G.E_MANAGER:add_event(Event({
-            delay = 0.01,  --  because stupid fucking tags not applying immediately
-            blockable = true,
-            trigger = 'after',
-            func = function()
-                sleeve_center:trigger_effect{context = "shop_final_pass"}
-                return true
-            end
-        }))
-    end
-    return old_Controller_snap_to(self, args)
-end
-
 local old_Card_set_base = Card.set_base
 function Card:set_base(card, initial)
     local output = old_Card_set_base(self, card, initial)
@@ -1810,7 +1786,7 @@ function Card:hover()
         local sleeve = self.config.center
         local sleeve_localvars = sleeve["loc_vars"] and sleeve:loc_vars()
         local sleeve_localkey = sleeve_localvars and sleeve_localvars.key or sleeve.key
-        
+
         local tooltips = {}
         if sleeve:is_unlocked() then
             local status, result = pcall(populate_info_queue, 'Sleeve', sleeve_localkey)

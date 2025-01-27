@@ -7,14 +7,17 @@ priority = 11
 # Move seed generation to be before Back:apply and Stake.modifiers() so that both methods can use the seed and true pseudorandom numbers
 # Game:start_run (both patches)
 [[patches]]
-[patches.regex]
+[patches.pattern]
 target = "game.lua"
-pattern = '''\n?[\t ]if not saveTable then
-[\t ]*if args\.seed then self\.GAME\.seeded = true end
-[\t ]*self\.GAME\.pseudorandom\.seed = args\.seed or \(not \(G\.SETTINGS\.tutorial_complete or G\.SETTINGS\.tutorial_progress\.completed_parts\['big_blind'\]\) and "TUTORIAL"\) or generate_starting_seed\(\)
-[\t ]*end
-\s*for k, v in pairs\(self\.GAME\.pseudorandom\) do if v == 0 then self\.GAME\.pseudorandom\[k\] = pseudohash\(k\.\.self\.GAME\.pseudorandom\.seed\) end end
-[\t ]*self\.GAME\.pseudorandom\.hashed_seed = pseudohash\(self\.GAME\.pseudorandom\.seed\)\n?'''
+pattern = '''
+if not saveTable then
+    if args.seed then self.GAME.seeded = true end
+    self.GAME.pseudorandom.seed = args.seed or (not (G.SETTINGS.tutorial_complete or G.SETTINGS.tutorial_progress.completed_parts["big_blind"]) and "TUTORIAL") or generate_starting_seed()
+end
+for k, v in pairs(self.GAME.pseudorandom) do if v == 0 then self.GAME.pseudorandom[k] = pseudohash(k..self.GAME.pseudorandom.seed) end end
+self.GAME.pseudorandom.hashed_seed = pseudohash(self.GAME.pseudorandom.seed)
+'''
+match_indent = true
 position = "at"
 payload = ''
 [[patches]]
@@ -33,7 +36,7 @@ for k, v in pairs(self.GAME.pseudorandom) do if v == 0 then self.GAME.pseudorand
 self.GAME.pseudorandom.hashed_seed = pseudohash(self.GAME.pseudorandom.seed)
 '''
 
-# Cryptid&Galdur compat (copied from Eremel <3 - needs higher priority than Galdur's patch)
+# Cryptid&Galdur compat (copied from Eremel <3 - needs higher/later priority than Galdur's patch)
 # Card:draw()
 [[patches]]
 [patches.regex]
@@ -80,3 +83,28 @@ payload = """if v.set and v.set == 'Sleeve' then
         G.DISCOVER_TALLIES.total.tally = G.DISCOVER_TALLIES.total.tally + 1
     end
 end"""
+
+# adds context for shop_final_pass to backs (and thus sleeves)
+# Game:update_shop()
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = """
+for i = 1, #G.GAME.tags do
+    G.GAME.tags[i]:apply_to_run({type = 'shop_final_pass'})
+end
+"""
+position = 'after'
+match_indent = true
+payload = """
+-- CardSleeves stuff
+G.E_MANAGER:add_event(Event({
+    delay = 0.01,  --  because stupid fucking tags not applying immediately
+    blockable = true,
+    trigger = 'after',
+    func = function()
+        G.GAME.selected_back:trigger_effect({context = "shop_final_pass"})  
+        return true
+    end
+}))
+"""
