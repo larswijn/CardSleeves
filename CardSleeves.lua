@@ -260,52 +260,7 @@ end
 function CardSleeves.Sleeve:trigger_effect(args)
     if not args then return end
 
-    if self.name == 'Plasma Sleeve' and args.context == 'final_scoring_step' and self.get_current_deck_key() ~= "b_plasma" then
-        local tot = args.chips + args.mult
-        args.chips = math.floor(tot/2)
-        args.mult = math.floor(tot/2)
-        update_hand_text({delay = 0}, {mult = args.mult, chips = args.chips})
-
-        G.E_MANAGER:add_event(Event({
-            func = (function()
-                play_sound('gong', 0.94, 0.3)
-                play_sound('gong', 0.94*1.5, 0.2)
-                play_sound('tarot1', 1.5)
-                ease_colour(G.C.UI_CHIPS, {0.8, 0.45, 0.85, 1})
-                ease_colour(G.C.UI_MULT, {0.8, 0.45, 0.85, 1})
-                attention_text({
-                    scale = 1.4, text = localize('k_balanced'), hold = 2, align = 'cm', offset = {x = 0,y = -2.7},major = G.play
-                })
-                G.E_MANAGER:add_event(Event({
-                    trigger = 'after',
-                    blockable = false,
-                    blocking = false,
-                    delay =  4.3,
-                    func = (function()
-                            ease_colour(G.C.UI_CHIPS, G.C.BLUE, 2)
-                            ease_colour(G.C.UI_MULT, G.C.RED, 2)
-                        return true
-                    end)
-                }))
-                G.E_MANAGER:add_event(Event({
-                    trigger = 'after',
-                    blockable = false,
-                    blocking = false,
-                    no_delete = true,
-                    delay =  6.3,
-                    func = (function()
-                        G.C.UI_CHIPS[1], G.C.UI_CHIPS[2], G.C.UI_CHIPS[3], G.C.UI_CHIPS[4] = G.C.BLUE[1], G.C.BLUE[2], G.C.BLUE[3], G.C.BLUE[4]
-                        G.C.UI_MULT[1], G.C.UI_MULT[2], G.C.UI_MULT[3], G.C.UI_MULT[4] = G.C.RED[1], G.C.RED[2], G.C.RED[3], G.C.RED[4]
-                        return true
-                    end)
-                }))
-                return true
-            end)
-        }))
-
-        delay(0.6)
-        return args.chips, args.mult
-    end
+    -- keep for compatibility reasons? (people incl me assuming this function exists)
 end
 
 function CardSleeves.Sleeve:locked_loc_vars(info_queue, card)
@@ -543,12 +498,12 @@ CardSleeves.Sleeve {
         end
         return { key = key, vars = vars }
     end,
-    trigger_effect = function(self, args)
-        if args.context and args.context.create_card and args.context.card then
-            local card = args.context.card
+    calculate = function(self, sleeve, context)
+        if context.create_card and context.card then
+            local card = context.card
             local is_spectral_pack = card.ability.set == "Booster" and card.ability.name:find("Spectral")
-            if is_spectral_pack and self.config.spectral_more_options then
-               card.ability.extra = card.ability.extra + self.config.spectral_more_options
+            if is_spectral_pack and sleeve.config.spectral_more_options then
+               card.ability.extra = card.ability.extra + sleeve.config.spectral_more_options
             end
         end
     end,
@@ -589,50 +544,50 @@ CardSleeves.Sleeve {
             self.skip_trigger_effect = false
         end
     end,
-    trigger_effect = function(self, args)
-        if not self.config.prevent_faces then
+    calculate = function(self, sleeve, context)
+        if not sleeve.config.prevent_faces then
             return
         end
-        if self.skip_trigger_effect then
+        if sleeve.skip_trigger_effect then
             return
         end
-        if self.allowed_card_centers == nil then
-            self:apply()
+        if sleeve.allowed_card_centers == nil then
+            sleeve:apply()
         end
 
         -- handle Strength and Ouija
-        local card = args.context and args.context.card
+        local card = context.card
         local is_playing_card = card and (card.ability.set == "Default" or card.ability.set == "Enhanced") and card.config.card_key
-        if args.context and args.context.before_use_consumable and card then
+        if context.before_use_consumable and card then
             if card.ability.name == 'Strength' then
-                self.in_strength = true
+                sleeve.in_strength = true
             elseif card.ability.name == "Ouija" then
-                self.in_ouija = true
+                sleeve.in_ouija = true
             end
-            if self.in_strength and self.in_ouija then
+            if sleeve.in_strength and sleeve.in_ouija then
                 print_warning("cannot be in both strength and ouija!")
             end
-        elseif args.context and args.context.after_use_consumable then
-            self.in_strength = nil
-            self.in_ouija = nil
-            self.ouija_rank = nil
-        elseif args.context and (args.context.create_card or args.context.modify_playing_card) and card and is_playing_card then
+        elseif context.after_use_consumable then
+            sleeve.in_strength = nil
+            sleeve.in_ouija = nil
+            sleeve.ouija_rank = nil
+        elseif (context.create_card or context.modify_playing_card) and card and is_playing_card then
             if SMODS.Ranks[card.base.value].face then
-                local initial = G.GAME.blind == nil or args.context.create_card
-                if self.in_strength then
-                    local base_key = SMODS.Suits[card.base.suit].card_key .. "_" .. self.get_rank_after_10()
+                local initial = G.GAME.blind == nil or context.create_card
+                if sleeve.in_strength then
+                    local base_key = SMODS.Suits[card.base.suit].card_key .. "_" .. sleeve.get_rank_after_10()
                     card:set_base(G.P_CARDS[base_key], initial)
-                elseif self.in_ouija then
-                    if self.ouija_rank == nil then
-                        local random_base = pseudorandom_element(self.allowed_card_centers, pseudoseed("slv"))
+                elseif sleeve.in_ouija then
+                    if sleeve.ouija_rank == nil then
+                        local random_base = pseudorandom_element(sleeve.allowed_card_centers, pseudoseed("slv"))
                         local card_instance = Card(0, 0, 0, 0, random_base, G.P_CENTERS.c_base)
-                        self.ouija_rank = SMODS.Ranks[card_instance.base.value]
+                        sleeve.ouija_rank = SMODS.Ranks[card_instance.base.value]
                         card_instance:remove()
                     end
-                    local base_key = SMODS.Suits[card.base.suit].card_key .. "_" .. self.ouija_rank.card_key
+                    local base_key = SMODS.Suits[card.base.suit].card_key .. "_" .. sleeve.ouija_rank.card_key
                     card:set_base(G.P_CARDS[base_key], initial)
                 else
-                    local random_base = pseudorandom_element(self.allowed_card_centers, pseudoseed("slv"))
+                    local random_base = pseudorandom_element(sleeve.allowed_card_centers, pseudoseed("slv"))
                     card:set_base(random_base, initial)
                 end
             end
@@ -658,18 +613,18 @@ CardSleeves.Sleeve {
         end
         return { key = key }
     end,
-    trigger_effect = function(self, args)
-        if not self.config.force_suits then
+    calculate = function(self, sleeve, context)
+        if not sleeve.config.force_suits then
             return
         end
 
-        local card = args.context and args.context.card
+        local card = context.card
         local is_playing_card = card and (card.ability.set == "Default" or card.ability.set == "Enhanced") and card.config.card_key
-        if args.context and (args.context.create_card or args.context.modify_playing_card) and card and is_playing_card then
-            for from_suit, to_suit in pairs(self.config.force_suits) do
+        if (context.create_card or context.modify_playing_card) and card and is_playing_card then
+            for from_suit, to_suit in pairs(sleeve.config.force_suits) do
                 if card.base.suit == from_suit then
                     local base = SMODS.Suits[to_suit].card_key .. "_" .. SMODS.Ranks[card.base.value].card_key
-                    local initial = G.GAME.blind == nil or args.context.create_card
+                    local initial = G.GAME.blind == nil or context.create_card
                     card:set_base(G.P_CARDS[base], initial)
                 end
             end
@@ -701,16 +656,16 @@ CardSleeves.Sleeve {
         end
         return { key = key, vars = vars }
     end,
-    trigger_effect = function(self, args)
-        if args.context and args.context.create_card and args.context.card then
-            local card = args.context.card
+    calculate = function(self, sleeve, context)
+        if context.create_card and context.card then
+            local card = context.card
             local is_booster_pack = card.ability.set == "Booster"
             local is_arcana_pack = is_booster_pack and card.ability.name:find("Arcana")
             local is_celestial_pack = is_booster_pack and card.ability.name:find("Celestial")
-            if is_arcana_pack and self.config.arcana_more_options then
-                card.ability.extra = card.ability.extra + self.config.arcana_more_options
-            elseif is_celestial_pack and self.config.celestial_more_options then
-                card.ability.extra = card.ability.extra + self.config.celestial_more_options
+            if is_arcana_pack and sleeve.config.arcana_more_options then
+                card.ability.extra = card.ability.extra + sleeve.config.arcana_more_options
+            elseif is_celestial_pack and sleeve.config.celestial_more_options then
+                card.ability.extra = card.ability.extra + sleeve.config.celestial_more_options
             end
         end
     end,
@@ -747,9 +702,7 @@ CardSleeves.Sleeve {
         local vars = { localize{type = 'name_text', key = 'tag_double', set = 'Tag'} }
         return { key = key, vars = vars }
     end,
-    trigger_effect = function(self, args)
-        CardSleeves.Sleeve.trigger_effect(self, args)
-
+    calculate = function(self, sleeve, context)
         local add_double_tag_event = Event({
             func = (function()
                 add_tag(Tag('tag_double'))
@@ -758,10 +711,15 @@ CardSleeves.Sleeve {
                 return true
             end)
         })
-        if self.name == 'Anaglyph Sleeve' and self.get_current_deck_key() ~= "b_anaglyph" and args.context == 'eval' and G.GAME.last_blind and G.GAME.last_blind.boss then
-            G.E_MANAGER:add_event(add_double_tag_event)
-        elseif self.name == 'Anaglyph Sleeve' and self.get_current_deck_key() == "b_anaglyph" and args.context == 'eval' and G.GAME.last_blind and not G.GAME.last_blind.boss then
-            G.E_MANAGER:add_event(add_double_tag_event)
+
+        if context.context == 'eval' then
+            if sleeve.get_current_deck_key() ~= "b_anaglyph" and G.GAME.last_blind and G.GAME.last_blind.boss then
+                -- add double tag like anaglyph deck does
+                G.E_MANAGER:add_event(add_double_tag_event)
+            elseif sleeve.get_current_deck_key() == "b_anaglyph" and G.GAME.last_blind and not G.GAME.last_blind.boss then
+                -- add double tag when stacking deck+sleeve on small/big blind
+                G.E_MANAGER:add_event(add_double_tag_event)
+            end
         end
     end,
 }
@@ -784,10 +742,56 @@ CardSleeves.Sleeve {
         local vars = { self.config.ante_scaling }
         return { key = key, vars = vars }
     end,
-    trigger_effect = function(self, args)
-        CardSleeves.Sleeve.trigger_effect(self, args)
-        -- TODO: this isn't API friendly?
-        if self.get_current_deck_key() == "b_plasma" and self.name == 'Plasma Sleeve' and args.context == "shop_final_pass" then
+    calculate = function(self, sleeve, context)
+        if self.get_current_deck_key() ~= "b_plasma" and context.context == 'final_scoring_step' then
+            -- copy-paste from plasma deck
+            local tot = context.chips + context.mult
+            context.chips = math.floor(tot/2)
+            context.mult = math.floor(tot/2)
+            update_hand_text({delay = 0}, {mult = context.mult, chips = context.chips})
+
+            G.E_MANAGER:add_event(Event({
+                func = (function()
+                    play_sound('gong', 0.94, 0.3)
+                    play_sound('gong', 0.94*1.5, 0.2)
+                    play_sound('tarot1', 1.5)
+                    ease_colour(G.C.UI_CHIPS, {0.8, 0.45, 0.85, 1})
+                    ease_colour(G.C.UI_MULT, {0.8, 0.45, 0.85, 1})
+                    attention_text({
+                        scale = 1.4, text = localize('k_balanced'), hold = 2, align = 'cm', offset = {x = 0,y = -2.7},major = G.play
+                    })
+                    G.E_MANAGER:add_event(Event({
+                        trigger = 'after',
+                        blockable = false,
+                        blocking = false,
+                        delay =  4.3,
+                        func = (function()
+                                ease_colour(G.C.UI_CHIPS, G.C.BLUE, 2)
+                                ease_colour(G.C.UI_MULT, G.C.RED, 2)
+                            return true
+                        end)
+                    }))
+                    G.E_MANAGER:add_event(Event({
+                        trigger = 'after',
+                        blockable = false,
+                        blocking = false,
+                        no_delete = true,
+                        delay =  6.3,
+                        func = (function()
+                            G.C.UI_CHIPS[1], G.C.UI_CHIPS[2], G.C.UI_CHIPS[3], G.C.UI_CHIPS[4] = G.C.BLUE[1], G.C.BLUE[2], G.C.BLUE[3], G.C.BLUE[4]
+                            G.C.UI_MULT[1], G.C.UI_MULT[2], G.C.UI_MULT[3], G.C.UI_MULT[4] = G.C.RED[1], G.C.RED[2], G.C.RED[3], G.C.RED[4]
+                            return true
+                        end)
+                    }))
+                    return true
+                end)
+            }))
+
+            delay(0.6)
+            return context.chips, context.mult
+        end
+
+        if self.get_current_deck_key() == "b_plasma" and (context.shop_final_pass or context.reroll_shop) then
             local cardareas = {}
             for _, obj in pairs(G) do
                 if type(obj) == "table" and obj["is"] and obj:is(CardArea) and obj.config.type == "shop" then
@@ -795,8 +799,8 @@ CardSleeves.Sleeve {
                 end
             end
             local total_cost, total_items_for_sale = 0, 0
-            for i, cardarea in pairs(cardareas) do
-                for j, card in pairs(cardarea.cards) do
+            for _, cardarea in pairs(cardareas) do
+                for _, card in pairs(cardarea.cards) do
                     card:set_cost()
                     local has_coupon_tag = card.area and card.ability.couponed and (card.area == G.shop_jokers or card.area == G.shop_booster)
                     if has_coupon_tag then
@@ -1469,8 +1473,15 @@ function Back:trigger_effect(args)
     new_chips, new_mult = old_Back_trigger_effect(self, args)
     args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
 
-    new_chips, new_mult = sleeve_center:trigger_effect(args)
-    args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
+    if type(sleeve_center.calculate) == "function" then
+        local context = type(args.context) == "table" and args.context or args  -- bit hacky
+        new_chips, new_mult = sleeve_center:calculate(sleeve_center, context)
+        args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
+    elseif type(sleeve_center.trigger_effect) == "function" then
+        -- support old deprecated trigger_effect
+        new_chips, new_mult = sleeve_center:trigger_effect(args)
+        args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
+    end
 
     return args.chips, args.mult
 end
@@ -1555,12 +1566,14 @@ function Card:set_base(card, initial)
     local output = old_Card_set_base(self, card, initial)
 
     if not is_in_run_info_tab then
-        local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve) or CardSleeves.Sleeve:get_obj("sleeve_casl_none")
+        local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
         local is_playing_card = (self.ability.set == "Default" or self.ability.set == "Enhanced") and self.config.card_key
         if initial then
             sleeve_center:trigger_effect{context = {create_card = true, card = self}}
+            if type(sleeve_center.calculate) == "function" then sleeve_center:calculate(sleeve_center, {create_card = true, card = self}) end
         elseif not initial and is_playing_card then
             sleeve_center:trigger_effect{context = {modify_playing_card = true, card = self}}
+            if type(sleeve_center.calculate) == "function" then sleeve_center:calculate(sleeve_center, {modify_playing_card = true, card = self}) end
         end
     end
 
@@ -1571,6 +1584,7 @@ local old_Card_use_consumable = Card.use_consumeable
 function Card:use_consumeable(...)
     local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
     sleeve_center:trigger_effect{context = {before_use_consumable = true, card = self}}
+    if type(sleeve_center.calculate) == "function" then sleeve_center:calculate(sleeve_center, {before_use_consumable = true, card = self}) end
 
     local output = old_Card_use_consumable(self, ...)
 
@@ -1580,6 +1594,7 @@ function Card:use_consumeable(...)
         trigger = 'after',
         func = function()
             sleeve_center:trigger_effect{context = {after_use_consumable = true}}
+            if type(sleeve_center.calculate) == "function" then sleeve_center:calculate(sleeve_center, {after_use_consumable = true}) end
             return true
         end
     }))

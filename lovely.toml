@@ -97,14 +97,18 @@ end
 position = 'after'
 match_indent = true
 payload = """
--- CardSleeves stuff
-G.E_MANAGER:add_event(Event({
-    delay = 0.01,  --  because stupid fucking tags not applying immediately
-    blockable = true,
-    trigger = 'after',
-    func = function()
-        G.GAME.selected_back:trigger_effect({context = "shop_final_pass"})  
-        return true
-    end
-}))
+if CardSleeves then
+    -- CardSleeves custom context stuff
+    G.E_MANAGER:add_event(Event({
+        delay = 0.01,  --  because stupid fucking tags not applying immediately
+        blockable = true,
+        trigger = 'after',
+        func = function()
+            local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
+            sleeve_center:trigger_effect{context = "shop_final_pass"}
+            if type(sleeve_center.calculate) == "function" then sleeve_center:calculate(sleeve_center, {shop_final_pass = true}) end
+            return true
+        end
+    }))
+end
 """
