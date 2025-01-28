@@ -1037,6 +1037,36 @@ local function set_sleeve_usage()
     end
 end
 
+local function get_sleeve_pool(mod_id)
+    local sleeves = {}
+    for _, sleeve in pairs(G.P_CENTER_POOLS.Sleeve) do
+        if sleeve.mod.id == mod_id or mod_id == nil then
+            sleeves[#sleeves+1] = sleeve
+        end
+    end
+    return sleeves
+end
+
+local function get_sleeve_tally_of(mod_id)
+    local tally, of = 0, 0
+    for _, sleeve in pairs(get_sleeve_pool(mod_id)) do
+        of = of + 1
+        if sleeve:is_unlocked() then
+            tally = tally + 1
+        end
+    end
+    return {tally = tally, of = of}
+end
+
+local function create_sleeve_button(mod_id)
+    -- creates the sleeve UIBox button in (collection/additions -> other) for given `mod_id`
+    local count = get_sleeve_tally_of(mod_id)
+    return UIBox_button {
+        count = {tally = count.tally, of = count.of},
+        button = 'your_collection_sleeves', label = {localize("k_sleeve")}, minw = 5, id = 'your_collection_sleeves'
+    }
+end
+
 -- GLOBAL (UI) FUNCS
 
 function G.FUNCS.change_sleeve(args)
@@ -1690,6 +1720,36 @@ function set_deck_loss(...)
     old_set_deck_loss(...)  -- at end to let old func call `G:save_settings()`
 end
 
+local old_smods_create_UIBox_Other_GameObjects = create_UIBox_Other_GameObjects
+function create_UIBox_Other_GameObjects()
+    local mod_has_sleeves = false
+    local old_mod_custom_collection_tabs
+    if G.ACTIVE_MOD_UI and not G.ACTIVE_MOD_UI.prevent_autogenerate_sleeve_addition then
+        -- `prevent_autogenerate_sleeve_addition` as opt-out, though I doubt anyone will want to use it
+        local mod_id = G.ACTIVE_MOD_UI.id
+        local mod_sleeve_count = get_sleeve_tally_of(mod_id)
+        mod_has_sleeves = mod_id ~= CardSleeves.id and mod_sleeve_count.of > 0
+        if mod_has_sleeves then
+            old_mod_custom_collection_tabs = G.ACTIVE_MOD_UI.custom_collection_tabs
+            G.ACTIVE_MOD_UI.custom_collection_tabs = function()
+                local res = old_mod_custom_collection_tabs and old_mod_custom_collection_tabs() or {}
+                res[#res+1] = create_sleeve_button(mod_id)
+                return res
+            end
+        end
+    end
+
+    -- yes, we're hooking a smods function
+    -- yes, I wish this was somehow built-in
+    local res = old_smods_create_UIBox_Other_GameObjects()
+
+    if mod_has_sleeves then
+        G.ACTIVE_MOD_UI.custom_collection_tabs = old_mod_custom_collection_tabs
+    end
+
+    return res
+end
+
 -- GALDUR (1.1.4+) COMPATIBILITY
 
 local function populate_info_queue(set, key)
@@ -1722,10 +1782,11 @@ local function generate_sleeve_card_areas()
     end
 end
 
-local function populate_sleeve_card_areas(page)
+local function populate_sleeve_card_areas(page, mod_id)
+    local sleeve_pool = get_sleeve_pool(mod_id)
     local count = 1 + (page - 1) * sleeve_count_page
     for i=1, sleeve_count_page do
-        if count > #G.P_CENTER_POOLS.Sleeve then
+        if count > #sleeve_pool then
             return
         end
         local area = sleeve_card_areas[i]
@@ -1754,29 +1815,30 @@ local function populate_sleeve_card_areas(page)
                 card.sticker = get_deck_win_sticker(selected_deck_center)
             end
         end
-        local card = create_sleeve_card(area, G.P_CENTER_POOLS.Sleeve[count])
+        local card = create_sleeve_card(area, sleeve_pool[count])
         card.params["sleeve_select"] = i
         card.sleeve_select_position = {page = page, count = i}
-        replace_sleeve_sprite(card, G.P_CENTER_POOLS.Sleeve[count])
+        replace_sleeve_sprite(card, sleeve_pool[count])
         area:emplace(card)
         count = count + 1
     end
 end
 
-local function generate_sleeve_card_areas_ui()
+local function generate_sleeve_card_areas_ui(mod_id)
+    local sleeve_pool = get_sleeve_pool(mod_id)
     local deck_ui_element = {}
     local count = 1
     for _ = 1, sleeve_count_vertical do
         local row = {n = G.UIT.R, config = {colour = G.C.LIGHT, padding = 0.075}, nodes = {}}  -- padding is this because size of cardareas isn't 100% => same total
         for _ = 1, sleeve_count_horizontal do
-            if count > #G.P_CENTER_POOLS.Sleeve then return end
+            if count > #sleeve_pool then break end
             table.insert(row.nodes, {n = G.UIT.O, config = {object = sleeve_card_areas[count], r = 0.1, id = "sleeve_select_"..count, focus_args = {snap_to = true}}})
             count = count + 1
         end
         table.insert(deck_ui_element, row)
     end
 
-    populate_sleeve_card_areas(1)
+    populate_sleeve_card_areas(1, mod_id)
 
     return {n=G.UIT.R, config={align = "cm", minh = 3.3, minw = 5, colour = G.C.BLACK, padding = 0.15, r = 0.1, emboss = 0.05}, nodes=deck_ui_element}
 end
@@ -1791,18 +1853,20 @@ local function clean_sleeve_areas()
     end
 end
 
-local function create_sleeve_page_cycle()
+local function create_sleeve_page_cycle(mod_id)
+    local sleeve_pool = get_sleeve_pool(mod_id)
     local options = {}
     local cycle
-    if #G.P_CENTER_POOLS.Sleeve > sleeve_count_page then
-        local total_pages = math.ceil(#G.P_CENTER_POOLS.Sleeve / sleeve_count_page)
+    if #sleeve_pool > sleeve_count_page then
+        local total_pages = math.ceil(#sleeve_pool / sleeve_count_page)
         for i=1, total_pages do
-            table.insert(options, localize('k_page')..' '..i..' / '..total_pages)
+            options[i] = localize('k_page')..' '..i..' / '..total_pages
         end
         cycle = create_option_cycle({
             options = options,
             w = 4.5,
             opt_callback = 'change_sleeve_page',
+            ref_table = { mod_id = mod_id },
             focus_args = { snap_to = true, nav = 'wide' },
             current_option = 1,
             colour = G.C.RED,
@@ -1891,7 +1955,7 @@ end
 
 G.FUNCS.change_sleeve_page = function(args)
     clean_sleeve_areas()
-    populate_sleeve_card_areas(args.cycle_config.current_option)
+    populate_sleeve_card_areas(args.cycle_config.current_option, args.cycle_config.ref_table.mod_id)
 end
 
 G.FUNCS.cycle_options = function(args)
@@ -2128,16 +2192,7 @@ SMODS.current_mod.config_tab = function()
 end
 
 SMODS.current_mod.custom_collection_tabs = function()
-    local tally = 0
-    for _, v in pairs(G.P_CENTER_POOLS['Sleeve']) do
-        if v:is_unlocked() then
-            tally = tally + 1
-        end
-    end
-    return { UIBox_button {
-        count = {tally = tally, of = #G.P_CENTER_POOLS['Sleeve']},
-        button = 'your_collection_sleeves', label = {localize("k_sleeve")}, minw = 5, id = 'your_collection_sleeves'
-    }}
+    return { create_sleeve_button(G.ACTIVE_MOD_UI and G.ACTIVE_MOD_UI.id or nil), }
 end
 
 local function create_UI_alt_description()
@@ -2146,11 +2201,11 @@ local function create_UI_alt_description()
     }}
 end
 
-local function create_UIBox_sleeves()
+local function create_UIBox_sleeves(mod_id)
     generate_sleeve_card_areas()
     local sleeve_pages = {n=G.UIT.C, config = {padding = 0.15}, nodes ={
-        generate_sleeve_card_areas_ui(),
-        create_sleeve_page_cycle(),
+        generate_sleeve_card_areas_ui(mod_id),
+        create_sleeve_page_cycle(mod_id),
         create_UI_alt_description(),
     }}
     return create_UIBox_generic_options{
@@ -2162,7 +2217,7 @@ end
 G.FUNCS.your_collection_sleeves = function()
 	G.SETTINGS.paused = true
 	G.FUNCS.overlay_menu{
-	  definition = create_UIBox_sleeves(),
+	  definition = create_UIBox_sleeves(G.ACTIVE_MOD_UI and G.ACTIVE_MOD_UI.id or nil),
 	}
 end
 
