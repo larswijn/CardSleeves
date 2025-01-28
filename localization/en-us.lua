@@ -1,5 +1,21 @@
 return {
     descriptions = {
+        Mod = {
+            CardSleeves = {
+                name = "Card Sleeves",
+                text = {
+                    "{s:1.3}Adds {s:1.3,C:attention}15{} {s:1.3,E:1}Sleeves{} {s:1.3}as modifier to decks.",
+                    " ",
+                    "{s:1.2}Includes an API for other mods",
+                    "{s:1.2}to add their own Sleeves.",
+                    " ",
+                    "{s:1.2}Programming and implementation by {s:1.2,C:blue}Larswijn{}{s:1.2}.",
+                    "{s:1.2}Original idea and art by {s:1.2,C:red}Sable{}.",
+                    " ",
+                    "{s:1.1}See https://github.com/larswijn/CardSleeves for more information."
+                }
+            }
+        },
         Sleeve = {
             sleeve_casl_none = {
                 name = "No Sleeve",

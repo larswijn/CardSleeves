@@ -2,12 +2,12 @@
 --- MOD_NAME: Card Sleeves
 --- MOD_ID: CardSleeves
 --- BADGE_COLOR: 0047AA
---- MOD_AUTHOR: [LarsWijn]
---- MOD_DESCRIPTION: Adds sleeves as modifier to decks. Art by Sable.
+--- MOD_AUTHOR: [Larswijn]
+--- MOD_DESCRIPTION: See localization file at `descriptions.Mods.CardSleeves`.
 --- PREFIX: casl
 --- VERSION: 1.5.5
 --- PRIORITY: -1
---- DEPENDS: [Steamodded>=1.0.0~ALPHA-0924a, Lovely>=0.6.0]
+--- DEPENDS: [Steamodded>=1.0.0~ALPHA-1030a, Lovely>=0.6.0]
 --- CONFLICTS: [GRM<=0.9.5]
 
 ----------------------------------------------
