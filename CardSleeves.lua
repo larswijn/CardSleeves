@@ -17,9 +17,14 @@
 
 KNOWN ISSUES/TODO IDEAS:
 
-* TODO: use metadata json instead of file header
-* Issue: What if locked sleeves in challenge?
-* Minor Issue: Tags for booster packs have wrong description when using double zodiac/ghost
+* TODO: 
+** use metadata json instead of file header
+** split into seperate files once a mod manager exists
+** check if MoreFluff has been updated so the older version can be added to the conflicts
+
+* ISSUES:
+** What if locked sleeves in challenge?
+** Minor Issue: Tags for booster packs have wrong description when using double zodiac/ghost
 
 * API:
 ** add optional shaders
@@ -1264,7 +1269,7 @@ function create_UIBox_sleeve_unlock(sleeve_center)
         }}
     }})
     return t
-  end
+end
 
 --[[ HOOKING / WRAPPING FUNCS
 
@@ -2089,6 +2094,10 @@ if DV and DV.SIM then
 end
 
 -- SMODS UI funcs (additions, config, collection)
+
+SMODS.current_mod.description_loc_vars = function()
+    return { background_colour = G.C.CLEAR, text_colour = G.C.WHITE, scale = 1.2 }
+end
 
 SMODS.current_mod.config_tab = function()
     local scale = 5/6
