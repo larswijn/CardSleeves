@@ -792,6 +792,11 @@ CardSleeves.Sleeve {
         end
 
         if self.get_current_deck_key() == "b_plasma" and (context.shop_final_pass or context.reroll_shop) then
+            -- stop controller/mouse from doing anything
+            local hold = 0.6  -- how long to take to ease the costs, and how long to hold the player
+            G.CONTROLLER.locks.shop_reroll = true
+            if G.CONTROLLER:save_cardarea_focus('shop_jokers') then G.CONTROLLER.interrupt.focus = true end
+
             local cardareas = {}
             for _, obj in pairs(G) do
                 if type(obj) == "table" and obj["is"] and obj:is(CardArea) and obj.config.type == "shop" then
@@ -812,33 +817,45 @@ CardSleeves.Sleeve {
                     total_items_for_sale = total_items_for_sale + 1
                 end
             end
-            local avg_cost = math.floor(total_cost / total_items_for_sale)
+            local avg_cost = math.floor((total_cost - 1) / total_items_for_sale)  -- make it always be in favour of the player
+            for _, cardarea in pairs(cardareas) do
+                for _, card in pairs(cardarea.cards) do
+                    card.cost = math.max(card.cost, card.base_cost)
+                    local mod = avg_cost - card.cost
+                    --         table, value,  mod, floor, timer, not_blockable, delay, ease_type
+                    ease_value(card,  "cost", mod, nil,   nil,   true,          hold,   "quad")
+                    -- card.cost = avg_cost
+                    -- card:set_cost()  
+                end
+            end
             G.E_MANAGER:add_event(Event({
                 func = (function()
-                    play_sound('gong', 0.94, 0.3)
-                    play_sound('gong', 0.94*1.5, 0.2)
-                    play_sound('tarot1', 1.5)
+                    play_sound('gong', 1.2, 0.2)
+                    play_sound('gong', 1.2*1.5, 0.1)
+                    play_sound('tarot1', 1.6, 0.8)
                     attention_text({
                         scale = 1.3,
                         colour = G.C.GOLD,
                         text = localize('k_balanced'),
-                        hold = 2,
+                        hold = 1.5,
                         align = 'cm',
-                        offset = {x = 0, y = 0},
+                        offset = {x = 0, y = -3.5},
                         major = G.play
                     })
                     return true
                 end)
             }))
-
-            -- delay(0.6)
-            for _, cardarea in pairs(cardareas) do
-                for _, card in pairs(cardarea.cards) do
-                    -- could maybe use `function ease_value` instead?
-                    card.cost = avg_cost
-                    -- card:set_cost()  
+            G.E_MANAGER:add_event(Event({
+                trigger = 'after',
+                delay = hold,
+                func = function()
+                    -- allow player to buy cards again, ONLY after having eased prices
+                    G.CONTROLLER.interrupt.focus = false
+                    G.CONTROLLER.locks.shop_reroll = false
+                    G.CONTROLLER:recall_cardarea_focus('shop_jokers')
+                    return true
                 end
-            end
+            }))
         end
     end
 }

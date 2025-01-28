@@ -84,17 +84,13 @@ payload = """if v.set and v.set == 'Sleeve' then
     end
 end"""
 
-# adds context for shop_final_pass to backs (and thus sleeves)
+# adds context for shop_final_pass to sleeves
 # Game:update_shop()
 [[patches]]
 [patches.pattern]
 target = 'game.lua'
-pattern = """
-for i = 1, #G.GAME.tags do
-    G.GAME.tags[i]:apply_to_run({type = 'shop_final_pass'})
-end
-"""
-position = 'after'
+pattern = """G.CONTROLLER:snap_to({node = G.shop:get_UIE_by_ID('next_round_button')})"""
+position = 'before'
 match_indent = true
 payload = """
 if CardSleeves then
