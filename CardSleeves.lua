@@ -21,6 +21,8 @@ KNOWN ISSUES/TODO IDEAS:
 ** use metadata json instead of file header
 ** split into seperate files once a mod manager exists
 ** check if MoreFluff has been updated so the older version can be added to the conflicts
+** see if unstable version is old enough to add it to the conflict list
+** see if 10spades version is old enough to add to the conflict list
 
 * ISSUES:
 ** What if locked sleeves in challenge?
@@ -283,8 +285,8 @@ function CardSleeves.Sleeve:locked_loc_vars(info_queue, card)
     end
     local stake_key = type(self.unlock_condition.stake) == "number" and SMODS.stake_from_index(self.unlock_condition.stake) or self.unlock_condition.stake
     if type(self.unlock_condition.stake) == "number" then
-        -- uncomment this in next version of CardSleeves
-        -- print_debug(("WARNING @%s: please use the stake key (best guess: '%s') instead of index '%d'"):format(self.mod.id, stake_key, self.unlock_condition.stake))
+        -- TODO: uncomment this in next version of CardSleeves
+        -- print_debug(("DEPRECATED usage of `%s.unlock_condition.stake` (from mod %s): please use the stake key (best guess is '%s') instead of index '%d'"):format(self.key, self.mod.id, stake_key, self.unlock_condition.stake))
     end
     local stake_name = localize{type = "name_text", set = "Stake", key = stake_key}
     local colours = G.C.GREY
@@ -1546,10 +1548,11 @@ function CardArea:draw(...)
 
     local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve)
     local draw_sleeve = self == G.deck and sleeve_center
+    local old_view_deck_draw
 
     if draw_sleeve and self.children["view_deck"] then
         -- prevent drawing the "view deck" button, we'll draw it ourselves later
-        local old_view_deck_draw = self.children.view_deck.draw
+        old_view_deck_draw = self.children.view_deck.draw
         self.children.view_deck.draw = function() end
     end
 
@@ -1583,10 +1586,13 @@ function CardArea:draw(...)
             self.sleeve_sprite.T.h = height
         end
         self.sleeve_sprite:draw()
-        if self.children["view_deck"] and G.deck_preview or self.states.collide.is or (G.buttons and G.buttons.states.collide.is and G.CONTROLLER.HID.controller) then
-            -- restore draw behavior of "view deck" so it can be drawn on top of sleeve sprite
+        if self.children["view_deck"] then
+            -- restore draw behavior of "view deck"
             self.children.view_deck.draw = old_view_deck_draw
-            self.children.view_deck:draw()
+            if G.deck_preview or self.states.collide.is or (G.buttons and G.buttons.states.collide.is and G.CONTROLLER.HID.controller) then
+                -- and don't forget to actually draw it when we need to
+                self.children.view_deck:draw()
+            end
         end
     end
 end
