@@ -302,9 +302,9 @@ function CardSleeves.Sleeve:check_for_unlock(args)
     elseif not self.unlock_condition.deck or not self.unlock_condition.stake then
         error("Please implement custom `check_for_unlock` or define `unlock_condition.deck` and `unlock_condition.stake` for Sleeve " .. self.key)
     end
-    local deck_info = G.PROFILES[G.SETTINGS.profile].deck_usage[self.unlock_condition.deck]
+    local deck_info = G.PROFILES[G.SETTINGS.profile] and G.PROFILES[G.SETTINGS.profile].deck_usage and G.PROFILES[G.SETTINGS.profile].deck_usage[self.unlock_condition.deck]
     local stake_key = type(self.unlock_condition.stake) == "number" and SMODS.stake_from_index(self.unlock_condition.stake) or self.unlock_condition.stake  -- best guess only
-    if args.type == 'win_deck' and deck_info and deck_info.wins_by_key[stake_key] then
+    if args.type == 'win_deck' and deck_info and deck_info.wins_by_key and deck_info.wins_by_key[stake_key] then
         return true
     end
 end
