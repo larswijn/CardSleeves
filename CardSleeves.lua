@@ -7,7 +7,7 @@
 --- PREFIX: casl
 --- VERSION: 1.5.5
 --- PRIORITY: -10
---- DEPENDS: [Steamodded>=1.0.0~ALPHA-1030a, Lovely>=0.6.0]
+--- DEPENDS: [Steamodded>=1.0.0~ALPHA-1206c, Lovely>=0.6.0]
 --- CONFLICTS: [GRM<=0.9.5]
 
 ----------------------------------------------
