@@ -285,8 +285,7 @@ function CardSleeves.Sleeve:locked_loc_vars(info_queue, card)
     end
     local stake_key = type(self.unlock_condition.stake) == "number" and SMODS.stake_from_index(self.unlock_condition.stake) or self.unlock_condition.stake
     if type(self.unlock_condition.stake) == "number" then
-        -- TODO: uncomment this in next version of CardSleeves
-        -- print_debug(("DEPRECATED usage of `%s.unlock_condition.stake` (from mod %s): please use the stake key (best guess is '%s') instead of index '%d'"):format(self.key, self.mod.id, stake_key, self.unlock_condition.stake))
+        print_debug(("DEPRECATED usage of `%s.unlock_condition.stake` (from mod %s): please use the stake key (best guess is '%s') instead of index '%d'"):format(self.key, self.mod.id, stake_key, self.unlock_condition.stake))
     end
     local stake_name = localize{type = "name_text", set = "Stake", key = stake_key}
     local colours = G.C.GREY
@@ -303,7 +302,9 @@ function CardSleeves.Sleeve:check_for_unlock(args)
     elseif not self.unlock_condition.deck or not self.unlock_condition.stake then
         error("Please implement custom `check_for_unlock` or define `unlock_condition.deck` and `unlock_condition.stake` for Sleeve " .. self.key)
     end
-    if args.type == 'win_deck' and get_deck_win_stake(self.unlock_condition.deck) >= self.unlock_condition.stake then
+    local deck_info = G.PROFILES[G.SETTINGS.profile].deck_usage[self.unlock_condition.deck]
+    local stake_key = type(self.unlock_condition.stake) == "number" and SMODS.stake_from_index(self.unlock_condition.stake) or self.unlock_condition.stake  -- best guess only
+    if args.type == 'win_deck' and deck_info and deck_info.wins_by_key[stake_key] then
         return true
     end
 end
