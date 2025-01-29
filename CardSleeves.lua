@@ -5,7 +5,7 @@
 --- MOD_AUTHOR: [Larswijn]
 --- MOD_DESCRIPTION: See localization file at `descriptions.Mods.CardSleeves`.
 --- PREFIX: casl
---- VERSION: 1.5.5
+--- VERSION: 1.6.0
 --- PRIORITY: -10
 --- DEPENDS: [Steamodded>=1.0.0~ALPHA-1206c, Lovely>=0.6.0]
 --- CONFLICTS: [GRM<=0.9.5]
