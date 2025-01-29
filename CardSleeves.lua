@@ -1522,22 +1522,56 @@ end
 local old_Back_trigger_effect = Back.trigger_effect
 function Back:trigger_effect(args)
     local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
-    local new_chips, new_mult
 
-    new_chips, new_mult = old_Back_trigger_effect(self, args)
-    args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
+    local o = { old_Back_trigger_effect(self, args) }
 
-    if type(sleeve_center.calculate) == "function" then
-        local context = type(args.context) == "table" and args.context or args  -- bit hacky
-        new_chips, new_mult = sleeve_center:calculate(sleeve_center, context)
+    if args.context == "final_scoring_step" then
+        local new_chips, new_mult = unpack(o)
         args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
+        if type(sleeve_center.calculate) == "function" then
+            new_chips, new_mult = sleeve_center:calculate(sleeve_center, args)
+        elseif type(sleeve_center.trigger_effect) == "function" then
+            -- support old deprecated trigger_effect
+            new_chips, new_mult = sleeve_center:trigger_effect(args)
+        end
+        args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
+        return args.chips, args.mult
+    end
+    if type(sleeve_center.calculate) == "function" then
+        local context = type(args.context) == "table" and args.context or args  -- bit hacky, though this shouldn't even have to be used?
+        if context.repetition then
+            -- handle this by hooking SMODS.calculate_repetitions
+        else
+            local effect = sleeve_center:calculate(sleeve_center, context)
+            if effect then
+                SMODS.calculate_effect(effect, G.deck.cards[1] or G.deck)
+            end
+        end
     elseif type(sleeve_center.trigger_effect) == "function" then
         -- support old deprecated trigger_effect
-        new_chips, new_mult = sleeve_center:trigger_effect(args)
-        args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
+        sleeve_center:trigger_effect(args)
     end
 
-    return args.chips, args.mult
+    return unpack(o)
+end
+
+local old_smods_calculate_repetitions = SMODS.calculate_repetitions
+function SMODS.calculate_repetitions(card, context, reps)
+    -- hook for only calculating repetitions; all other contexts are handled by Back:trigger_effect
+    reps = old_smods_calculate_repetitions(card, context, reps)
+
+    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
+    if type(sleeve_center.calculate) == "function" then
+        local effect = sleeve_center:calculate(sleeve_center, context)
+        if effect and effect.repetitions then
+            for _=1, effect.repetitions do
+                effect.card = effect.card or G.deck.cards[1] or G.deck
+                reps[#reps+1] = {key = effect}
+            end
+        end
+    end
+
+    return reps
 end
 
 local old_CardArea_draw = CardArea.draw
