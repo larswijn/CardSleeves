@@ -4,9 +4,9 @@ A Steamodded+lovely Balatro Mod that adds Sleeves.
 ![Balatro_Card_Sleeves](Balatro_Card_Sleeves.png)
 
 # Requirements
-Requires `steamodded >= 1.0.0~ALPHA-0924a` - [link](https://github.com/Steamopollys/Steamodded/wiki/01.-Getting-started)
+Requires `steamodded >= 1.0.0~ALPHA-1206c` - [link](https://github.com/Steamodded/smods/wiki).
 
-Requires `Lovely`, but this should already be installed as part of steamodded's installation process. If you do not have this, make sure you installed steamodded 1.0.0+ correctly.
+Requires `Lovely >= 0.6.0` - [link](https://github.com/ethangreen-dev/lovely-injector). This should already be installed as part of steamodded's installation process, but might need to be updated to version 0.6.0 or later.
 
 # Installation
 Get the latest stable version from the [Releases](https://github.com/larswijn/CardSleeves/releases/latest), then download and extract the zip.
@@ -55,6 +55,6 @@ CardSleeves also has support for [Galdur](https://github.com/Eremel/Galdur)'s im
 Any other mod can create new sleeves. See [the wiki](https://github.com/larswijn/CardSleeves/wiki) for more information.
 
 # Credits
-Big thanks to Sable for the idea and all the art, and the balatro modding community for helping out with the lua code.
+Big thanks to Sable for the original idea and the original art, and the amazing balatro modding community for helping out with the lua code.
 
 Any suggestions, improvements or bugs are welcome and can be submitted through Github's Issues, or on the Balatro Discord [Thread](https://discord.com/channels/1116389027176787968/1279246553931976714).
