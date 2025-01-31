@@ -1,0 +1,17 @@
+{
+	"id": "CardSleeves",
+	"name": "Card Sleeves",
+	"author": ["Larswijn"],
+	"description": "See localization file at `descriptions.Mods.CardSleeves`",
+	"prefix": "casl",
+	"main_file": "main.lua",
+    "version": "1.6.1",
+    "priority": -10,
+    "dependencies": [
+        "Steamodded (>=1.0.0~ALPHA-1206c)",
+        "Lovely (>=0.6.0)"
+    ],
+    "conflicts": [
+        "GRM (<=0.9.5)"
+    ]
+}
