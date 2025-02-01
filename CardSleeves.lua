@@ -3,7 +3,7 @@
 --- MOD_ID: CardSleeves
 --- BADGE_COLOR: 0047AA
 --- MOD_AUTHOR: [Larswijn]
---- MOD_DESCRIPTION: See localization file at `descriptions.Mods.CardSleeves`.
+--- MOD_DESCRIPTION: Adds sleeves as modifier to decks. See full description by enabling mod or checking `descriptions.Mods.CardSleeves`.
 --- PREFIX: casl
 --- VERSION: 1.6.1
 --- PRIORITY: -10
