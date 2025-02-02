@@ -1,9 +1,10 @@
+--- main code file
+
 --[[
 
 KNOWN ISSUES/TODO IDEAS:
 
 * TODO: 
-** use metadata json instead of file header
 ** split into seperate files once a mod manager exists
 ** check if MoreFluff has been updated so the older version can be added to the conflicts
 ** see if unstable version is old enough to add it to the conflict list
