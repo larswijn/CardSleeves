@@ -2,9 +2,9 @@
 	"id": "CardSleeves",
 	"name": "Card Sleeves",
 	"author": ["Larswijn"],
-	"description": "See localization file at `descriptions.Mods.CardSleeves`",
+	"description": "Adds sleeves as modifier to decks. See full description by enabling mod or checking `descriptions.Mods.CardSleeves`.",
 	"prefix": "casl",
-	"main_file": "main.lua",
+	"main_file": "CardSleeves.lua",
     "version": "1.6.1",
     "priority": -10,
     "dependencies": [
