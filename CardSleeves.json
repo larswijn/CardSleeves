@@ -1,0 +1,18 @@
+{
+	"id": "CardSleeves",
+	"name": "Card Sleeves",
+	"author": ["Larswijn"],
+    "badge_colour": "0047AA",
+	"description": "Adds sleeves as modifier to decks. See full description by enabling mod or checking `descriptions.Mods.CardSleeves`.",
+	"prefix": "casl",
+	"main_file": "CardSleeves.lua",
+    "version": "1.6.1",
+    "priority": -10,
+    "dependencies": [
+        "Steamodded (>=1.0.0~ALPHA-1206c)",
+        "Lovely (>=0.6.0)"
+    ],
+    "conflicts": [
+        "GRM (<=0.9.5)"
+    ]
+}

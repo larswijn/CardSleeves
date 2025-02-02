@@ -1,24 +1,10 @@
---- STEAMODDED HEADER
---- MOD_NAME: Card Sleeves
---- MOD_ID: CardSleeves
---- BADGE_COLOR: 0047AA
---- MOD_AUTHOR: [Larswijn]
---- MOD_DESCRIPTION: Adds sleeves as modifier to decks. See full description by enabling mod or checking `descriptions.Mods.CardSleeves`.
---- PREFIX: casl
---- VERSION: 1.6.1
---- PRIORITY: -10
---- DEPENDS: [Steamodded>=1.0.0~ALPHA-1206c, Lovely>=0.6.0]
---- CONFLICTS: [GRM<=0.9.5]
-
-----------------------------------------------
-------------MOD CODE -------------------------
+--- main code file
 
 --[[
 
 KNOWN ISSUES/TODO IDEAS:
 
 * TODO: 
-** use metadata json instead of file header
 ** split into seperate files once a mod manager exists
 ** check if MoreFluff has been updated so the older version can be added to the conflicts
 ** see if unstable version is old enough to add it to the conflict list
@@ -883,10 +869,7 @@ CardSleeves.Sleeve {
             self.config = {randomize_rank_suit = true}
         else
             key = self.key .. "_alt"
-            self.config = {randomize_rank_suit = true,
-                           randomize_start = true,
-                           random_lb = 3,
-                           random_ub = 6}
+            self.config = {randomize_rank_suit = true, randomize_start = true, random_lb = 3, random_ub = 6}
         end
         local vars = {}
         if self.config.randomize_start then
@@ -939,9 +922,7 @@ end
 
 local function create_sleeve_card(area, sleeve_center)
     local viewed_back = G.GAME.viewed_back ~= nil and {effect = {config = {}}} or false  -- cryptid compat
-    local new_card = Card(area.T.x, area.T.y, area.T.w + 0.2, area.T.h,
-                          nil, sleeve_center or G.P_CENTERS.c_base,
-                          {playing_card = 11, viewed_back = viewed_back, galdur_selector = true, sleeve_card = true})
+    local new_card = Card(area.T.x, area.T.y, area.T.w + 0.2, area.T.h, nil, sleeve_center or G.P_CENTERS.c_base, {playing_card = 11, viewed_back = viewed_back, galdur_selector = true, sleeve_card = true})
     new_card.sprite_facing = 'back'
     new_card.facing = 'back'
     return new_card
@@ -1262,8 +1243,7 @@ function G.UIDEF.current_sleeve(_scale)
 end
 
 function create_UIBox_sleeve_unlock(sleeve_center)
-    local area = CardArea(G.ROOM.T.x - 100, G.ROOM.T.h, 1.2*G.CARD_W, 1.2*G.CARD_H,
-                          {card_limit = 52, type = 'deck', highlight_limit = 0})
+    local area = CardArea(G.ROOM.T.x - 100, G.ROOM.T.h, 1.2*G.CARD_W, 1.2*G.CARD_H, {card_limit = 52, type = 'deck', highlight_limit = 0})
     local card = Card(G.ROOM.T.x + 0.2*G.ROOM.T.w/2,G.ROOM.T.h, G.CARD_W*1.2, G.CARD_H*1.2, pseudorandom_element(G.P_CARDS), G.P_CENTERS.c_base, {viewed_back = true})
     card.sprite_facing = 'back'
     card.facing = 'back'
@@ -1288,17 +1268,17 @@ function create_UIBox_sleeve_unlock(sleeve_center)
     end
 
     local t = create_UIBox_generic_options({ back_label = localize('b_continue'), no_pip = true, snap_back = true, back_func = 'continue_unlock', minw = 7, contents = {
-      {n=G.UIT.R, config={align = "cm", padding = 0}, nodes={
+        {n=G.UIT.R, config={align = "cm", padding = 0}, nodes={
         {n=G.UIT.O, config={object = DynaText({string = {{string = localize{type = 'name_text', set = 'Sleeve', key = sleeve_center.key}, suffix = ' '..localize('k_unlocked_ex'), outer_colour = G.C.UI.TEXT_LIGHT}}, colours = {G.C.BLUE},shadow = true, rotate = true, float = true, scale = 0.7, pop_in = 0.1})}}
-      }},
-      {n=G.UIT.R, config={align = "cm", padding = 0}, nodes=sleeve_criteria_cols},
-      {n=G.UIT.R, config={align = "cm", padding = 0.2, colour = G.C.BLACK, r = 0.2}, nodes={
-          {n=G.UIT.C, config={align = "cm", padding = 0}, nodes={
+    }},
+    {n=G.UIT.R, config={align = "cm", padding = 0}, nodes=sleeve_criteria_cols},
+    {n=G.UIT.R, config={align = "cm", padding = 0.2, colour = G.C.BLACK, r = 0.2}, nodes={
+        {n=G.UIT.C, config={align = "cm", padding = 0}, nodes={
             {n=G.UIT.O, config={object = area}}
-          }},
-          {n=G.UIT.C, config={align = "cm", r = 0.2, colour = G.C.WHITE, emboss = 0.05, padding = 0.2, minw = 4}, nodes={
+        }},
+        {n=G.UIT.C, config={align = "cm", r = 0.2, colour = G.C.WHITE, emboss = 0.05, padding = 0.2, minw = 4}, nodes={
             {n=G.UIT.R, config={align = "cm", padding = 0}, nodes=sleeve_description_cols}
-          }}
+        }}
         }}
     }})
     return t
@@ -2258,7 +2238,7 @@ end
 G.FUNCS.your_collection_sleeves = function()
 	G.SETTINGS.paused = true
 	G.FUNCS.overlay_menu{
-	  definition = create_UIBox_sleeves(G.ACTIVE_MOD_UI and G.ACTIVE_MOD_UI.id or nil),
+        definition = create_UIBox_sleeves(G.ACTIVE_MOD_UI and G.ACTIVE_MOD_UI.id or nil),
 	}
 end
 
