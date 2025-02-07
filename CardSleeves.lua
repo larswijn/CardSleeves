@@ -7,8 +7,7 @@ KNOWN ISSUES/TODO IDEAS:
 * TODO: 
 ** split into seperate files once a mod manager exists
 ** check if MoreFluff has been updated so the older version can be added to the conflicts
-** see if unstable version is old enough to add it to the conflict list
-** see if 10spades version is old enough to add to the conflict list
+** add unstable version 1.1.1d and earlier to the conflict list on feb 18?
 
 * ISSUES:
 ** What if locked sleeves in challenge?
@@ -29,7 +28,6 @@ KNOWN ISSUES/TODO IDEAS:
 
 CardSleeves = SMODS.current_mod
 
-local in_collection = false
 local is_in_run_info_tab = false
 local game_args = {}
 
@@ -1063,9 +1061,6 @@ function G.FUNCS.change_sleeve(args)
 end
 
 function G.FUNCS.change_viewed_sleeve()
-    if in_collection then
-        return
-    end
     local area = G.sticker_card.area
     local sleeve_center = CardSleeves.Sleeve:get_obj(G.viewed_sleeve)
     if sleeve_center then
@@ -1449,29 +1444,6 @@ function G.FUNCS.can_start_run(e)
     end
 end
 
-local old_FUNCS_your_collection = G.FUNCS.your_collection
-function G.FUNCS.your_collection(...)
-    in_collection = true
-    return old_FUNCS_your_collection(...)
-end
-local old_buildAdditionsTab = buildAdditionsTab
-function buildAdditionsTab(...)
-    -- from steamodded
-    in_collection = true
-    return old_buildAdditionsTab(...)
-end
-local old_FUNCS_exit_overlay_menu = G.FUNCS.exit_overlay_menu
-function G.FUNCS.exit_overlay_menu(...)
-    in_collection = false
-    return old_FUNCS_exit_overlay_menu(...)
-end
-local old_FUNCS_mods_button = G.FUNCS.mods_button
-function G.FUNCS.mods_button(...)
-    -- from steamodded
-    in_collection = false
-    return old_FUNCS_mods_button(...)
-end
-
 local old_Game_start_run = Game.start_run
 function Game:start_run(args)
     -- because G.GAME.challenge only gets defined _after_ `:init_game_object`
@@ -1785,7 +1757,7 @@ local function populate_info_queue(set, key)
     return info_queue
 end
 
-local function generate_sleeve_card_areas()
+local function generate_sleeve_card_areas(is_collection)
     if sleeve_card_areas then
         for i=1, #sleeve_card_areas do
             for j=1, #G.I.CARDAREA do
@@ -1799,13 +1771,14 @@ local function generate_sleeve_card_areas()
     sleeve_card_areas = {}
     for i=1, sleeve_count_page do
         sleeve_card_areas[i] = CardArea(G.ROOM.T.x + 0.2*G.ROOM.T.w/2,G.ROOM.T.h, 0.95*G.CARD_W, 0.945*G.CARD_H,
-        {card_limit = 5, type = 'deck', highlight_limit = 0, deck_height = 0.35, thin_draw = 1, index = i})
+        {card_limit = 5, type = "deck", highlight_limit = 0, deck_height = 0.35, thin_draw = 1, index = i, collection = is_collection})
     end
 end
 
 local function populate_sleeve_card_areas(page, mod_id)
     local sleeve_pool = get_sleeve_pool(mod_id)
     local count = 1 + (page - 1) * sleeve_count_page
+    local in_sleeve_select = Galdur and not sleeve_card_areas[1].config.collection  -- in collection or galdur select screen
     for i=1, sleeve_count_page do
         if count > #sleeve_pool then
             return
@@ -1818,7 +1791,7 @@ local function populate_sleeve_card_areas(page, mod_id)
         if Galdur and Galdur.config.reduce then
             card_number = 1
         end
-        local selected_deck_center = in_collection and G.P_CENTERS.b_red or Galdur.run_setup.choices.deck.effect.center
+        local selected_deck_center = in_sleeve_select and Galdur.run_setup.choices.deck.effect.center or G.P_CENTERS.b_red
         for index = 1, card_number do
             local card = Card(area.T.x, area.T.y, area.T.w, area.T.h, selected_deck_center, selected_deck_center,
                 {galdur_back = Back(selected_deck_center)})
@@ -1838,7 +1811,9 @@ local function populate_sleeve_card_areas(page, mod_id)
         end
         local card = create_sleeve_card(area, sleeve_pool[count])
         card.params["sleeve_select"] = i
-        card.sleeve_select_position = {page = page, count = i}
+        if in_sleeve_select then
+            card.sleeve_select_position = {page = page, count = i}  -- allows Card:click to know it's a sleeve
+        end
         replace_sleeve_sprite(card, sleeve_pool[count])
         area:emplace(card)
         count = count + 1
@@ -2140,7 +2115,7 @@ if Galdur then
 
     local old_Card_click = Card.click
     function Card:click()
-        if self.sleeve_select_position and self.config.center:is_unlocked() and not in_collection then
+        if self.sleeve_select_position and self.config.center:is_unlocked() then
             local nr = (self.sleeve_select_position.page - 1) * sleeve_count_page + self.sleeve_select_position.count
             G.FUNCS.change_sleeve{to_key = nr}
             set_new_sleeve(self.config.center)
@@ -2223,7 +2198,7 @@ local function create_UI_alt_description()
 end
 
 local function create_UIBox_sleeves(mod_id)
-    generate_sleeve_card_areas()
+    generate_sleeve_card_areas(true)
     local sleeve_pages = {n=G.UIT.C, config = {padding = 0.15}, nodes ={
         generate_sleeve_card_areas_ui(mod_id),
         create_sleeve_page_cycle(mod_id),
