@@ -1,4 +1,4 @@
---- main code file
+--- CardSleeves main code file
 
 --[[
 
@@ -19,6 +19,7 @@ KNOWN ISSUES/TODO IDEAS:
 * IDEAS:
 ** See if people want to select their own sleeves in challenges instead of adhering to the challenge?
 ** Yellow deck+sleeve has unique interest mechanic?
+** How about optional 2nd sleeve that only shows up for the respective deck (e.g. 2 unique sleeves for a deck???)
 ** See if people want some unique/custom sleeves by CardSleeves?
 ** See if people want a nerfed/balanced version of sleeves?
 
@@ -919,7 +920,8 @@ local function find_sleeve_card(area)
 end
 
 local function create_sleeve_card(area, sleeve_center)
-    local viewed_back = G.GAME.viewed_back ~= nil and {effect = {config = {}}} or false  -- cryptid compat
+    local fake_deck = {effect = {config = {}, center = {key = "fake", config = {}}, text_UI = {}, fake_deck = true}}
+    local viewed_back = G.GAME.viewed_back ~= nil and fake_deck or false  -- cryptid compat
     local new_card = Card(area.T.x, area.T.y, area.T.w + 0.2, area.T.h, nil, sleeve_center or G.P_CENTERS.c_base, {playing_card = 11, viewed_back = viewed_back, galdur_selector = true, sleeve_card = true})
     new_card.sprite_facing = 'back'
     new_card.facing = 'back'
@@ -936,7 +938,7 @@ local function create_sleeve_sprite(x, y, w, h, sleeve_center)
 end
 
 local function replace_sleeve_sprite(card, sleeve_center, offset)
-    offset = offset or {x=0, y=0.35}
+    offset = offset or {x=0, y=0.35}  -- any lower Y offset and sticker starts looking bad
     if card.children.back then
         card.children.back:remove()
     end
