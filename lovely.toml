@@ -12,14 +12,26 @@ target = "game.lua"
 pattern = '''
 if not saveTable then
     if args.seed then self.GAME.seeded = true end
-    self.GAME.pseudorandom.seed = args.seed or (not (G.SETTINGS.tutorial_complete or G.SETTINGS.tutorial_progress.completed_parts["big_blind"]) and "TUTORIAL") or generate_starting_seed()
+    self.GAME.pseudorandom.seed = args.seed or (not (G.SETTINGS.tutorial_complete or G.SETTINGS.tutorial_progress.completed_parts['big_blind']) and "TUTORIAL") or generate_starting_seed()
 end
+
 for k, v in pairs(self.GAME.pseudorandom) do if v == 0 then self.GAME.pseudorandom[k] = pseudohash(k..self.GAME.pseudorandom.seed) end end
 self.GAME.pseudorandom.hashed_seed = pseudohash(self.GAME.pseudorandom.seed)
 '''
 match_indent = true
 position = "at"
-payload = ''
+payload = '''
+-- moved this code to earlier in the function (by CardSleeves)
+--[[
+if not saveTable then
+    if args.seed then self.GAME.seeded = true end
+    self.GAME.pseudorandom.seed = args.seed or (not (G.SETTINGS.tutorial_complete or G.SETTINGS.tutorial_progress.completed_parts['big_blind']) and "TUTORIAL") or generate_starting_seed()
+end
+
+for k, v in pairs(self.GAME.pseudorandom) do if v == 0 then self.GAME.pseudorandom[k] = pseudohash(k..self.GAME.pseudorandom.seed) end end
+self.GAME.pseudorandom.hashed_seed = pseudohash(self.GAME.pseudorandom.seed)
+--]]
+'''
 [[patches]]
 [patches.pattern]
 target = "game.lua"

@@ -1648,6 +1648,19 @@ function Card:use_consumeable(...)
     return output
 end
 
+local old_Card_align_h_popup = Card.align_h_popup
+function Card:align_h_popup()
+    -- cannot use lovely patch since smods overwrites this
+    local ret = old_Card_align_h_popup(self)
+
+    if self.T.y < G.CARD_H*0.85 then
+        -- default is G.CARD_H*0.8; we slightly change the "flipping point" so sleeves on the top row of the sleeve select screen have their pop-up below them
+        ret.type = "bm"
+    end
+
+    return ret
+end
+
 local old_create_tabs = create_tabs
 function create_tabs(args)
     local sleeve_exists = G.GAME.selected_sleeve and G.GAME.selected_sleeve ~= "sleeve_casl_none"
@@ -1904,7 +1917,7 @@ function Card:hover()
             for _, center in pairs(info_queue) do
                 local desc = generate_card_ui(center, {main = {},info = {},type = {},name = 'done'}, nil, center.set, nil)
                 tooltips[#tooltips + 1] =
-                {n=info_col, config={align = "tm"}, nodes={
+                {n=info_col, config={align = self.params.sleeve_select > sleeve_count_horizontal and "bm" or "tm"}, nodes={
                     {n=G.UIT.R, config={align = "cm", colour = lighten(G.C.JOKER_GREY, 0.5), r = 0.1, padding = 0.05, emboss = 0.05}, nodes={
                     info_tip_from_rows(desc.info[1], desc.info[1].name),
                     }}
