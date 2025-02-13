@@ -21,6 +21,7 @@ KNOWN ISSUES/TODO IDEAS:
 ** See if people want to select their own sleeves in challenges instead of adhering to the challenge?
 ** Yellow deck+sleeve has unique interest mechanic?
 ** How about optional 2nd sleeve that only shows up for the respective deck (e.g. 2 unique sleeves for a deck???)
+** See if people want multiple sleeves at the same time
 ** See if people want some unique/custom sleeves by CardSleeves?
 ** See if people want a nerfed/balanced version of sleeves?
 
@@ -1580,7 +1581,7 @@ function CardArea:draw(...)
         local x2, height = -1, -1
         for i, card in pairs(self.cards) do
             local index_is_drawn = i == 1 or i%(self.config.thin_draw or 9) == 0 or i == #self.cards
-            local is_stationary = not card.states.drag.is and card.velocity.x < 0.01 and card.velocity.y < 0.01
+            local is_stationary = not card.states.drag.is and math.abs(card.velocity.x) < 0.001 and math.abs(card.velocity.y) < 0.001
             if index_is_drawn and card.states.visible and is_stationary then
                 x = math.min(x, card.T.x)
                 y = math.max(y, card.T.y)
