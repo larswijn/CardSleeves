@@ -36,7 +36,7 @@ return {
                 name = "Capa Vermelha",
                 text = G.localization.descriptions.Back["b_red"].text
             },
-			sleeve_casl_red_alt = {
+	    sleeve_casl_red_alt = {
                 name = "Capa Vermelha",
                 text = {
                     "{C:red}+#1#{} descarte em cada rodada",
