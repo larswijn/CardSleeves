@@ -7,8 +7,6 @@ KNOWN ISSUES/TODO IDEAS:
 * TODO: 
 ** split into seperate files once a mod manager exists
 ** check if MoreFluff has been updated so the older version can be added to the conflicts
-** see if unstable version is old enough to add it to the conflict list
-** see if 10spades version is old enough to add to the conflict list
 
 * ISSUES:
 ** What if locked sleeves in challenge?
@@ -23,6 +21,7 @@ KNOWN ISSUES/TODO IDEAS:
 ** How about optional 2nd sleeve that only shows up for the respective deck (e.g. 2 unique sleeves for a deck???)
 ** See if people want multiple sleeves at the same time
 ** See if people want some unique/custom sleeves by CardSleeves?
+*** Sleeve that combines joker and consumable slots
 ** See if people want a nerfed/balanced version of sleeves?
 
 --]]
@@ -412,14 +411,14 @@ CardSleeves.Sleeve {
     unlock_condition = { deck = "b_black", stake = "stake_green" },
     loc_vars = function(self)
         local key, vars
-        if self.get_current_deck_key() ~= "b_black" then
-            key = self.key
-            self.config = { hands = -1, joker_slot = 1 }
-            vars = { self.config.joker_slot, -self.config.hands }
-        else
+        if self.get_current_deck_key() == "b_black" then
             key = self.key .. "_alt"
             self.config = { discards = -1, joker_slot = 1 }
             vars = { self.config.joker_slot, -self.config.discards }
+        else
+            key = self.key
+            self.config = { hands = -1, joker_slot = 1 }
+            vars = { self.config.joker_slot, -self.config.hands }
         end
         return { key = key, vars = vars }
     end,
@@ -434,12 +433,12 @@ CardSleeves.Sleeve {
     unlock_condition = { deck = "b_magic", stake = "stake_black" },
     loc_vars = function(self)
         local key
-        if self.get_current_deck_key() ~= "b_magic" then
-            key = self.key
-            self.config = { voucher = 'v_crystal_ball', consumables = { 'c_fool', 'c_fool' } }
-        else
+        if self.get_current_deck_key() == "b_magic" then
             key = self.key .. "_alt"
             self.config = { voucher = "v_omen_globe" }
+        else
+            key = self.key
+            self.config = { voucher = 'v_crystal_ball', consumables = { 'c_fool', 'c_fool' } }
         end
         local vars = { localize{type = 'name_text', key = self.config.voucher, set = 'Voucher'} }
         if self.config.consumables then
@@ -459,11 +458,11 @@ CardSleeves.Sleeve {
     loc_vars = function(self)
         local key
         if self.get_current_deck_key() ~= "b_nebula" then
-            key = self.key
-            self.config = { voucher = 'v_telescope', consumable_slot = -1 }
-        else
             key = self.key .. "_alt"
             self.config = { voucher = 'v_observatory' }
+        else
+            key = self.key
+            self.config = { voucher = 'v_telescope', consumable_slot = -1 }
         end
         local vars = { localize{type = 'name_text', key = self.config.voucher, set = 'Voucher'} }
         if self.config.consumable_slot then
@@ -483,14 +482,14 @@ CardSleeves.Sleeve {
     loc_vars = function(self)
         local key
         local vars = {}
-        if self.get_current_deck_key() ~= "b_ghost" then
-            key = self.key
-            self.config = { spectral_rate = 2, consumables = { 'c_hex' } }
-            vars[#vars+1] = localize{type = 'name_text', key = self.config.consumables[1], set = 'Tarot'}
-        else
+        if self.get_current_deck_key() == "b_ghost" then
             key = self.key .. "_alt"
             self.config = { spectral_rate = 4, spectral_more_options = 2 }
             vars[#vars+1] = self.config.spectral_more_options
+        else
+            key = self.key
+            self.config = { spectral_rate = 2, consumables = { 'c_hex' } }
+            vars[#vars+1] = localize{type = 'name_text', key = self.config.consumables[1], set = 'Tarot'}
         end
         return { key = key, vars = vars }
     end,
@@ -514,12 +513,12 @@ CardSleeves.Sleeve {
     unlock_condition = { deck = "b_abandoned", stake = "stake_black" },
     loc_vars = function(self)
         local key = self.key
-        if self.get_current_deck_key() ~= "b_abandoned" then
-            key = self.key
-            self.config = { remove_faces = true }
-        else
+        if self.get_current_deck_key() == "b_abandoned" then
             key = key .. "_alt"
-            self.config = { prevent_faces = true }
+            self.config = { prevent_faces = true }  -- prevent faces during entire run
+        else
+            key = self.key
+            self.config = { remove_faces = true }  -- only removes faces at start of run
         end
         return { key = key }
     end,
@@ -600,12 +599,12 @@ CardSleeves.Sleeve {
     unlock_condition = { deck = "b_checkered", stake = "stake_black" },
     loc_vars = function(self)
         local key
-        if self.get_current_deck_key() ~= "b_checkered" then
-            key = self.key
-            self.config = {}
-        else
+        if self.get_current_deck_key() == "b_checkered" then
             key = self.key .. "_alt"
             self.config = { force_suits = {["Clubs"] = "Spades", ["Diamonds"] = "Hearts"} }
+        else
+            key = self.key
+            self.config = {}
         end
         return { key = key }
     end,
@@ -638,17 +637,17 @@ CardSleeves.Sleeve {
     loc_vars = function(self)
         local key
         local vars = {}
-        if self.get_current_deck_key() ~= "b_zodiac" then
+        if self.get_current_deck_key() == "b_zodiac" then
+            key = self.key .. "_alt"
+            self.config = { arcana_more_options = 2, celestial_more_options = 2 }
+            vars[#vars+1] = self.config.arcana_more_options
+            vars[#vars+1] = self.config.celestial_more_options
+        else
             key = self.key
             self.config = { vouchers = {'v_tarot_merchant', 'v_planet_merchant', 'v_overstock_norm'} }
             for _, voucher in pairs(self.config.vouchers) do
                 vars[#vars+1] = localize{type = 'name_text', key = voucher, set = 'Voucher'}
             end
-        else
-            key = self.key .. "_alt"
-            self.config = { arcana_more_options = 2, celestial_more_options = 2 }
-            vars[#vars+1] = self.config.arcana_more_options
-            vars[#vars+1] = self.config.celestial_more_options
         end
         return { key = key, vars = vars }
     end,
@@ -690,10 +689,10 @@ CardSleeves.Sleeve {
     config = {},
     loc_vars = function(self)
         local key
-        if self.get_current_deck_key() ~= "b_anaglyph" then
-            key = self.key
-        else
+        if self.get_current_deck_key() == "b_anaglyph" then
             key = self.key .. "_alt"
+        else
+            key = self.key
         end
         local vars = { localize{type = 'name_text', key = 'tag_double', set = 'Tag'} }
         return { key = key, vars = vars }
@@ -709,11 +708,11 @@ CardSleeves.Sleeve {
         })
 
         if context.context == 'eval' then
-            if sleeve.get_current_deck_key() ~= "b_anaglyph" and G.GAME.last_blind and G.GAME.last_blind.boss then
-                -- add double tag like anaglyph deck does
-                G.E_MANAGER:add_event(add_double_tag_event)
-            elseif sleeve.get_current_deck_key() == "b_anaglyph" and G.GAME.last_blind and not G.GAME.last_blind.boss then
+            if sleeve.get_current_deck_key() == "b_anaglyph" and G.GAME.last_blind and not G.GAME.last_blind.boss then
                 -- add double tag when stacking deck+sleeve on small/big blind
+                G.E_MANAGER:add_event(add_double_tag_event)
+            elseif sleeve.get_current_deck_key() ~= "b_anaglyph" and G.GAME.last_blind and G.GAME.last_blind.boss then
+                -- add double tag like anaglyph deck does
                 G.E_MANAGER:add_event(add_double_tag_event)
             end
         end
@@ -730,63 +729,15 @@ CardSleeves.Sleeve {
     config = {ante_scaling = 2},
     loc_vars = function(self)
         local key
-        if self.get_current_deck_key() ~= "b_plasma" then
-            key = self.key
-        else
+        if self.get_current_deck_key() == "b_plasma" then
             key = self.key .. "_alt"
+        else
+            key = self.key
         end
         local vars = { self.config.ante_scaling }
         return { key = key, vars = vars }
     end,
     calculate = function(self, sleeve, context)
-        if self.get_current_deck_key() ~= "b_plasma" and context.context == 'final_scoring_step' then
-            -- copy-paste from plasma deck
-            local tot = context.chips + context.mult
-            context.chips = math.floor(tot/2)
-            context.mult = math.floor(tot/2)
-            update_hand_text({delay = 0}, {mult = context.mult, chips = context.chips})
-
-            G.E_MANAGER:add_event(Event({
-                func = (function()
-                    play_sound('gong', 0.94, 0.3)
-                    play_sound('gong', 0.94*1.5, 0.2)
-                    play_sound('tarot1', 1.5)
-                    ease_colour(G.C.UI_CHIPS, {0.8, 0.45, 0.85, 1})
-                    ease_colour(G.C.UI_MULT, {0.8, 0.45, 0.85, 1})
-                    attention_text({
-                        scale = 1.4, text = localize('k_balanced'), hold = 2, align = 'cm', offset = {x = 0,y = -2.7},major = G.play
-                    })
-                    G.E_MANAGER:add_event(Event({
-                        trigger = 'after',
-                        blockable = false,
-                        blocking = false,
-                        delay =  4.3,
-                        func = (function()
-                                ease_colour(G.C.UI_CHIPS, G.C.BLUE, 2)
-                                ease_colour(G.C.UI_MULT, G.C.RED, 2)
-                            return true
-                        end)
-                    }))
-                    G.E_MANAGER:add_event(Event({
-                        trigger = 'after',
-                        blockable = false,
-                        blocking = false,
-                        no_delete = true,
-                        delay =  6.3,
-                        func = (function()
-                            G.C.UI_CHIPS[1], G.C.UI_CHIPS[2], G.C.UI_CHIPS[3], G.C.UI_CHIPS[4] = G.C.BLUE[1], G.C.BLUE[2], G.C.BLUE[3], G.C.BLUE[4]
-                            G.C.UI_MULT[1], G.C.UI_MULT[2], G.C.UI_MULT[3], G.C.UI_MULT[4] = G.C.RED[1], G.C.RED[2], G.C.RED[3], G.C.RED[4]
-                            return true
-                        end)
-                    }))
-                    return true
-                end)
-            }))
-
-            delay(0.6)
-            return context.chips, context.mult
-        end
-
         if self.get_current_deck_key() == "b_plasma" and (context.shop_final_pass or context.reroll_shop) then
             -- stop controller/mouse from doing anything
             local hold = 0.6  -- how long to take to ease the costs, and how long to hold the player
@@ -853,6 +804,54 @@ CardSleeves.Sleeve {
                 end
             }))
         end
+
+        if self.get_current_deck_key() ~= "b_plasma" and context.context == 'final_scoring_step' then
+            -- copy-paste from plasma deck
+            local tot = context.chips + context.mult
+            context.chips = math.floor(tot/2)
+            context.mult = math.floor(tot/2)
+            update_hand_text({delay = 0}, {mult = context.mult, chips = context.chips})
+
+            G.E_MANAGER:add_event(Event({
+                func = (function()
+                    play_sound('gong', 0.94, 0.3)
+                    play_sound('gong', 0.94*1.5, 0.2)
+                    play_sound('tarot1', 1.5)
+                    ease_colour(G.C.UI_CHIPS, {0.8, 0.45, 0.85, 1})
+                    ease_colour(G.C.UI_MULT, {0.8, 0.45, 0.85, 1})
+                    attention_text({
+                        scale = 1.4, text = localize('k_balanced'), hold = 2, align = 'cm', offset = {x = 0,y = -2.7},major = G.play
+                    })
+                    G.E_MANAGER:add_event(Event({
+                        trigger = 'after',
+                        blockable = false,
+                        blocking = false,
+                        delay =  4.3,
+                        func = (function()
+                                ease_colour(G.C.UI_CHIPS, G.C.BLUE, 2)
+                                ease_colour(G.C.UI_MULT, G.C.RED, 2)
+                            return true
+                        end)
+                    }))
+                    G.E_MANAGER:add_event(Event({
+                        trigger = 'after',
+                        blockable = false,
+                        blocking = false,
+                        no_delete = true,
+                        delay =  6.3,
+                        func = (function()
+                            G.C.UI_CHIPS[1], G.C.UI_CHIPS[2], G.C.UI_CHIPS[3], G.C.UI_CHIPS[4] = G.C.BLUE[1], G.C.BLUE[2], G.C.BLUE[3], G.C.BLUE[4]
+                            G.C.UI_MULT[1], G.C.UI_MULT[2], G.C.UI_MULT[3], G.C.UI_MULT[4] = G.C.RED[1], G.C.RED[2], G.C.RED[3], G.C.RED[4]
+                            return true
+                        end)
+                    }))
+                    return true
+                end)
+            }))
+
+            delay(0.6)
+            return context.chips, context.mult
+        end
     end
 }
 
@@ -866,12 +865,12 @@ CardSleeves.Sleeve {
     config = {randomize_rank_suit = true},
     loc_vars = function(self)
         local key
-        if self.get_current_deck_key() ~= "b_erratic" then
-            key = self.key
-            self.config = {randomize_rank_suit = true}
-        else
+        if self.get_current_deck_key() == "b_erratic" then
             key = self.key .. "_alt"
             self.config = {randomize_rank_suit = true, randomize_start = true, random_lb = 3, random_ub = 6}
+        else
+            key = self.key
+            self.config = {randomize_rank_suit = true}
         end
         local vars = {}
         if self.config.randomize_start then
