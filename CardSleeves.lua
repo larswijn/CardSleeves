@@ -536,7 +536,7 @@ CardSleeves.Sleeve {
         end
         return { key = key }
     end,
-    apply = function(self)
+    apply = function(self, sleeve)
         CardSleeves.Sleeve.apply(self)
         if self.config.prevent_faces and self.allowed_card_centers == nil then
             self.allowed_card_centers = {}
@@ -561,7 +561,7 @@ CardSleeves.Sleeve {
             return
         end
         if sleeve.allowed_card_centers == nil then
-            sleeve:apply()
+            sleeve:apply(sleeve)
         end
 
         -- handle Strength and Ouija
@@ -893,7 +893,7 @@ CardSleeves.Sleeve {
         end
         return { key = key, vars = vars }
     end,
-    apply = function(self)
+    apply = function(self, sleeve)
         CardSleeves.Sleeve.apply(self)
         if self.config.randomize_start then
             local function get_random()
@@ -1520,7 +1520,7 @@ local old_Back_apply_to_run = Back.apply_to_run
 function Back:apply_to_run(...)
     local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
     old_Back_apply_to_run(self, ...)
-    sleeve_center:apply()
+    sleeve_center:apply(sleeve_center)
 end
 
 local old_Back_trigger_effect = Back.trigger_effect
