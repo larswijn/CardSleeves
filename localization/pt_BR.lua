@@ -1,6 +1,22 @@
 -- Portuguese (Brazil) by PinkMaggit
 return {
     descriptions = {
+		Mod = {
+            CardSleeves = {
+                name = "Card Sleeves",
+                text = {
+                    "{s:1.3}Adiciona {s:1.3,C:attention}15{} {s:1.3,E:1,C:dark_edition}Capas{} {s:1.3}que modificam baralhos.",
+                    " ",
+                    "Inclui uma API para outros mods",
+                    "adicionarem suas próprias capas.",
+                    " ",
+                    "Programação e implementação por {C:blue}Larswijn{}.",
+                    "Ideia e arte original por {C:red}Sable{}.",
+                    " ",
+                    "{s:1.1}Visite https://github.com/larswijn/CardSleeves para mais informações."
+                }
+            }
+        },
         Sleeve = {
             sleeve_casl_none = {
                 name = "Sem Capa",
@@ -20,15 +36,38 @@ return {
                 name = "Capa Vermelha",
                 text = G.localization.descriptions.Back["b_red"].text
             },
+			sleeve_casl_red_alt = {
+                name = "Capa Vermelha",
+                text = {
+                    "{C:red}+#1#{} descarte em cada rodada",
+                    "",
+                    "{C:blue}#2#{} mão em cada rodada"
+                },
+            },
 
             sleeve_casl_blue = {
                 name = "Capa Azul",
                 text = G.localization.descriptions.Back["b_blue"].text
             },
+			sleeve_casl_blue_alt = {
+                name = "Capa Azul",
+                text = {
+                    "{C:blue}+#1#{} mão em cada rodada",
+                    "",
+                    "{C:red}#2#{} descarte em cada rodada"
+                },
+            },
 
             sleeve_casl_yellow = {
                 name = "Capa Amarela",
                 text = G.localization.descriptions.Back["b_yellow"].text
+            },
+			sleeve_casl_yellow_alt = {
+                name = "Capa Amarela",
+                text = {
+                    "Comece a tentativa com o",
+                    "cupom de {C:money,T:v_seed_money}#1#{}"
+                },
             },
 
             sleeve_casl_green = {
@@ -37,9 +76,17 @@ return {
                     "No fim de cada Rodada:",
                     "+{C:money}$#1#{s:0.85} por {C:blue}Mão restante",
                     "+{C:money}$#2#{s:0.85} por {C:red}Descarte restante",
-                    "Sem {C:attention}Juros"
+                    "Não receba {C:attention}Juros"
                     }
             },
+            sleeve_casl_green_alt = {
+                name = "Capa Verde",
+                text = {
+                    "Tenha até",
+                    "{C:red}-$#1#{} em dívida por",
+                    "cada Mão e Descarte",
+                    "{C:inactive}(Currently {C:red}-$#2#{C:inactive})"
+                }
 
             sleeve_casl_black = {
                 name = "Capa Preta",
@@ -135,6 +182,14 @@ return {
                 name = "Capa Pintada",
                 text = G.localization.descriptions.Back["b_painted"].text
             },
+			sleeve_casl_painted_alt = {
+                name = "Capa Pintada",
+                text = {
+                    "{C:attention}+#1#{} limite de",
+					"seleção de cartas,",
+                    "{C:red}#2#{} espaço de Curinga",
+                }
+            },
 
             sleeve_casl_anaglyph = {
                 name = "Capa Anáglifa",
@@ -178,6 +233,7 @@ return {
     misc = {
         dictionary = {
             k_sleeve = "Capa",
+			k_sleeves = "Capas",
             gald_sleeves = "Capa",
             gald_random_sleeve = "Aleatória",
             sleeve_unique_effect_desc = "Algumas capas têm efeitos únicos quando combinadas com baralhos específicos",
