@@ -373,7 +373,17 @@ CardSleeves.Sleeve {
     unlocked = false,
     unlock_condition = { deck = "b_red", stake = "stake_red" },
     loc_vars = function(self)
-        return { vars = { self.config.discards } }
+        local key, vars
+        if self.get_current_deck_key() == "b_red" then
+            key = self.key .. "_alt"
+            self.config = { discards = 1, hands = -1 }
+            vars = { self.config.discards, self.config.hands }
+        else
+            key = self.key
+            self.config = { discards = 1 }
+            vars = { self.config.discards }
+        end
+        return { key = key, vars = vars }
     end,
 }
 
@@ -382,11 +392,20 @@ CardSleeves.Sleeve {
     name = "Blue Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 0 },
-    config = { hands = 1 },
     unlocked = false,
     unlock_condition = { deck = "b_blue", stake = "stake_green" },
     loc_vars = function(self)
-        return { vars = { self.config.hands } }
+        local key, vars
+        if self.get_current_deck_key() == "b_blue" then
+            key = self.key .. "_alt"
+            self.config = { hands = 1, discards = -1 }
+            vars = { self.config.hands, self.config.discards }
+        else
+            key = self.key
+            self.config = { hands = 1 }
+            vars = { self.config.hands }
+        end
+        return { key = key, vars = vars }
     end,
 }
 
@@ -395,11 +414,20 @@ CardSleeves.Sleeve {
     name = "Yellow Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 0 },
-    config = { dollars = 10 },
     unlocked = false,
     unlock_condition = { deck = "b_yellow", stake = "stake_green" },
     loc_vars = function(self)
-        return { vars = { self.config.dollars } }
+        local key, vars
+        if self.get_current_deck_key() == "b_yellow" then
+            key = self.key .. "_alt"
+            self.config = { voucher = "v_seed_money"}
+            vars = { localize{type = 'name_text', key = self.config.voucher, set = 'Voucher'} }
+        else
+            key = self.key
+            self.config = { dollars = 10}
+            vars = { self.config.dollars }
+        end
+        return { key = key, vars = vars }
     end,
 }
 
@@ -408,12 +436,52 @@ CardSleeves.Sleeve {
     name = "Green Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 0 },
-    config = { extra_hand_bonus = 1, extra_discard_bonus = 1, no_interest = true },
     unlocked = false,
     unlock_condition = { deck = "b_green", stake = "stake_green" },
     loc_vars = function(self)
-        return { vars = { self.config.extra_hand_bonus, self.config.extra_discard_bonus, self.config.no_interest } }
+        local key, vars
+        if self.get_current_deck_key() == "b_green" then
+            key = self.key .. "_alt"
+            self.config = { debt_bonus = 2 }
+            local added_bankrupt = "?"
+            if G.STAGE == G.STAGES.RUN then
+                -- only calculate if we're in a run, otherwise it's bogus
+                added_bankrupt = self.config.debt_bonus * (G.GAME.round_resets.discards + G.GAME.round_resets.hands)
+            end
+            vars = { self.config.debt_bonus, added_bankrupt }
+        else
+            key = self.key
+            self.config = { extra_hand_bonus = 1, extra_discard_bonus = 1, no_interest = true }
+            vars = { self.config.extra_hand_bonus, self.config.extra_discard_bonus, self.config.no_interest }
+        end
+        return { key = key, vars = vars }
     end,
+    apply = function(self, sleeve)
+        CardSleeves.Sleeve.apply(sleeve)
+        if sleeve.config.debt_bonus then
+            G.E_MANAGER:add_event(Event({
+                trigger = "after",
+                func = (function()
+                    sleeve.config.added_bankrupt = sleeve.config.debt_bonus * (G.GAME.round_resets.discards + G.GAME.round_resets.hands)
+                    G.GAME.bankrupt_at = G.GAME.bankrupt_at - sleeve.config.added_bankrupt
+                    return true
+                end)
+            }))
+        end
+    end,
+    calculate = function(self, sleeve, context)
+        if sleeve.config.debt_bonus then
+            if (context.end_of_round and not context.individual and not context.repetition) then
+                if not sleeve.config.added_bankrupt then
+                    sleeve.config.added_bankrupt = sleeve.config.debt_bonus * (G.GAME.round_resets.discards + G.GAME.round_resets.hands)
+                end
+                G.GAME.bankrupt_at = G.GAME.bankrupt_at + sleeve.config.added_bankrupt
+                sleeve.config.added_bankrupt = sleeve.config.debt_bonus * (G.GAME.round_resets.discards + G.GAME.round_resets.hands)
+                G.GAME.bankrupt_at = G.GAME.bankrupt_at - sleeve.config.added_bankrupt
+                print_debug("G.GAME.bankrupt_at, added_bankrupt = " .. tprint({G.GAME.bankrupt_at, sleeve.config.added_bankrupt}))
+            end
+        end
+    end
 }
 
 CardSleeves.Sleeve {
@@ -687,10 +755,32 @@ CardSleeves.Sleeve {
     pos = { x = 1, y = 2 },
     unlocked = false,
     unlock_condition = { deck = "b_painted", stake = "stake_blue" },
-    config = {hand_size = 2, joker_slot = -1},
     loc_vars = function(self)
-        return { vars = { self.config.hand_size, self.config.joker_slot } }
+        local key
+        local vars = {}
+        if self.get_current_deck_key() == "b_painted" then
+            key = self.key .. "_alt"
+            self.config = { selection_size = 1, joker_slot = -1 }
+            vars = { self.config.selection_size, self.config.joker_slot }
+        else
+            key = self.key
+            self.config = {hand_size = 2, joker_slot = -1}
+            vars = { self.config.hand_size, self.config.joker_slot }
+        end
+        return { key = key, vars = vars }
     end,
+    apply = function(self, sleeve)
+        CardSleeves.Sleeve.apply(self)
+        if sleeve.config.selection_size then
+            G.E_MANAGER:add_event(Event({
+                trigger = "after",
+                func = (function()
+                    G.hand.config.highlighted_limit = G.hand.config.highlighted_limit + sleeve.config.selection_size
+                    return true
+                end)
+            }))
+        end
+    end
 }
 
 CardSleeves.Sleeve {

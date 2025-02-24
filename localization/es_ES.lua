@@ -1,4 +1,4 @@
--- Spanish translation by Batolol
+-- Spanish translation by Batolol and Yamper
 return {
     descriptions = {
         Sleeve = {

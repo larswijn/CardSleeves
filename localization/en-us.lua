@@ -35,15 +35,38 @@ return {
                 name = "Red Sleeve",
                 text = G.localization.descriptions.Back["b_red"].text
             },
+            sleeve_casl_red_alt = {
+                name = "Red Sleeve",
+                text = {
+                    "{C:red}+#1#{} discard every round",
+                    "",
+                    "{C:blue}#2#{} hand every round"
+                },
+            },
 
             sleeve_casl_blue = {
                 name = "Blue Sleeve",
                 text = G.localization.descriptions.Back["b_blue"].text
             },
+            sleeve_casl_blue_alt = {
+                name = "Blue Sleeve",
+                text = {
+                    "{C:blue}+#1#{} hand every round",
+                    "",
+                    "{C:red}#2#{} discard every round"
+                },
+            },
 
             sleeve_casl_yellow = {
                 name = "Yellow Sleeve",
                 text = G.localization.descriptions.Back["b_yellow"].text
+            },
+            sleeve_casl_yellow_alt = {
+                name = "Yellow Sleeve",
+                text = {
+                    "Start run with",
+                    "{C:money,T:v_seed_money}#1#{}"
+                },
             },
 
             sleeve_casl_green = {
@@ -53,7 +76,16 @@ return {
                     "+{C:money}$#1#{s:0.85} per remaining {C:blue}Hand",
                     "+{C:money}$#2#{s:0.85} per remaining {C:red}Discard",
                     "Earn no {C:attention}Interest"
-                    }
+                }
+            },
+            sleeve_casl_green_alt = {
+                name = "Green Sleeve",
+                text = {
+                    "Can go up to",
+                    "{C:red}-$#1#{} in debt for",
+                    "every Hand and Discard",
+                    "{C:inactive}(Currently {C:red}-$#2#{C:inactive})"
+                }
             },
 
             sleeve_casl_black = {
@@ -150,6 +182,13 @@ return {
                 name = "Painted Sleeve",
                 text = G.localization.descriptions.Back["b_painted"].text
             },
+            sleeve_casl_painted_alt = {
+                name = "Painted Sleeve",
+                text = {
+                    "{C:attention}+#1#{} card selection limit,",
+                    "{C:red}#2#{} Joker slot",
+                }
+            },
 
             sleeve_casl_anaglyph = {
                 name = "Anaglyph Sleeve",
@@ -193,6 +232,7 @@ return {
     misc = {
         dictionary = {
             k_sleeve = "Sleeve",
+            k_sleeves = "Sleeves",
             gald_sleeves = "Select Sleeve",
             gald_random_sleeve = "Random Sleeve",
             sleeve_unique_effect_desc = "Some sleeves have unique effects when combined with specific decks",

@@ -55,6 +55,6 @@ CardSleeves also has support for [Galdur](https://github.com/Eremel/Galdur)'s im
 Any other mod can create new sleeves. See [the wiki](https://github.com/larswijn/CardSleeves/wiki) for more information.
 
 # Credits
-Big thanks to Sable for the original idea and the original art, and the amazing balatro modding community for helping out with the lua code.
+Big thanks to Sable for the original idea and the original art, all the cool people who helped translate, and the amazing balatro modding community for helping out with the lua code.
 
 Any suggestions, improvements or bugs are welcome and can be submitted through Github's Issues, or on the Balatro Discord [Thread](https://discord.com/channels/1116389027176787968/1279246553931976714).

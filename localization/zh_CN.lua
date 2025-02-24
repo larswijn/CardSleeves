@@ -1,4 +1,4 @@
--- Chinese translation by Mr. Clover
+-- Chinese translation by Mr. Clover and Dimserene
 return {
     descriptions = {
         Sleeve = {

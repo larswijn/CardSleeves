@@ -1,4 +1,4 @@
--- French translation by Miser
+-- French translation by Miser and Guigui
 return {
     descriptions = {
         Sleeve = {
@@ -20,16 +20,40 @@ return {
                 name = "Pochette Rouge",
                 text = G.localization.descriptions.Back["b_red"].text
             },
+            sleeve_casl_red_alt = {
+                name = "Pochette Rouge",
+                text = {
+                    "{C:red}+#1#{} défausse à chaque manche",
+                    "",
+                    "{C:blue}#2#{} main à chaque manche"
+                },
+            },
 
             sleeve_casl_blue = {
                 name = "Pochette Bleue",
                 text = G.localization.descriptions.Back["b_blue"].text
+            },
+            sleeve_casl_blue_alt = {
+                name = "Pochette Bleue",
+                text = {
+                    "{C:blue}+#1#{} main à chaque manche",
+                    "",
+                    "{C:red}#2#{} défausse à chaque manche"
+                },
             },
 
             sleeve_casl_yellow = {
                 name = "Pochette Jaune",
                 text = G.localization.descriptions.Back["b_yellow"].text
             },
+            sleeve_casl_yellow_alt = {
+                name = "Pochette Jaune",
+                text = {
+                    "Commencez la partie avec le",
+                    "coupon {C:money,T:v_seed_money}#1#{}"
+                },
+            },
+
 
             sleeve_casl_green = {
                 name = "Pochette Verte",
@@ -38,7 +62,16 @@ return {
                     "+{C:money}$#1#{s:0.85} pour chaque {C:blue}Main",
                     "+{C:money}$#2#{s:0.85} par {C:red}Défausse{} restante",
                     "Ne recevez pas {C:attention}d'intérêt"
-                    }
+                }
+            },
+            sleeve_casl_green_alt = {
+                name = "Pochette Verte",
+                text = {
+                    "Vous pouvez accumuler",
+                    "{C:red}-$#1#{} de dettes pour",
+                    "chaque Main et Défausse",
+                    "{C:inactive}(Actuellement {C:red}-$#2#{C:inactive})"
+                }
             },
 
             sleeve_casl_black = {
@@ -62,7 +95,7 @@ return {
             sleeve_casl_magic_alt = {
                 name = "Pochette Magique",
                 text = {
-                    "Commencer la partie avec le",
+                    "Commencez la partie avec le",
                     "coupon {C:tarot,T:v_omen_globe}#1#{}",
                 }
             },
@@ -74,7 +107,7 @@ return {
             sleeve_casl_nebula_alt = {
                 name = "Pochette Nébuleuse",
                 text = {
-                    "Commencer la partie avec le",
+                    "Commencez la partie avec le",
                     "coupon {C:planet,T:v_observatory}#1#{}",
                     }
             },
@@ -135,6 +168,13 @@ return {
                 name = "Pochette Peinte",
                 text = G.localization.descriptions.Back["b_painted"].text
             },
+            sleeve_casl_painted_alt = {
+                name = "Pochette Peinte",
+                text = {
+                    "{C:attention}+#1#{} à la limite de sélection de cartes,",
+                    "{C:red}#2#{} emplacement Joker",
+                }
+            },
 
             sleeve_casl_anaglyph = {
                 name = "Pochette Anaglyphe",
@@ -178,6 +218,7 @@ return {
     misc = {
         dictionary = {
             k_sleeve = "Pochette",
+            k_sleeves = "Pochettes",
             gald_sleeves = "Choisir Pochette",
             gald_random_sleeve = "Pochette Aléatoire",
             sleeve_unique_effect_desc = "Certaines pochettes ont des effets uniques lorsque combinés avec des Jeux spécifiques",
