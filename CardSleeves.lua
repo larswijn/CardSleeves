@@ -266,7 +266,7 @@ function CardSleeves.Sleeve:locked_loc_vars(info_queue, card)
     local deck_name = localize('k_unknown')
     if not G.P_CENTERS[self.unlock_condition.deck] then
         print_error("G.P_CENTERS[" .. tprint(self.unlock_condition.deck, 2) .. "] was not found!")
-        deck_name = "[UI ERROR]"
+        deck_name = "[NOT FOUND]"
     elseif G.P_CENTERS[self.unlock_condition.deck].unlocked then
         deck_name = localize{type = "name_text", set = "Back", key = self.unlock_condition.deck}
     end
@@ -302,6 +302,7 @@ function CardSleeves.Sleeve:is_unlocked()
 end
 
 function CardSleeves.Sleeve:get_name()
+    print_warning(":get_name is DEPRECATED")
     if self:is_unlocked() then
         return localize{type = "name_text", set = self.set, key = self.key}
     else
@@ -318,10 +319,16 @@ function CardSleeves.Sleeve:generate_ui(info_queue, card, desc_nodes, specific_v
             nodes = desc_nodes,
             vars = specific_vars or {}
         }
+        local res = {}
         if self.locked_loc_vars and type(self.locked_loc_vars) == 'function' then
-            local res = self:locked_loc_vars(info_queue, card) or {}
+            res = self:locked_loc_vars(info_queue, card) or {}
             target.key = res.key or target.key
             target.vars = res.vars or target.vars
+        end
+        if desc_nodes == full_UI_table.main and not full_UI_table.name then
+            full_UI_table.name = self.set == 'Enhanced' and 'temp_value' or localize { type = 'name', set = target.set, key = res.name_key or target.key, nodes = full_UI_table.name, vars = res.name_vars or target.vars or {} }
+        elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name and self.set ~= 'Enhanced' then
+            desc_nodes.name = localize{type = 'name_text', key = res.name_key or target.key, set = target.set }
         end
         localize(target)
     else
@@ -1103,11 +1110,11 @@ function G.UIDEF.sleeve_description(sleeve_key, minw, padding)
     minw = minw or 5.5
     padding = padding or 0
     local sleeve_center = CardSleeves.Sleeve:get_obj(sleeve_key)
-    local ret_nodes = {}
+    local ret_nodes, full_UI_table = {}, {}
     local sleeve_name = ""
     if sleeve_center then
-        sleeve_name = sleeve_center:get_name()
-        sleeve_center:generate_ui({}, nil, ret_nodes, nil, {name = {}})
+        sleeve_center:generate_ui({}, nil, ret_nodes, nil, full_UI_table)
+        sleeve_name = full_UI_table.name or ret_nodes.name
     else
         sleeve_name = "ERROR"
         ret_nodes = {
@@ -1374,13 +1381,16 @@ function G.UIDEF.challenge_description_tab(args)
         local challenge = G.CHALLENGES[args._id]
         if challenge.sleeve then
             local sleeve_center = CardSleeves.Sleeve:get_obj(challenge.sleeve)
+            local ret_nodes, full_UI_table = {}, {}
+            sleeve_center:generate_ui({}, nil, ret_nodes, nil, full_UI_table)
+            local sleeve_name = full_UI_table.name or ret_nodes.name
             local UI_node = {
                 n = G.UIT.R,
                 config = {align = "cl", maxw = 3.5},
                 nodes = localize {
                     type = "text",
                     key = "ch_m_sleeve",
-                    vars = {sleeve_center:get_name()},
+                    vars = {sleeve_name},
                     default_col = G.C.L_BLACK
                 }
             }
@@ -1950,8 +1960,9 @@ function Card:hover()
             end
         end
 
-        local ret_nodes = {}
-        sleeve:generate_ui({}, nil, ret_nodes, nil, {name = {}})
+        local ret_nodes, full_UI_table = {}, {}
+        sleeve:generate_ui({}, nil, ret_nodes, nil, full_UI_table)
+        local sleeve_name = full_UI_table.name or ret_nodes.name
         local desc_t = {}
         for _, v in ipairs(ret_nodes) do
             desc_t[#desc_t + 1] = { n = G.UIT.R, config = { align = "cm"}, nodes = v }
@@ -1967,7 +1978,7 @@ function Card:hover()
                     {n=G.UIT.R, config={align = "cm", r = 0.1, minw = 3, maxw = 4, minh = 0.4}, nodes={
                         {n=G.UIT.O, config={object = UIBox{definition =
                             {n=G.UIT.ROOT, config={align = "cm", colour = G.C.CLEAR}, nodes={
-                                {n=G.UIT.O, config={object = DynaText({string = sleeve:get_name(), maxw = 4, colours = {sleeve_name_colour}, shadow = true, bump = true, scale = 0.5, pop_in = 0, silent = true})}},
+                                {n=G.UIT.O, config={object = DynaText({string = sleeve_name, maxw = 4, colours = {sleeve_name_colour}, shadow = true, bump = true, scale = 0.5, pop_in = 0, silent = true})}},
                             }},
                         config = {offset = {x=0,y=0}, align = 'cm'}}}
                         },
@@ -2009,7 +2020,10 @@ if Galdur then
 
     local function set_sleeve_text(sleeve_center)
         -- sets deck name to sleeve name in Galdur's deck preview
-        local texts = split_string_2(sleeve_center:get_name())
+        local ret_nodes, full_UI_table = {}, {}
+        sleeve_center:generate_ui({}, nil, ret_nodes, nil, full_UI_table)
+        local sleeve_name = full_UI_table.name or ret_nodes.name
+        local texts = split_string_2(sleeve_name)
         if Galdur.deck_preview_texts then
             Galdur.deck_preview_texts.deck_preview_1 = texts[1]
             Galdur.deck_preview_texts.deck_preview_2 = texts[2]
@@ -2029,7 +2043,10 @@ if Galdur then
         end
         local sleeve_center = CardSleeves.Sleeve:get_obj(quick_start_sleeve)
         if sleeve_center then
-            return sleeve_center:get_name()
+            local ret_nodes, full_UI_table = {}, {}
+            sleeve_center:generate_ui({}, nil, ret_nodes, nil, full_UI_table)
+            local sleeve_name = full_UI_table.name or ret_nodes.name
+            return sleeve_name
         else
             return "ERROR"
         end
