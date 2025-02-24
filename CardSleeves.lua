@@ -131,6 +131,14 @@ CardSleeves.Sleeve = SMODS.Center:extend {
     pre_inject_class = function(self)
         G.P_CENTER_POOLS[self.set] = {}
     end,
+    inject = function(self)
+        if not self.unlocked and self.check_for_unlock then
+            if self:check_for_unlock() then
+                self.unlocked = true
+            end
+        end
+        SMODS.Center.inject(self)
+    end,
     get_obj = function(self, key)
         if key == nil then
             return nil
@@ -280,7 +288,7 @@ function CardSleeves.Sleeve:locked_loc_vars(info_queue, card)
         colours = get_stake_col(SMODS.Stakes[stake_key].order)
     end
     local vars = { deck_name, stake_name, colours = {colours} }
-    return { vars = vars }
+    return { key = "sleeve_locked", vars = vars }
 end
 
 function CardSleeves.Sleeve:check_for_unlock(args)
@@ -291,7 +299,7 @@ function CardSleeves.Sleeve:check_for_unlock(args)
     end
     local deck_info = G.PROFILES[G.SETTINGS.profile] and G.PROFILES[G.SETTINGS.profile].deck_usage and G.PROFILES[G.SETTINGS.profile].deck_usage[self.unlock_condition.deck]
     local stake_key = type(self.unlock_condition.stake) == "number" and SMODS.stake_from_index(self.unlock_condition.stake) or self.unlock_condition.stake  -- best guess only
-    if args.type == 'win_deck' and deck_info and deck_info.wins_by_key and deck_info.wins_by_key[stake_key] then
+    if deck_info and deck_info.wins_by_key and deck_info.wins_by_key[stake_key] then
         return true
     end
 end
@@ -1262,7 +1270,8 @@ function create_UIBox_sleeve_unlock(sleeve_center)
     area:emplace(sleeve_card)
 
     local sleeve_criteria = {}
-    localize{type = 'descriptions', set = "Sleeve", key = 'sleeve_locked', nodes = sleeve_criteria, vars = sleeve_center:locked_loc_vars().vars, default_col = G.C.WHITE, shadow = true}
+    local locked_loc_vars = sleeve_center:locked_loc_vars()
+    localize{type = 'descriptions', set = "Sleeve", key = locked_loc_vars.key or 'sleeve_locked', nodes = sleeve_criteria, vars = locked_loc_vars.vars, default_col = G.C.WHITE, shadow = true}
     local sleeve_criteria_cols = {}
     for k, v in ipairs(sleeve_criteria) do
         if k > 1 then sleeve_criteria_cols[#sleeve_criteria_cols+1] = {n=G.UIT.C, config={align = "cm", padding = 0, minw = 0.1}, nodes={}} end
@@ -1270,7 +1279,10 @@ function create_UIBox_sleeve_unlock(sleeve_center)
     end
 
     local sleeve_description = {}
-    sleeve_center:generate_ui({}, nil, sleeve_description, nil, {name = {}})
+    local old_get_current_deck_key = sleeve_center.get_current_deck_key
+    sleeve_center.get_current_deck_key = function() return "" end  -- real hacky
+    localize{type = 'descriptions', set = "Sleeve", key = sleeve_center.key, nodes = sleeve_description, vars = sleeve_center:loc_vars().vars}
+    sleeve_center.get_current_deck_key = old_get_current_deck_key
     local sleeve_description_cols = {}
     for _, v in ipairs(sleeve_description) do
         sleeve_description_cols[#sleeve_description_cols + 1] = { n = G.UIT.R, config = { align = "cm"}, nodes = v }
@@ -1962,7 +1974,7 @@ function Card:hover()
 
         local ret_nodes, full_UI_table = {}, {}
         sleeve:generate_ui({}, nil, ret_nodes, nil, full_UI_table)
-        local sleeve_name = full_UI_table.name or ret_nodes.name
+        local sleeve_name = full_UI_table.name or ret_nodes.name or "NAME ERROR"
         local desc_t = {}
         for _, v in ipairs(ret_nodes) do
             desc_t[#desc_t + 1] = { n = G.UIT.R, config = { align = "cm"}, nodes = v }
