@@ -7,6 +7,7 @@ KNOWN ISSUES/TODO IDEAS:
 * TODO: 
 ** split into seperate files once a mod manager exists
 ** check if MoreFluff has been updated so the older version can be added to the conflicts
+** Translations missing: Spanish, both Chinese
 
 * ISSUES:
 ** What if locked sleeves in challenge?
@@ -17,9 +18,7 @@ KNOWN ISSUES/TODO IDEAS:
 
 * IDEAS:
 ** See if people want to select their own sleeves in challenges instead of adhering to the challenge?
-** Yellow deck+sleeve has unique interest mechanic?
 ** How about optional 2nd sleeve that only shows up for the respective deck (e.g. 2 unique sleeves for a deck???)
-** See if people want multiple sleeves at the same time
 ** See if people want some unique/custom sleeves by CardSleeves?
 *** Sleeve that combines joker and consumable slots
 ** See if people want a nerfed/balanced version of sleeves?
@@ -347,7 +346,7 @@ end
 function CardSleeves.Sleeve.get_current_deck_key()
     if Galdur and Galdur.config.use and Galdur.run_setup.choices.deck then
         return Galdur.run_setup.choices.deck.effect.center.key
-    elseif G.GAME.viewed_back then
+    elseif G.GAME.viewed_back and G.GAME.viewed_back.effect then
         return G.GAME.viewed_back.effect.center.key
     elseif G.GAME.selected_back then
         return G.GAME.selected_back.effect.center.key
@@ -1308,7 +1307,7 @@ end
 --[[ HOOKING / WRAPPING FUNCS
 
 *List of functions we hook into and change its output or properties:
- (not a full list) (also see lovely.toml)
+ (not a full list) (also see lovely.toml!)
 **G.UIDEF.run_setup_option
 **G.UIDEF.view_deck
 **G.FUNCS.can_start_run
