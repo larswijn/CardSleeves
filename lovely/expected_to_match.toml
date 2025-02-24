@@ -5,6 +5,7 @@ priority = 11
 
 # stupid implementation because steamodded didn't accept my PR (could possibly rewrite using events instead)
 # Move seed generation to be before Back:apply and Stake.modifiers() so that both methods can use the seed and true pseudorandom numbers
+# Needs to have later priority than Cryptid
 # Game:start_run (both patches)
 [[patches]]
 [patches.pattern]
@@ -47,15 +48,6 @@ end
 for k, v in pairs(self.GAME.pseudorandom) do if v == 0 then self.GAME.pseudorandom[k] = pseudohash(k..self.GAME.pseudorandom.seed) end end
 self.GAME.pseudorandom.hashed_seed = pseudohash(self.GAME.pseudorandom.seed)
 '''
-
-# Cryptid&Galdur compat (copied from Eremel <3 - needs higher/later priority than Galdur's patch)
-# Card:draw()
-[[patches]]
-[patches.regex]
-target = 'card.lua'
-pattern = '''self.params.viewed_back and G.GAME.viewed_back or G.GAME.selected_back'''
-position = 'before'
-payload = ''' type(self.params.viewed_back) == 'table' and self.params.viewed_back or '''
 
 # allow stake sticker to have rotation and positional offset
 # Card:draw()

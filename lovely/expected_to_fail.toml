@@ -1,0 +1,26 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = 11
+
+# Cryptid&Galdur compat (copied from Eremel <3 - needs higher/later priority than Galdur's patch)
+# expected to fail if Galdur isn't presented
+# Card:draw()
+[[patches]]
+[patches.regex]
+target = 'card.lua'
+pattern = '''self.params.viewed_back and G.GAME.viewed_back or G.GAME.selected_back'''
+position = 'before'
+payload = ''' type(self.params.viewed_back) == 'table' and self.params.viewed_back or '''
+
+# allows 5+ card selection (expected to fail when cryptid is present)
+# G.FUNCS.can_play
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+pattern = """if #G.hand.highlighted <= 0 or G.GAME.blind.block_play or #G.hand.highlighted > 5 then"""
+position = 'at'
+match_indent = true
+payload = """
+if #G.hand.highlighted <= 0 or G.GAME.blind.block_play or #G.hand.highlighted > G.hand.config.highlighted_limit then
+"""
