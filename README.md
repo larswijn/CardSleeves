@@ -20,18 +20,18 @@ Sleeves are run modifiers similar to decks. Any deck and sleeve can be combined.
 CardSleeves adds 15 Sleeves by default, some of which have an unique and different effect when paired with their corresponding deck:
 | Sleeve           | Base effect                                            | Unique effect                                                          |
 |------------------|--------------------------------------------------------|------------------------------------------------------------------------|
-| Red Sleeve       | +1 discards                                            | none                                                                   |
-| Blue Sleeve      | +1 hands                                               | none                                                                   |
-| Yellow Sleeve    | +$10                                                   | none                                                                   |
-| Green Sleeve     | +$1 per remaining hand/discard                         | none                                                                   |
-| Black Sleeve     | +1 joker slots, -1 hands                               | +1 joker slots, -1 discards                                            |
+| Red Sleeve       | +1 discard                                             | +1 discard, -1 hand                                                    |
+| Blue Sleeve      | +1 hand                                                | +1 hand, -1 discard                                                    |
+| Yellow Sleeve    | +$10                                                   | Seed Money Voucher                                                     |
+| Green Sleeve     | +$1 per remaining hand/discard                         | Can go up to -$2 in debt for every hand and discard                    |
+| Black Sleeve     | +1 joker slot, -1 hand                                 | +1 joker slot, -1 discard                                              |
 | Magic Sleeve     | Crystal Ball Voucher, 2 Fools                          | Omen Globe Voucher                                                     |
 | Nebula Sleeve    | Telescope Voucher, -1 consumable slot                  | Observatory Voucher                                                    |
 | Ghost Sleeve     | Spectral cards appear in shop, Hex card                | Spectrals appear more often in shop, Spectral pack size increases by 2 |
 | Abandoned Sleeve | No Face Cards in starting deck                         | Face Cards never appear                                                |
 | Checkered Sleeve | 26 Spades and 26 Hearts in starting deck               | Only Spades and Hearts appear                                          |
 | Zodiac Sleeve    | Tarot Merchant, Planet Merchant and Overstock Vouchers | Arcana/Celestial pack size increases by 2                              |
-| Painted Sleeve   | +2 hand size, -1 joker slots                           | none                                                                   |
+| Painted Sleeve   | +2 hand size, -1 joker slot                            | +1 card selection limit, -1 joker slot                                 |
 | Anaglyph Sleeve  | Double Tag after each Boss Blind                       | Double Tag after each Small/Big Blind                                  |
 | Plasma Sleeve    | Balance chips/mult, X2 base Blind size                 | Balance prices in shop                                                 |
 | Erratic Sleeve   | All ranks/suits in starting deck are randomized        | Starting Hands/Discards/Dollars/Joker slots are randomized between 3-6 |
