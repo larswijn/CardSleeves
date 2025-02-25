@@ -478,7 +478,6 @@ CardSleeves.Sleeve {
                 G.GAME.bankrupt_at = G.GAME.bankrupt_at + sleeve.config.added_bankrupt
                 sleeve.config.added_bankrupt = sleeve.config.debt_bonus * (G.GAME.round_resets.discards + G.GAME.round_resets.hands)
                 G.GAME.bankrupt_at = G.GAME.bankrupt_at - sleeve.config.added_bankrupt
-                print_debug("G.GAME.bankrupt_at, added_bankrupt = " .. tprint({G.GAME.bankrupt_at, sleeve.config.added_bankrupt}))
             end
         end
     end
