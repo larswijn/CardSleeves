@@ -86,7 +86,8 @@ return {
                     "{C:red}-$#1#{} em dívida por",
                     "cada Mão e Descarte",
                     "{C:inactive}(Currently {C:red}-$#2#{C:inactive})"
-                }
+                },
+            },
 
             sleeve_casl_black = {
                 name = "Capa Preta",
