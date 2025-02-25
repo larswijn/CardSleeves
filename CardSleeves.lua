@@ -538,7 +538,7 @@ CardSleeves.Sleeve {
     unlock_condition = { deck = "b_nebula", stake = "stake_black" },
     loc_vars = function(self)
         local key
-        if self.get_current_deck_key() ~= "b_nebula" then
+        if self.get_current_deck_key() == "b_nebula" then
             key = self.key .. "_alt"
             self.config = { voucher = 'v_observatory' }
         else
