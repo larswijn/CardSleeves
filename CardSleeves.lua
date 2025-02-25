@@ -344,7 +344,9 @@ function CardSleeves.Sleeve:generate_ui(info_queue, card, desc_nodes, specific_v
 end
 
 function CardSleeves.Sleeve.get_current_deck_key()
-    if Galdur and Galdur.config.use and Galdur.run_setup.choices.deck then
+    if in_collection then
+        return ""  -- bit hacky
+    elseif Galdur and Galdur.config.use and Galdur.run_setup.choices.deck then
         return Galdur.run_setup.choices.deck.effect.center.key
     elseif G.GAME.viewed_back and G.GAME.viewed_back.effect then
         return G.GAME.viewed_back.effect.center.key
@@ -1791,8 +1793,9 @@ function Card:align_h_popup()
     -- cannot use lovely patch since smods overwrites this
     local ret = old_Card_align_h_popup(self)
 
-    if self.T.y < G.CARD_H*0.85 then
-        -- default is G.CARD_H*0.8; we slightly change the "flipping point" so sleeves on the top row of the sleeve select screen have their pop-up below them
+    if self.params.sleeve_card and self.T.y < G.CARD_H*1.4 then
+        -- default is G.CARD_H*0.8; we change the "flipping point" so the sleeves have their pop-up below them
+        -- needs to be at least G.CARD_H*1.3 for bm when only one row of sleeves in collection
         ret.type = "bm"
     end
 
