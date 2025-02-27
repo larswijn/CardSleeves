@@ -12,33 +12,64 @@ return {
                 text = {
                     "在{V:1}#2#{}或以上的难度",
                     "以{C:attention}#1#{}牌組",
-                    "贏得一局"
+                    "贏得一局游戏"
                 }
             },
 
             sleeve_casl_red = {
-                name = "紅卡套",
+                name = "紅色卡套",
                 text = G.localization.descriptions.Back["b_red"].text
+            },
+            sleeve_casl_red_alt = {
+                name = "紅色卡套",
+                text = {
+                    "弃牌次数{C:red}+#1#{}",
+                    "",
+                    "出牌次数{C:blue}#2#{}"
+                },
             },
 
             sleeve_casl_blue = {
-                name = "藍卡套",
+                name = "藍色卡套",
                 text = G.localization.descriptions.Back["b_blue"].text
+            },
+            sleeve_casl_blue_alt = {
+                name = "藍色卡套",
+                text = {
+                    "出牌次数{C:blue}+#1#{}",
+                    "",
+                    "弃牌次数{C:red}#2#{}"
+                },
             },
 
             sleeve_casl_yellow = {
-                name = "黃卡套",
+                name = "黃色卡套",
                 text = G.localization.descriptions.Back["b_yellow"].text
+            },
+            sleeve_casl_yellow_alt = {
+                name = "黃色卡套",
+                text = {
+                    "开始游戏时获得",
+                    "{C:money,T:v_seed_money}#1#{}礼券",
+                },
             },
 
             sleeve_casl_green = {
-                name = "绿卡套",
+                name = "綠色卡套",
                 text = {
-                    "每回合结束时：",
-                    "每剩一次{C:blue}出牌次数，獲得+{C:money}$#1#{s:0.85}",
-                    "每剩一次{C:red}弃牌次数，獲得+{C:money}$#2#{s:0.85}",
-                    "不赚取任何{C:attention}利息"
+                    "回合结束时：",
+                    "每个剩余的{C:blue}出牌次数{}会给予+{C:money}$#1#{s:0.85}",
+                    "每个剩余的{C:red}弃牌次数{}会给予+{C:money}$#2#{s:0.85}",
+                    "不再赚取任何{C:attention}利息"
                     }
+            },
+            sleeve_casl_green_alt = {
+                name = "綠色卡套",
+                text = {
+                    "每个出牌次数及弃牌次数",
+                    "可让你负债至{C:red}-$#1#{}",
+                    "{C:inactive}（目前可负债至{C:red}-$#2#{C:inactive}）"
+                }
             },
 
             sleeve_casl_black = {
@@ -48,8 +79,7 @@ return {
             sleeve_casl_black_alt = {
                 name = "黑色卡套",
                 text = {
-                    "小丑牌槽位{C:attention}+#1#{}",
-                    "每回合",
+                    "小丑牌栏位 {C:attention}+#1#{}",
                     "弃牌次数{C:red}-#2#{}"
                 }
             },
@@ -61,7 +91,7 @@ return {
             sleeve_casl_magic_alt = {
                 name = "魔法卡套",
                 text = {
-                    "开局时拥有",
+                    "开始游戏时获得",
                     "{C:tarot,T:v_omen_globe}#1#{}优惠券",
                 }
             },
@@ -73,7 +103,7 @@ return {
             sleeve_casl_nebula_alt = {
                 name = "星云卡套",
                 text = {
-                    "开局时拥有",
+                    "开始游戏时拥有",
                     "{C:planet,T:v_observatory}#1#{}优惠券",
                     }
             },
@@ -99,22 +129,22 @@ return {
             sleeve_casl_abandoned_alt = {
                 name = "废弃卡套",
                 text = {
-                    "{C:attention}人头牌{}不会",
-                    "出现在此局"
+                    "{C:attention}人头牌{}",
+                    "不再出现在这局游戏"
                 }
             },
 
             sleeve_casl_checkered = {
-                name = "方格卡套",
+                name = "格纹卡套",
                 text = G.localization.descriptions.Back["b_checkered"].text
             },
             sleeve_casl_checkered_alt = {
-                name = "方格卡套",
+                name = "格纹卡套",
                 text = {
                     "所有{C:clubs}梅花{}卡牌",
-                    "会转成{C:spades}黑桃{}",
+                    "会转换成{C:spades}黑桃{}",
                     "所有{C:diamonds}方块{}卡牌",
-                    "会转成{C:hearts}红心{}",
+                    "会转换成{C:hearts}红心{}",
                 }
             },
 
@@ -134,13 +164,20 @@ return {
                 name = "彩绘卡套",
                 text = G.localization.descriptions.Back["b_painted"].text
             },
+            sleeve_casl_painted_alt = {
+                name = "彩绘卡套",
+                text = {
+                    "可选择的卡牌的上限{C:attention}+#1#{}",
+                    "小丑牌栏位{C:red}#2#{}",
+                }
+            },
 
             sleeve_casl_anaglyph = {
-                name = "浮雕卡套",
+                name = "立体卡套",
                 text = G.localization.descriptions.Back["b_anaglyph"].text
             },
             sleeve_casl_anaglyph_alt = {
-                name = "浮雕卡套",
+                name = "立体卡套",
                 text = {
                     "击败{C:attention}小盲注{}",
                     "或{C:attention}大盲注{}后，",
@@ -161,15 +198,15 @@ return {
             },
 
             sleeve_casl_erratic = {
-                name = "古怪卡套",
+                name = "乖僻卡套",
                 text = G.localization.descriptions.Back["b_erratic"].text
             },
             sleeve_casl_erratic_alt = {
-                name = "古怪卡套",
+                name = "乖僻卡套",
                 text = {
                     "{C:blue}出牌{}、{C:red}弃牌{}、{C:money}金钱{}",
-                    "及{C:attention}小丑牌槽位{}的初始值",
-                    "都随机介于{C:attention}#1#{}及{C:attention}#2#{}开局",
+                    "及{C:attention}小丑牌欄位{}的初始值",
+                    "都随机介于{C:attention}#1#{}及{C:attention}#2#{}开始游戏",
                 }
             }
         }
@@ -177,6 +214,7 @@ return {
     misc = {
         dictionary = {
             k_sleeve = "卡套",
+            k_sleeves = "卡套",
             gald_sleeves = "选择卡套",
             gald_random_sleeve = "随机卡套",
             sleeve_unique_effect_desc = "一些卡套会对对应的牌组带有独特的效果",
@@ -207,7 +245,7 @@ return {
         v_text = {
             -- for challenges
             ch_m_sleeve = {
-                "开局时拥有{C:attention}#1#{}"
+                "开始游戏时拥有{C:attention}#1#{}"
             }
         }
     }

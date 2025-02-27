@@ -10,8 +10,8 @@ return {
             sleeve_locked = {
                 name = "已鎖定",
                 text = {
-                    "使用{C:attention}#1#{}牌組",
-                    "來贏得一局在{V:1}#2#{}難度或以上的遊戲",
+                    "使用{C:attention}#1#{}",
+                    "在{V:1}#2#{}下贏得一局遊戲",
                 }
             },
 
@@ -19,15 +19,38 @@ return {
                 name = "紅色牌套",
                 text = G.localization.descriptions.Back["b_red"].text
             },
+            sleeve_casl_red_alt = {
+                name = "紅色牌套",
+                text = {
+                    "棄牌次數{C:red}+#1#{}",
+                    "",
+                    "出牌次數{C:blue}#2#{}"
+                },
+            },
 
             sleeve_casl_blue = {
                 name = "藍色牌套",
                 text = G.localization.descriptions.Back["b_blue"].text
             },
+            sleeve_casl_blue_alt = {
+                name = "藍色牌套",
+                text = {
+                    "出牌次數{C:blue}+#1#{}",
+                    "",
+                    "棄牌次數{C:red}#2#{}"
+                },
+            },
 
             sleeve_casl_yellow = {
                 name = "黃色牌套",
                 text = G.localization.descriptions.Back["b_yellow"].text
+            },
+            sleeve_casl_yellow_alt = {
+                name = "黃色牌套",
+                text = {
+                    "開始遊戲時獲得",
+                    "{C:money,T:v_seed_money}#1#{}禮券",
+                },
             },
 
             sleeve_casl_green = {
@@ -37,7 +60,15 @@ return {
                     "每個剩餘的{C:blue}出牌次數{}會給予+{C:money}$#1#{s:0.85}",
                     "每個剩餘的{C:red}棄牌次數{}會給予+{C:money}$#2#{s:0.85}",
                     "不再賺取任何{C:attention}利息"
-                    }
+                }
+            },
+            sleeve_casl_green_alt = {
+                name = "綠色牌套",
+                text = {
+                    "每個出牌次數及棄牌次數",
+                    "可讓你負債至{C:red}-$#1#{}",
+                    "{C:inactive}（目前可負債至{C:red}-$#2#{C:inactive}）"
+                }
             },
 
             sleeve_casl_black = {
@@ -132,6 +163,13 @@ return {
                 name = "彩繪牌套",
                 text = G.localization.descriptions.Back["b_painted"].text
             },
+            sleeve_casl_painted_alt = {
+                name = "彩繪牌套",
+                text = {
+                    "可選擇的卡牌的上限{C:attention}+#1#{}",
+                    "小丑牌欄位{C:red}#2#{}",
+                }
+            },
 
             sleeve_casl_anaglyph = {
                 name = "立體牌套",
@@ -166,7 +204,7 @@ return {
                 name = "乖僻牌套",
                 text = {
                     "{C:blue}出牌{}、{C:red}棄牌{}、{C:money}金钱{}",
-                    "及{C:attention}小丑牌槽位{}的初始值",
+                    "及{C:attention}小丑牌欄位{}的初始值",
                     "都隨機介於{C:attention}#1#{}及{C:attention}#2#{}的形式開始遊戲",
                 }
             }
@@ -175,6 +213,7 @@ return {
     misc = {
         dictionary = {
             k_sleeve = "牌套",
+            k_sleeves = "牌套",
             gald_sleeves = "選擇牌套",
             gald_random_sleeve = "隨機牌套",
             sleeve_unique_effect_desc = "一些牌套會與對應的牌組給予獨特的效果",
@@ -195,7 +234,7 @@ return {
                 "（無任何遊戲效果）"
             },
             sleeve_info_location_options = {
-                "只在查看牌组",
+                "只在查看牌組",
                 "只在本局遊戲信息",
                 "在雙方顯示",
                 "隱藏牌套資料"
