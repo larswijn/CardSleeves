@@ -1154,7 +1154,7 @@ local function create_sleeve_button(mod_id)
     local count = get_sleeve_tally_of(mod_id)
     return UIBox_button {
         count = {tally = count.tally, of = count.of},
-        button = 'your_collection_sleeves', label = {localize("k_sleeve")}, minw = 5, id = 'your_collection_sleeves'
+        button = 'your_collection_sleeves', label = {localize("k_sleeves")}, minw = 5, id = 'your_collection_sleeves'
     }
 end
 
@@ -1798,7 +1798,7 @@ function Card:align_h_popup()
     -- cannot use lovely patch since smods overwrites this
     local ret = old_Card_align_h_popup(self)
 
-    if self.params.sleeve_card and self.T.y < G.CARD_H*1.4 then
+    if self.params.sleeve_card and not self.params.deck_preview and self.T.y < G.CARD_H*1.4 then
         -- default is G.CARD_H*0.8; we change the "flipping point" so the sleeves have their pop-up below them
         -- needs to be at least G.CARD_H*1.3 for bm when only one row of sleeves in collection
         ret.type = "bm"
