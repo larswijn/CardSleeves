@@ -4,10 +4,10 @@
 
 KNOWN ISSUES/TODO IDEAS:
 
-* TODO: 
+* TODO:
 ** split into seperate files once a mod manager exists
 ** check if MoreFluff has been updated so the older version can be added to the conflicts
-** Translations missing: Spanish, both Chinese
+** Switch to using the `starting_shop` context in plasma sleeve
 
 * ISSUES:
 ** What if locked sleeves in challenge?
@@ -877,7 +877,7 @@ CardSleeves.Sleeve {
                     --         table, value,  mod, floor, timer, not_blockable, delay, ease_type
                     ease_value(card,  "cost", mod, nil,   nil,   true,          hold,   "quad")
                     -- card.cost = avg_cost
-                    -- card:set_cost()  
+                    -- card:set_cost()
                 end
             end
             G.E_MANAGER:add_event(Event({
@@ -1413,7 +1413,7 @@ end
 **CardArea:unhighlight_all
 **create_UIBox_arcana_pack
 **create_UIBox_spectral_pack
-**create_UIBox_standard_pack  
+**create_UIBox_standard_pack
 **create_UIBox_buffoon_pack
 **create_UIBox_celestial_pack
 --]]
@@ -1611,7 +1611,12 @@ local old_Back_apply_to_run = Back.apply_to_run
 function Back:apply_to_run(...)
     local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
     old_Back_apply_to_run(self, ...)
-    sleeve_center:apply(sleeve_center)
+    if sleeve_center then
+        if sleeve_center["loc_vars"] then
+            sleeve_center:loc_vars()
+        end
+        sleeve_center:apply(sleeve_center)
+    end
 end
 
 local old_Back_trigger_effect = Back.trigger_effect
