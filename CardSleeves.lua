@@ -1639,8 +1639,8 @@ function Back:trigger_effect(args)
     end
     if type(sleeve_center.calculate) == "function" then
         local context = type(args.context) == "table" and args.context or args  -- bit hacky, though this shouldn't even have to be used?
-        if context.repetition then
-            -- handle this by hooking SMODS.calculate_repetitions
+        if context.repetition or context.retrigger_joker_check then
+            -- handle this by hooking SMODS.calculate_repetitions or SMODS.calculate_retriggers
         else
             local effect = sleeve_center:calculate(sleeve_center, context)
             if effect then
@@ -1672,6 +1672,26 @@ function SMODS.calculate_repetitions(card, context, reps)
     end
 
     return reps
+end
+
+local old_smods_calculate_retriggers = SMODS.calculate_retriggers
+function SMODS.calculate_retriggers(card, context, _ret)
+    -- hook for only calculating retriggers; other contexts are handled by Back:trigger_effect
+    -- why tf is this coded this way sigh
+    local retriggers = old_smods_calculate_retriggers(card, context, _ret)
+
+    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
+    if type(sleeve_center.calculate) == "function" then
+        local effect = sleeve_center:calculate(sleeve_center, {retrigger_joker_check = true, other_card = card, other_context = context, other_ret = _ret})
+        if effect and effect.repetitions then
+            effect.retrigger_card = G.GAME.selected_back
+            effect.message_card = effect.message_card or G.deck.cards[1] or G.deck
+            effect.message = effect.message or (not effect.remove_default_message and localize('k_again_ex'))
+            retriggers[#retriggers+1] = effect
+        end
+    end
+
+    return retriggers
 end
 
 local old_CardArea_draw = CardArea.draw
