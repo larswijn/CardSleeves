@@ -71,12 +71,7 @@ return {
 
             sleeve_casl_green = {
                 name = "Green Sleeve",
-                text = {
-                    "At end of each Round:",
-                    "+{C:money}$#1#{s:0.85} per remaining {C:blue}Hand",
-                    "+{C:money}$#2#{s:0.85} per remaining {C:red}Discard",
-                    "Earn no {C:attention}Interest"
-                }
+                text = G.localization.descriptions.Back["b_green"].text
             },
             sleeve_casl_green_alt = {
                 name = "Green Sleeve",

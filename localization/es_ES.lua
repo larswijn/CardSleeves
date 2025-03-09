@@ -72,12 +72,7 @@ return {
 
             sleeve_casl_green = {
                 name = "Funda Verde",
-                text = {
-                    "Al final de cada ronda:",
-                    "+{C:money}$#1#{s:0.85} por cada {C:blue}Mano restante",
-                    "+{C:money}$#2#{s:0.85} por cada {C:red}Descarte restante",
-                    "No ganas {C:attention}Interes"
-                }
+                text = G.localization.descriptions.Back["b_green"].text
             },
             sleeve_casl_green_alt = {
                 name = "Funda Verde",

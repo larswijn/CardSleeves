@@ -36,7 +36,7 @@ return {
                 name = "Capa Vermelha",
                 text = G.localization.descriptions.Back["b_red"].text
             },
-	    sleeve_casl_red_alt = {
+	        sleeve_casl_red_alt = {
                 name = "Capa Vermelha",
                 text = {
                     "{C:red}+#1#{} descarte em cada rodada",
@@ -72,12 +72,7 @@ return {
 
             sleeve_casl_green = {
                 name = "Capa Verde",
-                text = {
-                    "No fim de cada Rodada:",
-                    "+{C:money}$#1#{s:0.85} por {C:blue}Mão restante",
-                    "+{C:money}$#2#{s:0.85} por {C:red}Descarte restante",
-                    "Não receba {C:attention}Juros"
-                    }
+                text = G.localization.descriptions.Back["b_green"].text
             },
             sleeve_casl_green_alt = {
                 name = "Capa Verde",

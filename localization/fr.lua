@@ -57,12 +57,7 @@ return {
 
             sleeve_casl_green = {
                 name = "Pochette Verte",
-                text = {
-                    "À la fin de la Manche",
-                    "+{C:money}$#1#{s:0.85} pour chaque {C:blue}Main",
-                    "+{C:money}$#2#{s:0.85} par {C:red}Défausse{} restante",
-                    "Ne recevez pas {C:attention}d'intérêt"
-                }
+                text = G.localization.descriptions.Back["b_green"].text
             },
             sleeve_casl_green_alt = {
                 name = "Pochette Verte",

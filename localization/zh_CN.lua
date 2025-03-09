@@ -56,12 +56,7 @@ return {
 
             sleeve_casl_green = {
                 name = "綠色卡套",
-                text = {
-                    "回合结束时：",
-                    "每个剩余的{C:blue}出牌次数{}会给予+{C:money}$#1#{s:0.85}",
-                    "每个剩余的{C:red}弃牌次数{}会给予+{C:money}$#2#{s:0.85}",
-                    "不再赚取任何{C:attention}利息"
-                    }
+                text = G.localization.descriptions.Back["b_green"].text
             },
             sleeve_casl_green_alt = {
                 name = "綠色卡套",
