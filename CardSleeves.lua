@@ -251,7 +251,7 @@ function CardSleeves.Sleeve:apply()
         G.GAME.modifiers.no_interest = true
     end
     if self.config.extra_hand_bonus then
-        G.GAME.modifiers.money_per_hand = (G.GAME.modifiers.money_per_hand or 1) + self.config.extra_hand_bonus
+        G.GAME.modifiers.money_per_hand = (G.GAME.modifiers.money_per_hand or 0) + self.config.extra_hand_bonus
     end
     if self.config.extra_discard_bonus then
         G.GAME.modifiers.money_per_discard = (G.GAME.modifiers.money_per_discard or 0) + self.config.extra_discard_bonus
@@ -453,7 +453,7 @@ CardSleeves.Sleeve {
             vars = { self.config.debt_bonus, added_bankrupt }
         else
             key = self.key
-            self.config = { extra_hand_bonus = 1, extra_discard_bonus = 1, no_interest = true }
+            self.config = { extra_hand_bonus = 2, extra_discard_bonus = 1, no_interest = true }
             vars = { self.config.extra_hand_bonus, self.config.extra_discard_bonus, self.config.no_interest }
         end
         return { key = key, vars = vars }
