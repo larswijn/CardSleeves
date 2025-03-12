@@ -1639,8 +1639,9 @@ function Back:trigger_effect(args)
     end
     if type(sleeve_center.calculate) == "function" then
         local context = type(args.context) == "table" and args.context or args  -- bit hacky, though this shouldn't even have to be used?
-        if context.repetition or context.retrigger_joker_check then
+        if context.repetition or context.retrigger_joker_check or context.destroy_card then
             -- handle this by hooking SMODS.calculate_repetitions or SMODS.calculate_retriggers
+            -- or by lovely patching SMODS.calculate_destroying_cards
         else
             local effect = sleeve_center:calculate(sleeve_center, context)
             if effect then
