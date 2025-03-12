@@ -6,7 +6,7 @@ A Steamodded+lovely Balatro Mod that adds Sleeves.
 # Requirements
 Requires `steamodded >= 1.0.0~ALPHA-1206c` - [link](https://github.com/Steamodded/smods/wiki).
 
-Requires `Lovely >= 0.6.0` - [link](https://github.com/ethangreen-dev/lovely-injector). This should already be installed as part of steamodded's installation process, but might need to be updated to version 0.6.0 or later.
+Requires `Lovely >= 0.7.1` - [link](https://github.com/ethangreen-dev/lovely-injector). Make sure you have version 0.7.1 or later, or the lovely-injector will crash.
 
 # Installation
 Get the latest stable version from the [Releases](https://github.com/larswijn/CardSleeves/releases/latest), then download and extract the zip.
