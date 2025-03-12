@@ -13,6 +13,8 @@
         "Lovely (>=0.6.0)"
     ],
     "conflicts": [
-        "GRM (<=0.9.5)"
+        "GRM (<=0.9.5)",
+        "VNBalatro (<=1.3.0)",
+        "SKHDecks (<=1.2.2)"
     ]
 }
