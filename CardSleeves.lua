@@ -1639,9 +1639,23 @@ function Back:trigger_effect(args)
     end
     if type(sleeve_center.calculate) == "function" then
         local context = type(args.context) == "table" and args.context or args  -- bit hacky, though this shouldn't even have to be used?
-        if context.repetition or context.retrigger_joker_check or context.destroy_card then
+        if context.repetition or context.retrigger_joker_check then
             -- handle this by hooking SMODS.calculate_repetitions or SMODS.calculate_retriggers
-            -- or by lovely patching SMODS.calculate_destroying_cards
+        elseif context.destroy_card then
+            -- TODO lovely patch this instead when lovely patching other mods works on mac (see https://github.com/larswijn/CardSleeves/commit/e2b376d6d914e0bd929e68d865f15935bb1f6040)
+            local effect = sleeve_center:calculate(sleeve_center, context)
+            if effect then
+                -- janky hack mate
+                if not o[1] then
+                    o[1] = effect
+                else
+                    local index = o[1]
+                    while index.extra do
+                        index = index.extra
+                    end
+                    index.extra = effect
+                end
+            end
         else
             local effect = sleeve_center:calculate(sleeve_center, context)
             if effect then
@@ -1653,6 +1667,7 @@ function Back:trigger_effect(args)
         sleeve_center:trigger_effect(args)
     end
 
+    -- we modify `o` in some cases
     return unpack(o)
 end
 

@@ -112,26 +112,3 @@ if CardSleeves then
     }))
 end
 """
-
-# properly handle destroying card contexts
-# SMODS.calculate_destroying_cards
-[[patches]]
-[patches.pattern]
-target = '=[SMODS _ "src/utils.lua"]'
-pattern = """-- TARGET: card destroyed"""
-position = 'after'
-match_indent = true
-payload = """
-if CardSleeves then
-    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
-    if type(sleeve_center.calculate) == "function" then
-        local sleeve_effect = sleeve_center:calculate(sleeve_center, context)
-        if sleeve_effect then
-            local calculate_destroy = SMODS.calculate_effect(sleeve_effect, G.deck.cards[1] or G.deck)
-            if calculate_destroy then
-                destroyed = true
-            end
-        end
-    end
-end
-"""
