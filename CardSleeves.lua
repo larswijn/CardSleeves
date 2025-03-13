@@ -308,15 +308,6 @@ function CardSleeves.Sleeve:is_unlocked()
     return self.unlocked or CardSleeves.config.allow_any_sleeve_selection or G.PROFILES[G.SETTINGS.profile].all_unlocked
 end
 
-function CardSleeves.Sleeve:get_name()
-    print_warning(":get_name is DEPRECATED")
-    if self:is_unlocked() then
-        return localize{type = "name_text", set = self.set, key = self.key}
-    else
-        return localize('k_locked')
-    end
-end
-
 function CardSleeves.Sleeve:generate_ui(info_queue, card, desc_nodes, specific_vars, full_UI_table)
     if not self:is_unlocked() then
         local target = {
