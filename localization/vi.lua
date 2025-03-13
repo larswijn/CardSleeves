@@ -1,3 +1,4 @@
+-- Vietnamese by HuyTheLocFixer
 return {
     descriptions = {
         Mod = {
