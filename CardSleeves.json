@@ -10,7 +10,7 @@
     "priority": -10,
     "dependencies": [
         "Steamodded (>=1.0.0~ALPHA-1206c)",
-        "Lovely (>=0.7.1)"
+        "Lovely (>=0.6.0)"
     ],
     "conflicts": [
         "GRM (<=0.9.5)",
