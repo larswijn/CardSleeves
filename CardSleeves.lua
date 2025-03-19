@@ -1362,7 +1362,8 @@ function create_UIBox_sleeve_unlock(sleeve_center)
     local sleeve_description = {}
     local old_get_current_deck_key = sleeve_center.get_current_deck_key
     sleeve_center.get_current_deck_key = function() return "" end  -- real hacky
-    localize{type = 'descriptions', set = "Sleeve", key = sleeve_center.key, nodes = sleeve_description, vars = sleeve_center:loc_vars().vars}
+    local loc_vars = sleeve_center.loc_vars and sleeve_center:loc_vars() or {}
+    localize{type = 'descriptions', set = "Sleeve", key = sleeve_center.key, nodes = sleeve_description, vars = loc_vars.vars or {}}
     sleeve_center.get_current_deck_key = old_get_current_deck_key
     local sleeve_description_cols = {}
     for _, v in ipairs(sleeve_description) do
