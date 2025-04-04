@@ -29,6 +29,7 @@ CardSleeves = SMODS.current_mod
 
 -- not perfect, but works well enough afaik
 local in_collection = false
+local starting_run = false
 local is_in_run_info_tab = false
 local game_args = {}
 
@@ -278,7 +279,7 @@ function CardSleeves.Sleeve:locked_loc_vars(info_queue, card)
     end
     local stake_key = type(self.unlock_condition.stake) == "number" and SMODS.stake_from_index(self.unlock_condition.stake) or self.unlock_condition.stake
     if type(self.unlock_condition.stake) == "number" then
-        print_debug(("DEPRECATED usage of `%s.unlock_condition.stake` (from mod %s): please use the stake key (best guess is '%s') instead of index '%d'"):format(self.key, self.mod.id, stake_key, self.unlock_condition.stake))
+        print_warning(("DEPRECATED usage of `%s.unlock_condition.stake` (from mod %s): please use the stake key (best guess is '%s') instead of index '%d'"):format(self.key, self.mod.id, stake_key, self.unlock_condition.stake))
     end
     local stake_name = localize{type = "name_text", set = "Stake", key = stake_key}
     local colours = G.C.GREY
@@ -335,8 +336,9 @@ end
 
 function CardSleeves.Sleeve.get_current_deck_key()
     if in_collection then
-        return ""  -- bit hacky
-    elseif Galdur and Galdur.config.use and Galdur.run_setup.choices.deck then
+        -- bit hacky
+        return "collection"
+    elseif Galdur and Galdur.config.use and Galdur.run_setup.choices and Galdur.run_setup.choices.deck then
         return Galdur.run_setup.choices.deck.effect.center.key
     elseif G.GAME.viewed_back and G.GAME.viewed_back.effect then
         return G.GAME.viewed_back.effect.center.key
@@ -1271,6 +1273,26 @@ local function create_sleeve_button(mod_id)
         button = 'your_collection_sleeves', label = {localize("k_sleeves")}, minw = 5, id = 'your_collection_sleeves'
     }
 end
+
+local function create_fake_sleeve(sleeve)
+    -- shallow copy of given sleeve object
+    -- this is so hacky I hate it
+    local fake_sleeve = {}
+    fake_sleeve.fake_sleeve = true
+    for k, v in pairs(sleeve) do
+        if k == "config" and type(v) == "table" then
+            fake_sleeve[k] = {}
+            for k2, v2 in pairs(v) do
+                -- deep-ish copy of config table in case other modders do weird stuff with the config table
+                fake_sleeve[k][k2] = v2
+            end
+        else
+            fake_sleeve[k] = v
+        end
+    end
+    setmetatable(fake_sleeve, getmetatable(sleeve))
+    return fake_sleeve
+end
 --#endregion
 
 --#region GLOBAL (used in UI) FUNCS
@@ -1278,9 +1300,6 @@ function G.FUNCS.change_sleeve(args)
     local sleeve_center = G.P_CENTER_POOLS.Sleeve[args.to_key]
     G.viewed_sleeve = sleeve_center.key
     G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve = sleeve_center.key
-    if sleeve_center["loc_vars"] then
-        sleeve_center:loc_vars()
-    end
 end
 
 function G.FUNCS.change_viewed_sleeve()
@@ -1338,7 +1357,7 @@ function G.UIDEF.sleeve_description(sleeve_key, minw, padding)
     local ret_nodes, full_UI_table = {}, {}
     local sleeve_name = ""
     if sleeve_center then
-        sleeve_center:generate_ui({}, nil, ret_nodes, nil, full_UI_table)
+        sleeve_center.generate_ui(create_fake_sleeve(sleeve_center), {}, nil, ret_nodes, nil, full_UI_table)
         sleeve_name = full_UI_table.name or ret_nodes.name
     else
         sleeve_name = "ERROR"
@@ -1558,6 +1577,9 @@ end
 local old_uidef_run_setup_option = G.UIDEF.run_setup_option
 function G.UIDEF.run_setup_option(_type)
     local output = old_uidef_run_setup_option(_type)
+
+    in_collection = false
+
     --[[
     nodes =
     [
@@ -1574,6 +1596,9 @@ function G.UIDEF.run_setup_option(_type)
         G.viewed_sleeve = "sleeve_casl_none"
         if G.SAVED_GAME ~= nil then
             G.viewed_sleeve = saved_game.GAME.selected_sleeve or G.viewed_sleeve
+            if Galdur and Galdur.config.use and Galdur.run_setup.choices then
+                Galdur.run_setup.choices.deck = G.GAME.viewed_back
+            end
         end
         table.insert(output.nodes, 2,
             {
@@ -1601,6 +1626,7 @@ function G.UIDEF.run_setup_option(_type)
     else
         print_warning("Unexpected value for _type = " .. tprint(_type))
     end
+
     return output
 end
 
@@ -1613,7 +1639,7 @@ function G.UIDEF.challenge_description_tab(args)
         if challenge.sleeve then
             local sleeve_center = CardSleeves.Sleeve:get_obj(challenge.sleeve)
             local ret_nodes, full_UI_table = {}, {}
-            sleeve_center:generate_ui({}, nil, ret_nodes, nil, full_UI_table)
+            sleeve_center.generate_ui(create_fake_sleeve(sleeve_center), {}, nil, ret_nodes, nil, full_UI_table)
             local sleeve_name = full_UI_table.name or ret_nodes.name
             local UI_node = {
                 n = G.UIT.R,
@@ -1692,6 +1718,13 @@ function G.FUNCS.can_start_run(e)
     end
 end
 
+local old_FUNCS_start_setup_run = G.FUNCS.start_setup_run
+function G.FUNCS.start_setup_run(e)
+    starting_run = true
+
+    old_FUNCS_start_setup_run(e)
+end
+
 local old_FUNCS_your_collection = G.FUNCS.your_collection
 function G.FUNCS.your_collection(...)
     in_collection = true
@@ -1706,6 +1739,19 @@ end
 local old_FUNCS_exit_overlay_menu = G.FUNCS.exit_overlay_menu
 function G.FUNCS.exit_overlay_menu(...)
     in_collection = false
+
+    if G.STAGE == G.STAGES.RUN then
+        if not starting_run then
+            -- reset viewed back (vanilla+galdur) to selected back as to not confuse `get_current_deck_key`
+            -- it also seems like this `starting_run` safety check is only relevant for vanilla, and galdur handles it without issue
+            if Galdur and Galdur.config.use and Galdur.run_setup and Galdur.run_setup.choices then
+                Galdur.run_setup.choices.deck = nil
+            end
+            G.GAME.viewed_back = nil
+        end
+        starting_run = false
+    end
+
     return old_FUNCS_exit_overlay_menu(...)
 end
 local old_FUNCS_mods_button = G.FUNCS.mods_button
@@ -1719,6 +1765,8 @@ local old_Game_start_run = Game.start_run
 function Game:start_run(args)
     -- because G.GAME.challenge only gets defined _after_ `:init_game_object`
     game_args = args
+    in_collection = false
+
     old_Game_start_run(self, args)
 end
 
@@ -1738,14 +1786,17 @@ end
 
 local old_Back_apply_to_run = Back.apply_to_run
 function Back:apply_to_run(...)
-    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
     old_Back_apply_to_run(self, ...)
+
+    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
     if sleeve_center then
-        if sleeve_center["loc_vars"] then
+        if sleeve_center.loc_vars and type(sleeve_center.loc_vars) == "function" then
             sleeve_center:loc_vars()
         end
         sleeve_center:apply(sleeve_center)
     end
+
+    starting_run = false
 end
 
 local old_Back_trigger_effect = Back.trigger_effect
@@ -1970,12 +2021,13 @@ function Card:hover()
 
         local col = self.params.deck_preview and G.UIT.C or G.UIT.R
         local info_col = self.params.deck_preview and G.UIT.R or G.UIT.C
-        local sleeve = self.config.center
-        local sleeve_localvars = sleeve["loc_vars"] and sleeve:loc_vars()
-        local sleeve_localkey = sleeve_localvars and sleeve_localvars.key or sleeve.key
+        local sleeve_center = self.config.center
+        local fake_sleeve_center = create_fake_sleeve(sleeve_center)
+        local sleeve_localvars = sleeve_center["loc_vars"] and sleeve_center.loc_vars(fake_sleeve_center)
+        local sleeve_localkey = sleeve_localvars and sleeve_localvars.key or sleeve_center.key
 
         local tooltips = {}
-        if sleeve:is_unlocked() then
+        if sleeve_center:is_unlocked() then
             local status, result = pcall(populate_info_queue, 'Sleeve', sleeve_localkey)
             if not status then
                 -- exception
@@ -1997,14 +2049,14 @@ function Card:hover()
         end
 
         local ret_nodes, full_UI_table = {}, {}
-        sleeve:generate_ui({}, nil, ret_nodes, nil, full_UI_table)
+        sleeve_center.generate_ui(fake_sleeve_center, {}, nil, ret_nodes, nil, full_UI_table)
         local sleeve_name = full_UI_table.name or ret_nodes.name or "NAME ERROR"
         local desc_t = {}
         for _, v in ipairs(ret_nodes) do
             desc_t[#desc_t + 1] = { n = G.UIT.R, config = { align = "cm"}, nodes = v }
         end
         local sleeve_name_colour = G.C.WHITE
-        if sleeve_localkey ~= sleeve.key then
+        if sleeve_localkey ~= sleeve_center.key then
             sleeve_name_colour = G.C.DARK_EDITION
         end
         self.config.h_popup = {n=G.UIT.C, config={align = "cm", padding=0.1}, nodes={
@@ -2022,7 +2074,7 @@ function Card:hover()
                     {n=G.UIT.R, config={align = "cm", colour = G.C.WHITE, minh = 1.3, maxh = 3, minw = 3, maxw = 4, r = 0.1}, nodes={
                         {n=G.UIT.R, config = { align = "cm", padding = 0.03, colour = G.C.WHITE, r = 0.1}, nodes = desc_t }
                     }},
-                    create_sleeve_badges(sleeve)
+                    create_sleeve_badges(sleeve_center)
                 }}
             }},
             (self.params.sleeve_select <= sleeve_count_horizontal and {n=col, config={align=(self.params.deck_preview and 'bm' or 'cm'), padding=0.1}, nodes = tooltips} or {n=G.UIT.R})
@@ -2158,7 +2210,7 @@ if Galdur then
     local function set_sleeve_text(sleeve_center)
         -- sets deck name to sleeve name in Galdur's deck preview
         local ret_nodes, full_UI_table = {}, {}
-        sleeve_center:generate_ui({}, nil, ret_nodes, nil, full_UI_table)
+        sleeve_center.generate_ui(create_fake_sleeve(sleeve_center), {}, nil, ret_nodes, nil, full_UI_table)
         local sleeve_name = full_UI_table.name or ret_nodes.name
         local texts = split_string_2(sleeve_name)
         if Galdur.deck_preview_texts then
@@ -2181,7 +2233,7 @@ if Galdur then
         local sleeve_center = CardSleeves.Sleeve:get_obj(quick_start_sleeve)
         if sleeve_center then
             local ret_nodes, full_UI_table = {}, {}
-            sleeve_center:generate_ui({}, nil, ret_nodes, nil, full_UI_table)
+            sleeve_center.generate_ui(create_fake_sleeve(sleeve_center), {}, nil, ret_nodes, nil, full_UI_table)
             local sleeve_name = full_UI_table.name or ret_nodes.name
             return sleeve_name
         else
@@ -2300,11 +2352,6 @@ if Galdur then
 
     local function confirm()
         clean_sleeve_areas()
-
-        local sleeve_center = CardSleeves.Sleeve:get_obj(G.viewed_sleeve)
-        if sleeve_center and sleeve_center["loc_vars"] then
-            sleeve_center:loc_vars()
-        end
     end
 
     local old_Card_click = Card.click
