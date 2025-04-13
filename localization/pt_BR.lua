@@ -235,8 +235,14 @@ return {
             sleeve_unique_effect_desc = "Algumas capas têm efeitos únicos quando combinadas com baralhos específicos",
             adjust_deck_alignment = "Empilhar baralho",
             adjust_deck_alignment_desc = {
-                "Empilha o baralho de maneira bem mais comprimida",
-                "durante a tentativa (apenas visual)"
+                "Empilha as cartas do baralho de forma",
+                "bem mais compacta durante a rodada",
+                "para prevenir o esticamento da capa (apenas visual)"
+            },
+            adjust_deck_alignment_options = {
+                "Sempre empilhar",
+                "Quando usar capa",
+                "Nunca empilhar"
             },
             allow_any_sleeve_selection = "Desbloquear todas as capas",
             allow_any_sleeve_selection_desc = {

@@ -1909,6 +1909,7 @@ function CardArea:draw(...)
     old_CardArea_draw(self, ...)
 
     if draw_sleeve then
+        local compress_deck = CardSleeves.config.adjust_deck_alignment == true or CardSleeves.config.adjust_deck_alignment == 1 or CardSleeves.config.adjust_deck_alignment == 2
         local x, y = 999999999, -1
         local x2, height = -1, -1
         for i, card in pairs(self.cards) do
@@ -1923,7 +1924,7 @@ function CardArea:draw(...)
         end
         local width = x2 - x
         x = x > 1000000 and self.T.x + 0.1 or x - 0.03
-        y = (y < 0 and self.T.y or y) + (CardSleeves.config.adjust_deck_alignment and 0.05 or -0.05)
+        y = (y < 0 and self.T.y or y) + (compress_deck and 0.05 or -0.05)
         width = width <= 0 and self.T.w - 0.2 or width + 0.06
         height = height <= 0 and self.T.h or height
         if self.sleeve_sprite == nil then
@@ -1952,7 +1953,8 @@ function CardArea:align_cards(...)
     old_CardArea_align_cards(self, ...)
 
     if (self == G.hand or self == G.deck or self == G.discard or self == G.play) and G.view_deck and G.view_deck[1] and G.view_deck[1].cards then return end
-    if self.config.type == 'deck' and self == G.deck and CardSleeves.config.adjust_deck_alignment then
+    local compress_deck = CardSleeves.config.adjust_deck_alignment == true or CardSleeves.config.adjust_deck_alignment == 1 or (CardSleeves.config.adjust_deck_alignment == 2 and G.GAME.selected_sleeve ~= "sleeve_casl_none")
+    if self.config.type == 'deck' and self == G.deck and compress_deck then
         local total_cards = 0
         for _, card in ipairs(self.cards) do
             if card.states.visible and not card.states.drag.is then
@@ -2404,7 +2406,19 @@ SMODS.current_mod.config_tab = function()
     return {n=G.UIT.ROOT, config = {align = "cl", minh = G.ROOM.T.h*0.25, padding = 0.0, r = 0.1, colour = G.C.GREY}, nodes = {
         {n = G.UIT.R, config = { padding = 0.05 }, nodes = {
             {n = G.UIT.C, config = { minw = G.ROOM.T.w*0.25, padding = 0.05 }, nodes = {
-                create_toggle{ label = localize("adjust_deck_alignment"), info = localize("adjust_deck_alignment_desc"), active_colour = CardSleeves.badge_colour, ref_table = CardSleeves.config, ref_value = "adjust_deck_alignment" },
+                create_option_cycle{
+                    label = localize("adjust_deck_alignment"),
+                    info = localize("adjust_deck_alignment_desc"),
+                    options = localize("adjust_deck_alignment_options"),
+                    current_option = type(CardSleeves.config.adjust_deck_alignment) == "number" and CardSleeves.config.adjust_deck_alignment or (CardSleeves.config.adjust_deck_alignment and 1 or 3),
+                    colour = CardSleeves.badge_colour,
+                    w = 4.5,
+                    text_scale = 0.4,
+                    scale = scale,
+                    ref_table = CardSleeves.config,
+                    ref_value = "adjust_deck_alignment",
+                    opt_callback = 'casl_cycle_options',
+                },
                 {n=G.UIT.R, config={minh=0.25}},
                 create_option_cycle{
                     label = localize("sleeve_info_location"),

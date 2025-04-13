@@ -214,8 +214,14 @@ return {
             sleeve_unique_effect_desc = "一些牌套會與對應的牌組給予獨特的效果",
             adjust_deck_alignment = "叠起卡牌",
             adjust_deck_alignment_desc = {
-                "讓牌組及卡套在遊戲時更貼近",
+                "讓牌組及牌套在遊戲時更貼近",
+                "防止卡牌超出牌套",
                 "（無任何遊戲效果）"
+            },
+            adjust_deck_alignment_options = {
+                "總是叠起",
+                "只使用牌套時",
+                "永不叠起"
             },
             allow_any_sleeve_selection = "解鎖所有牌套",
             allow_any_sleeve_selection_desc = {

@@ -233,8 +233,14 @@ return {
             sleeve_unique_effect_desc = "Some sleeves have unique effects when combined with specific decks",
             adjust_deck_alignment = "Stack deck pile",
             adjust_deck_alignment_desc = {
-                "Stacks the deck pile much more closely",
-                "while in a run (visual only)"
+                "Stacks the cards in the deck pile",
+                "much more closely while in a run to",
+                "prevent sleeve stretching (visual only)"
+            },
+            adjust_deck_alignment_options = {
+                "Always stack",
+                "When using sleeve",
+                "Never stack"
             },
             allow_any_sleeve_selection = "Unlock all sleeves",
             allow_any_sleeve_selection_desc = {

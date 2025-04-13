@@ -220,7 +220,14 @@ return {
             adjust_deck_alignment = "Condensation des cartes",
             adjust_deck_alignment_desc = {
                 "Condense les cartes de la pile",
-                "dans une partie (changement seulement visuel)"
+                "beaucoup plus proche dans une partie pour",
+                "prévenir l'étirage de pochette",
+                "(changement seulement visuel)"
+            },
+            adjust_deck_alignment_options = {
+                "Toujours condensé",
+                "En utilisant pochettes",
+                "Jamais condensé"
             },
             allow_any_sleeve_selection = "Débloquer toutes les pochettes",
             allow_any_sleeve_selection_desc = {

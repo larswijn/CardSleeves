@@ -216,7 +216,13 @@ return {
             adjust_deck_alignment = "叠起卡牌",
             adjust_deck_alignment_desc = {
                 "让牌组及卡套在游戏时更贴近",
+                "防止卡牌超出卡套",
                 "（无任何游戏效果）"
+            },
+            adjust_deck_alignment_options = {
+                "总是叠起",
+                "只使用卡套时",
+                "永不叠起"
             },
             allow_any_sleeve_selection = "解锁所有卡套",
             allow_any_sleeve_selection_desc = {

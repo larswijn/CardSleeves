@@ -235,7 +235,13 @@ return {
             adjust_deck_alignment = "Xếp chồng bài",
             adjust_deck_alignment_desc = {
                 "Xếp chồng bài gọn hơn trong trận",
+                "để ngăn gây giãn bọc bài",
                 "(chỉ ảnh hưởng đến vẻ ngoài)"
+            },
+            adjust_deck_alignment_options = {
+                "Luôn xếp",
+                "Khi dùng bọc",
+                "Không xếp"
             },
             allow_any_sleeve_selection = "Mở khoá mọi bọc bài",
             allow_any_sleeve_selection_desc = {

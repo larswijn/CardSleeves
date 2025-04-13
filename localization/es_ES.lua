@@ -234,8 +234,14 @@ return {
             sleeve_unique_effect_desc = "Algunas fundas tienen efectos únicos cuando se combinan con barajas específicas",
             adjust_deck_alignment = "apilar baraja",
             adjust_deck_alignment_desc = {
-                "Apila la baraja mucho mas cerca",
-                "durante la partida (solo visual)"
+                "Apilas las cartas en el mazo",
+                "mas juntas durante una partida para",
+                "preveer que la funda se estire (efecto visual)"
+            },
+            adjust_deck_alignment_options = {
+                "Siempre apilar",
+                "Cuando se usa una funda",
+                "No apilar"
             },
             allow_any_sleeve_selection = "Desbloquear todas las Fundas",
             allow_any_sleeve_selection_desc = {
