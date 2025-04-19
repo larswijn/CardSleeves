@@ -769,6 +769,11 @@ CardSleeves.Sleeve {
                 trigger = "after",
                 func = (function()
                     G.hand.config.highlighted_limit = G.hand.config.highlighted_limit + sleeve.config.selection_size
+                    if SMODS.change_play_limit and SMODS.change_discard_limit then
+                        -- future proofing?
+                        SMODS.change_play_limit(1)
+                        SMODS.change_discard_limit(1)
+                    end
                     return true
                 end)
             }))
