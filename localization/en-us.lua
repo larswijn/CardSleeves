@@ -65,7 +65,7 @@ return {
                 name = "Yellow Sleeve",
                 text = {
                     "Start run with",
-                    "{C:money,T:v_seed_money}#1#{}"
+                    "{C:money,T:v_seed_money}#1#{} voucher"
                 },
             },
 
