@@ -1571,6 +1571,25 @@ end
 **create_UIBox_celestial_pack
 --]]
 
+if SMODS.DrawStep and SMODS.version < "1.0.0~BETA-0423a" then
+    local old_drawstep_back_sticker_func = SMODS.DrawSteps.back_sticker.func
+    SMODS.DrawStep:take_ownership('back_sticker',
+        {
+            func = function(self)
+                if self.params.sleeve_card and self.sticker and G.shared_stickers[self.sticker] then
+                    G.shared_stickers[self.sticker].role.draw_major = self
+                    local sticker_offset = self.sticker_offset or {}
+                    G.shared_stickers[self.sticker]:draw_shader('dissolve', nil, nil, true, self.children.center, nil, self.sticker_rotation, sticker_offset.x, sticker_offset.y)
+                    local stake = G.P_STAKES['stake_'..string.lower(self.sticker)] or {}
+                    if stake.shiny then G.shared_stickers[self.sticker]:draw_shader('voucher', nil, self.ARGS.send_to_shader, true, self.children.center, nil, self.sticker_rotation, sticker_offset.x, sticker_offset.y) end
+                else
+                    old_drawstep_back_sticker_func(self)
+                end
+            end,
+        }
+    )
+end
+
 local old_uidef_run_info = G.UIDEF.run_info
 function G.UIDEF.run_info(...)
     is_in_run_info_tab = true

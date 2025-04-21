@@ -49,16 +49,22 @@ for k, v in pairs(self.GAME.pseudorandom) do if v == 0 then self.GAME.pseudorand
 self.GAME.pseudorandom.hashed_seed = pseudohash(self.GAME.pseudorandom.seed)
 '''
 
-# allow stake sticker to have rotation and positional offset
+# allow stake sticker to have rotation and positional offset - backwards compat for smods versions before DrawStep
 # Card:draw()
 [[patches]]
 [patches.pattern]
 target = 'card.lua'
-pattern = '''G.shared_stickers[self.sticker]:draw_shader('dissolve', nil, nil, true, self.children.center)'''
+pattern = '''
+G.shared_stickers[self.sticker]:draw_shader('dissolve', nil, nil, true, self.children.center)
+if self.sticker == 'Gold' then G.shared_stickers[self.sticker]:draw_shader('voucher', nil, self.ARGS.send_to_shader, true, self.children.center) end
+'''
 position = 'at'
 match_indent = true
-payload = '''local sticker_offset = self.sticker_offset or {}
-G.shared_stickers[self.sticker]:draw_shader('dissolve', nil, nil, true, self.children.center, nil, self.sticker_rotation, sticker_offset.x, sticker_offset.y)'''
+payload = '''
+local sticker_offset = self.sticker_offset or {}
+G.shared_stickers[self.sticker]:draw_shader('dissolve', nil, nil, true, self.children.center, nil, self.sticker_rotation, sticker_offset.x, sticker_offset.y)
+if self.sticker == 'Gold' or self.sticker == 'gold' then G.shared_stickers[self.sticker]:draw_shader('voucher', nil, self.ARGS.send_to_shader, true, self.children.center, nil, self.sticker_rotation, sticker_offset.x, sticker_offset.y) end
+'''
 
 # allow custom subtext in notify alert (the pop-up on the right side of the screen)
 # create_UIBox_notify_alert(...)
