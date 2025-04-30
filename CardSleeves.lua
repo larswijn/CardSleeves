@@ -1948,7 +1948,7 @@ function CardArea:draw(...)
         end
         local width = x2 - x
         x = x > 1000000 and self.T.x + 0.1 or x - 0.03
-        y = (y < 0 and self.T.y or y) + (compress_deck and 0.05 or -0.05)
+        y = (y < 0 and self.T.y or y) + (compress_deck and 0.1 or -0.05)
         width = width <= 0 and self.T.w - 0.2 or width + 0.06
         height = height <= 0 and self.T.h or height
         if self.sleeve_sprite == nil then
