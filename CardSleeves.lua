@@ -1472,7 +1472,7 @@ function G.UIDEF.current_sleeve(_scale)
     _scale = _scale or 1
     local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
     local sleeve_atlas = SMODS.Atlases[sleeve_center.atlas]
-    local sleeve_size = {px = sleeve_atlas.px or 71, py = sleeve_atlas.py or 95}
+    local sleeve_size = {px = sleeve_atlas.px or 73, py = sleeve_atlas.py or 95}
     local sleeve_sprite = create_sleeve_sprite(0, 0, _scale*1.5, _scale*(sleeve_size.py/sleeve_size.px)*1.5, sleeve_center)
     sleeve_sprite.states.drag.can = false
     local mod_badges = create_sleeve_badges(sleeve_center)
@@ -2000,7 +2000,7 @@ local old_Card_set_base = Card.set_base
 function Card:set_base(card, initial)
     local output = old_Card_set_base(self, card, initial)
 
-    if not is_in_run_info_tab then
+    if not is_in_run_info_tab and self.ability then
         local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
         local is_playing_card = (self.ability.set == "Default" or self.ability.set == "Enhanced") and self.config.card_key
         if initial then
