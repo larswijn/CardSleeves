@@ -1,3 +1,4 @@
+-- Russian translation by EnderDrag0n and Astryder
 return {
     descriptions = {
         Mod = {
