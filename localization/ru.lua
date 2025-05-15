@@ -185,11 +185,11 @@ return {
             },
 
             sleeve_casl_anaglyph = {
-                name = "Анаглифный Рукав",
+                name = "Анаглифический Рукав",
                 text = G.localization.descriptions.Back["b_anaglyph"].text
             },
             sleeve_casl_anaglyph_alt = {
-                name = "Анаглифный Рукав",
+                name = "Анаглифический Рукав",
                 text = {
                     "{C:attention,T:tag_double}#1#{} после победы над",
                     "{C:attention}Малым{} или {C:attention}Большим Блайндом{},",
