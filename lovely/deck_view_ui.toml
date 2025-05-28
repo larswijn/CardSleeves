@@ -1,0 +1,23 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = 11
+
+# Add Sleeve info to Deck view
+[[patches]]
+[patches.pattern]
+target = '''=[SMODS _ "src/overrides.lua"]'''
+pattern = '''local t = {n = G.UIT.ROOT, config = {align = "cm", minw = 3, padding = 0.1, r = 0.1, colour = G.C.CLEAR}, nodes = {
+		{n = G.UIT.O, config = {
+				id = 'suit_list','''
+position = 'before'
+match_indent = true
+payload = '''CardSleeves.create_sleeve_info_in_deck_view(object)'''
+
+[[patches]]
+[patches.pattern]
+target = '''=[SMODS _ "src/overrides.lua"]'''
+pattern = '''local suit_list = G.OVERLAY_MENU:get_UIE_by_ID('suit_list')'''
+position = 'before'
+match_indent = true
+payload = '''CardSleeves.create_sleeve_info_in_deck_view(object)'''

@@ -1553,7 +1553,6 @@ end
 *List of functions we hook into and change its output or properties:
  (not a full list) (also see lovely patches!)
 **G.UIDEF.run_setup_option
-**G.UIDEF.view_deck
 **G.FUNCS.can_start_run
 **G.FUNCS.change_viewed_back
 **Game:init_game_object
@@ -1682,41 +1681,36 @@ function G.UIDEF.challenge_description_tab(args)
     return output
 end
 
-local old_uidef_view_deck = G.UIDEF.view_deck
-function G.UIDEF.view_deck(...)
-    local output = old_uidef_view_deck(...)
+function CardSleeves.create_sleeve_info_in_deck_view(object)
+	local config_in_view_deck = CardSleeves.config.sleeve_info_location == 1 or CardSleeves.config.sleeve_info_location == 3
+	if G.GAME.selected_sleeve and G.GAME.selected_sleeve ~= "sleeve_casl_none" and config_in_view_deck then
+    	-- combine suit_tallies into 1x4 if only 2x2, to save on horizontal space (yes this looks bad with mods that add suits)
+    	local base_cards_area = object.nodes[2].nodes[1].nodes[1].nodes[2]
+    	local suit_tallies = base_cards_area.nodes[3].nodes
+    	if #suit_tallies <= 2 and not base_cards_area.nodes[5] and base_cards_area.nodes[4] then
+    	    for _, suit_element in ipairs(base_cards_area.nodes[4].nodes) do
+    	    	table.insert(suit_tallies, suit_element)
+    	    end
+    	    table.remove(base_cards_area.nodes, 4)
+    	end
 
-    local config_in_view_deck = CardSleeves.config.sleeve_info_location == 1 or CardSleeves.config.sleeve_info_location == 3
-    if G.GAME.selected_sleeve and G.GAME.selected_sleeve ~= "sleeve_casl_none" and config_in_view_deck then
-        -- combine suit_tallies into 1x4 if only 2x2, to save on horizontal space (yes this looks bad with mods that add suits)
-        local base_cards_area = output.nodes[2].nodes[1].nodes[1].nodes[2]
-        local suit_tallies = base_cards_area.nodes[3].nodes
-        if #suit_tallies <= 2 and not base_cards_area.nodes[5] then
-            for _, suit_element in ipairs(base_cards_area.nodes[4].nodes) do
-                table.insert(suit_tallies, suit_element)
-            end
-            table.remove(base_cards_area.nodes, 4)
-        end
-
-        -- insert sleeve description UI element
-        local minw, padding = 2.5, 0.05
-        local UI_node = {
-            n = G.UIT.R,
-            config = {align = "cm", r = 0.1, colour = G.C.L_BLACK, emboss = 0.05},
-            nodes = {
-                {
-                    n = G.UIT.R,
-                    config = {align = "cm", r = 0.1, minw = minw, maxw = 4, minh = 1, colour = G.C.WHITE},
-                    nodes = {
-                        G.UIDEF.sleeve_description(G.GAME.selected_sleeve, minw, padding),
-                    }
-                }
-            }
-        }
-        table.insert(output.nodes[2].nodes[1].nodes[1].nodes, 2, UI_node)
-    end
-
-    return output
+    	-- insert sleeve description UI element
+    	local minw, padding = 2.5, 0.05
+    	local UI_node = {
+    	    n = G.UIT.R,
+    	    config = {align = "cm", r = 0.1, colour = G.C.L_BLACK, emboss = 0.05},
+    	    nodes = {
+    	        {
+    	            n = G.UIT.R,
+    	            config = {align = "cm", r = 0.1, minw = minw, maxw = 4, minh = 1, colour = G.C.WHITE},
+    	            nodes = {
+    	                G.UIDEF.sleeve_description(G.GAME.selected_sleeve, minw, padding),
+    	            }
+    	        }
+    	    }
+    	}
+    	table.insert(object.nodes[2].nodes[1].nodes[1].nodes, 2, UI_node)
+	end
 end
 
 local old_FUNCS_change_viewed_back = G.FUNCS.change_viewed_back
