@@ -1111,6 +1111,64 @@ local function booster_pack_size_fix_wrapper(func)
     return wrapper
 end
 
+local function deck_view_wrapper(func)
+    -- insert sleeve info UI element if setting is enabled
+    local function wrapper(...)
+        local output = func(...) or {nodes = {G.OVERLAY_MENU:get_UIE_by_ID('suit_list')}}
+
+        local config_in_view_deck = CardSleeves.config.sleeve_info_location == 1 or CardSleeves.config.sleeve_info_location == 3
+        if G.GAME.selected_sleeve and G.GAME.selected_sleeve ~= "sleeve_casl_none" and config_in_view_deck then
+            -- insert sleeve description UI element
+            local minw, padding = 2.5, 0.05
+            local UI_node = {
+                n = G.UIT.R,
+                config = {align = "cm", r = 0.1, colour = G.C.L_BLACK, emboss = 0.05},
+                nodes = {
+                    {
+                        n = G.UIT.R,
+                        config = {align = "cm", r = 0.1, minw = minw, maxw = 4, minh = 1, colour = G.C.WHITE},
+                        nodes = {
+                            G.UIDEF.sleeve_description(G.GAME.selected_sleeve, minw, padding),
+                        }
+                    }
+                }
+            }
+            local base_cards_area, uibox
+
+            local SMODS_view_deck_menu = output and output.nodes and output.nodes[1] and output.nodes[1].config and output.nodes[1].config.id == "suit_list"
+            -- SMODS' view_deck UI menu since https://github.com/Steamodded/smods/pull/582  or  vanilla base implementation that is used in SMODS versions before PR 582
+
+            if SMODS_view_deck_menu then
+                uibox = output.nodes[1].config.object
+                base_cards_area = uibox.definition.nodes[2].nodes[1].nodes[1].nodes[2]
+
+                table.insert(uibox.definition.nodes[2].nodes[1].nodes[1].nodes, 2, UI_node)
+            else
+                base_cards_area = output.nodes[2].nodes[1].nodes[1].nodes[2]
+
+                table.insert(output.nodes[2].nodes[1].nodes[1].nodes, 2, UI_node)
+            end
+
+            local suit_tallies = base_cards_area.nodes[3] and base_cards_area.nodes[3].nodes or {}
+            -- combine suit_tallies into 1x4 if only 2x2, to save on vertical space
+            if #suit_tallies <= 2 and base_cards_area.nodes[4] and not base_cards_area.nodes[5] then
+                for _, suit_element in ipairs(base_cards_area.nodes[4].nodes) do
+                    table.insert(suit_tallies, suit_element)
+                end
+                table.remove(base_cards_area.nodes, 4)
+            end
+
+            if SMODS_view_deck_menu and uibox then
+                uibox:set_parent_child(uibox.definition, nil)
+                uibox:recalculate()
+            end
+        end
+
+        return output
+    end
+    return wrapper
+end
+
 local function set_sleeve_usage()
     if G.GAME.selected_sleeve then
         local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve)
@@ -1682,41 +1740,9 @@ function G.UIDEF.challenge_description_tab(args)
     return output
 end
 
-local old_uidef_view_deck = G.UIDEF.view_deck
-function G.UIDEF.view_deck(...)
-    local output = old_uidef_view_deck(...)
-
-    local config_in_view_deck = CardSleeves.config.sleeve_info_location == 1 or CardSleeves.config.sleeve_info_location == 3
-    if G.GAME.selected_sleeve and G.GAME.selected_sleeve ~= "sleeve_casl_none" and config_in_view_deck then
-        -- combine suit_tallies into 1x4 if only 2x2, to save on horizontal space (yes this looks bad with mods that add suits)
-        local base_cards_area = output.nodes[2].nodes[1].nodes[1].nodes[2]
-        local suit_tallies = base_cards_area.nodes[3].nodes
-        if #suit_tallies <= 2 and not base_cards_area.nodes[5] then
-            for _, suit_element in ipairs(base_cards_area.nodes[4].nodes) do
-                table.insert(suit_tallies, suit_element)
-            end
-            table.remove(base_cards_area.nodes, 4)
-        end
-
-        -- insert sleeve description UI element
-        local minw, padding = 2.5, 0.05
-        local UI_node = {
-            n = G.UIT.R,
-            config = {align = "cm", r = 0.1, colour = G.C.L_BLACK, emboss = 0.05},
-            nodes = {
-                {
-                    n = G.UIT.R,
-                    config = {align = "cm", r = 0.1, minw = minw, maxw = 4, minh = 1, colour = G.C.WHITE},
-                    nodes = {
-                        G.UIDEF.sleeve_description(G.GAME.selected_sleeve, minw, padding),
-                    }
-                }
-            }
-        }
-        table.insert(output.nodes[2].nodes[1].nodes[1].nodes, 2, UI_node)
-    end
-
-    return output
+G.UIDEF.view_deck = deck_view_wrapper(G.UIDEF.view_deck)
+if G.FUNCS.your_suits_page then
+    G.FUNCS.your_suits_page = deck_view_wrapper(G.FUNCS.your_suits_page)
 end
 
 local old_FUNCS_change_viewed_back = G.FUNCS.change_viewed_back
