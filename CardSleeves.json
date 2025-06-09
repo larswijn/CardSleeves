@@ -6,7 +6,7 @@
 	"description": "Adds sleeves as modifier to decks.  See full description in-game by enabling mod or checking `descriptions.Mods.CardSleeves`.",
 	"prefix": "casl",
 	"main_file": "CardSleeves.lua",
-    "version": "1.7.8",
+    "version": "1.7.9",
     "priority": -10,
     "dependencies": [
         "Steamodded (>=1.0.0~ALPHA-1206c)",
