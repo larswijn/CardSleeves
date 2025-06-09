@@ -1792,8 +1792,7 @@ function G.FUNCS.exit_overlay_menu(...)
 
     if G.STAGE == G.STAGES.RUN then
         if not starting_run then
-            -- reset viewed back (vanilla+galdur) to selected back as to not confuse `get_current_deck_key`
-            -- it also seems like this `starting_run` safety check is only relevant for vanilla, and galdur handles it without issue
+            -- reset viewed back (galdur+vanilla) to selected back when closing the new run menu as to not confuse `get_current_deck_key`
             if Galdur and Galdur.config.use and Galdur.run_setup and Galdur.run_setup.choices then
                 Galdur.run_setup.choices.deck = nil
             end
@@ -2318,6 +2317,7 @@ if Galdur then
 
     local old_Galdur_start_run = Galdur.start_run
     function Galdur.start_run(_quick_start)
+        starting_run = true
         quick_start_sleeve = G.viewed_sleeve
         return old_Galdur_start_run(_quick_start)
     end
