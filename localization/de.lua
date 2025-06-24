@@ -126,7 +126,7 @@ return {
                 text = G.localization.descriptions.Back["b_ghost"].text
             },
             sleeve_casl_ghost_alt = {
-                name = "Ghost Sleeve",
+                name = "Geister-Hülle",
                 text = {
                     "{C:spectral}Geister{}-Karten erscheinen",
                     "doppelt so häufig im Shop,",
