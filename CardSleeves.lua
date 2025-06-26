@@ -6,6 +6,7 @@ KNOWN ISSUES/TODO IDEAS:
 
 * TODO:
 ** split into seperate files once a mod manager exists
+** Up min SMODS to 0423a to get SMODS.DrawStep or 0525b for deck preview pages & hand limit API
 
 * ISSUES:
 ** What if locked sleeves in challenge?
@@ -1859,90 +1860,44 @@ function Back:trigger_effect(args)
 
     local o = { old_Back_trigger_effect(self, args) }
 
-    if args.context == "final_scoring_step" then
-        local new_chips, new_mult = unpack(o)
-        args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
-        if type(sleeve_center.calculate) == "function" then
-            new_chips, new_mult = sleeve_center:calculate(sleeve_center, args)
-        elseif type(sleeve_center.trigger_effect) == "function" then
-            -- support old deprecated trigger_effect
-            new_chips, new_mult = sleeve_center:trigger_effect(args)
-        end
-        args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
-        return args.chips, args.mult
-    end
-    if type(sleeve_center.calculate) == "function" then
-        local context = type(args.context) == "table" and args.context or args  -- bit hacky, though this shouldn't even have to be used?
-        if context.repetition or context.retrigger_joker_check then
-            -- handle this by hooking SMODS.calculate_repetitions or SMODS.calculate_retriggers
-        elseif context.destroy_card or context.modify_scoring_hand then
-            -- handle very specific contexts that cannot be triggered through SMODS.calculate_effect
-            -- TODO lovely patch this instead when lovely patching other mods works on mac (see https://github.com/larswijn/CardSleeves/commit/e2b376d6d914e0bd929e68d865f15935bb1f6040)
-            local effect = sleeve_center:calculate(sleeve_center, context)
-            if effect then
-                -- janky hack mate
-                if not o[1] then
-                    o[1] = effect
-                else
-                    local index = o[1]
-                    while index.extra do
-                        index = index.extra
-                    end
-                    index.extra = effect
-                end
-            end
-        else
-            local effect = sleeve_center:calculate(sleeve_center, context)
-            if effect then
-                SMODS.calculate_effect(effect, G.deck.cards[1] or G.deck)
-            end
-        end
-    elseif type(sleeve_center.trigger_effect) == "function" then
+    if type(sleeve_center.trigger_effect) == "function" then
         -- support old deprecated trigger_effect
+        if args.context == "final_scoring_step" then
+            local new_chips, new_mult = unpack(o)
+            args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
+            new_chips, new_mult = sleeve_center:trigger_effect(args)
+            args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
+            return args.chips, args.mult
+        end
         sleeve_center:trigger_effect(args)
     end
 
-    -- we modify `o` in some cases
     return unpack(o)
 end
 
-local old_smods_calculate_repetitions = SMODS.calculate_repetitions
-function SMODS.calculate_repetitions(card, context, reps)
-    -- hook for only calculating repetitions; all other contexts are handled by Back:trigger_effect
-    reps = old_smods_calculate_repetitions(card, context, reps)
+local old_smods_get_card_areas = SMODS.get_card_areas
+function SMODS.get_card_areas(_type, _context)
+    local output = old_smods_get_card_areas(_type, _context)
 
-    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
-    if type(sleeve_center.calculate) == "function" then
-        local effect = sleeve_center:calculate(sleeve_center, context)
-        if effect and effect.repetitions then
-            for _=1, effect.repetitions do
-                effect.card = effect.card or G.deck.cards[1] or G.deck
-                reps[#reps+1] = {key = effect}
+    if _type == 'individual' then
+        local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
+        if sleeve_center.calculate then
+            local fake_sleeve = setmetatable({}, {
+                -- almost "wrap" the sleeve
+                __index = sleeve_center,
+            })
+            function fake_sleeve:calculate(context)
+                -- Redirect to the actual sleeve:calculate method
+                return sleeve_center:calculate(sleeve_center, context)
             end
+            output[#output+1] = {
+                object = fake_sleeve,
+                scored_card = G.deck.cards[1] or G.deck,
+            }
         end
     end
 
-    return reps
-end
-
-local old_smods_calculate_retriggers = SMODS.calculate_retriggers
-function SMODS.calculate_retriggers(card, context, _ret)
-    -- hook for only calculating retriggers; other contexts are handled by Back:trigger_effect
-    -- why tf is this coded this way sigh
-    local retriggers = old_smods_calculate_retriggers(card, context, _ret)
-
-    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
-    if type(sleeve_center.calculate) == "function" then
-        local effect = sleeve_center:calculate(sleeve_center, {retrigger_joker_check = true, other_card = card, other_context = context, other_ret = _ret})
-        if effect and effect.repetitions then
-            effect.retrigger_card = G.GAME.selected_back
-            effect.message_card = effect.message_card or G.deck.cards[1] or G.deck
-            effect.message = effect.message or (not effect.remove_default_message and localize('k_again_ex'))
-            retriggers[#retriggers+1] = effect
-        end
-    end
-
-    return retriggers
+    return output
 end
 
 local old_CardArea_draw = CardArea.draw
