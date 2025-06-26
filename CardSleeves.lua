@@ -6,7 +6,6 @@ KNOWN ISSUES/TODO IDEAS:
 
 * TODO:
 ** split into seperate files once a mod manager exists
-** Switch to using the `starting_shop` context in plasma sleeve
 
 * ISSUES:
 ** What if locked sleeves in challenge?
@@ -19,7 +18,6 @@ KNOWN ISSUES/TODO IDEAS:
 ** See if people want to select their own sleeves in challenges instead of adhering to the challenge?
 ** How about optional 2nd sleeve that only shows up for the respective deck (e.g. 2 unique sleeves for a deck???)
 ** See if people want some unique/custom sleeves by CardSleeves?
-*** Sleeve that combines joker and consumable slots
 ** See if people want a nerfed/balanced version of sleeves?
 
 --]]
@@ -840,68 +838,75 @@ CardSleeves.Sleeve {
         return { key = key, vars = vars }
     end,
     calculate = function(self, sleeve, context)
-        if self.get_current_deck_key() == "b_plasma" and (context.shop_final_pass or context.reroll_shop) then
-            -- stop controller/mouse from doing anything
+        if self.get_current_deck_key() == "b_plasma" and (context.starting_shop or context.reroll_shop) then
             local hold = 0.6  -- how long to take to ease the costs, and how long to hold the player
-            G.CONTROLLER.locks.shop_reroll = true
+            G.CONTROLLER.locks.shop_reroll = true  -- stop controller/mouse from doing anything
             if G.CONTROLLER:save_cardarea_focus('shop_jokers') then G.CONTROLLER.interrupt.focus = true end
 
-            local cardareas = {}
-            for _, obj in pairs(G) do
-                if type(obj) == "table" and obj["is"] and obj:is(CardArea) and obj.config.type == "shop" then
-                    cardareas[#cardareas+1] = obj
-                end
-            end
-            local total_cost, total_items_for_sale = 0, 0
-            for _, cardarea in pairs(cardareas) do
-                for _, card in pairs(cardarea.cards) do
-                    card:set_cost()
-                    local has_coupon_tag = card.area and card.ability.couponed and (card.area == G.shop_jokers or card.area == G.shop_booster)
-                    if has_coupon_tag then
-                        -- tags that set price to 0 (coupon, uncommon, rare, etc)
-                        card.cost = 0
-                        card.ability.couponed = false
-                    end
-                    total_cost = total_cost + card.cost
-                    total_items_for_sale = total_items_for_sale + 1
-                end
-            end
-            local avg_cost = math.floor((total_cost - 1) / total_items_for_sale)  -- make it always be in favour of the player
-            for _, cardarea in pairs(cardareas) do
-                for _, card in pairs(cardarea.cards) do
-                    card.cost = math.max(card.cost, card.base_cost)
-                    local mod = avg_cost - card.cost
-                    --         table, value,  mod, floor, timer, not_blockable, delay, ease_type
-                    ease_value(card,  "cost", mod, nil,   nil,   true,          hold,   "quad")
-                    -- card.cost = avg_cost
-                    -- card:set_cost()
-                end
-            end
             G.E_MANAGER:add_event(Event({
-                func = (function()
-                    play_sound('gong', 1.2, 0.2)
-                    play_sound('gong', 1.2*1.5, 0.1)
-                    play_sound('tarot1', 1.6, 0.8)
-                    attention_text({
-                        scale = 1.3,
-                        colour = G.C.GOLD,
-                        text = localize('k_balanced'),
-                        hold = 1.5,
-                        align = 'cm',
-                        offset = {x = 0, y = -3.5},
-                        major = G.play
-                    })
-                    return true
-                end)
-            }))
-            G.E_MANAGER:add_event(Event({
+                delay = 0.01,  --  because tags don't immediately apply, sigh
+                blockable = true,
                 trigger = 'after',
-                delay = hold,
                 func = function()
-                    -- allow player to buy cards again, ONLY after having eased prices
-                    G.CONTROLLER.interrupt.focus = false
-                    G.CONTROLLER.locks.shop_reroll = false
-                    G.CONTROLLER:recall_cardarea_focus('shop_jokers')
+                    local cardareas = {}
+                    for _, obj in pairs(G) do
+                        if type(obj) == "table" and obj["is"] and obj:is(CardArea) and obj.config.type == "shop" then
+                            cardareas[#cardareas+1] = obj
+                        end
+                    end
+                    local total_cost, total_items_for_sale = 0, 0
+                    for _, cardarea in pairs(cardareas) do
+                        for _, card in pairs(cardarea.cards) do
+                            card:set_cost()
+                            local has_coupon_tag = card.area and card.ability.couponed and (card.area == G.shop_jokers or card.area == G.shop_booster)
+                            if has_coupon_tag then
+                                -- tags that set price to 0 (coupon, uncommon, rare, etc)
+                                card.cost = 0
+                                card.ability.couponed = false
+                            end
+                            total_cost = total_cost + card.cost
+                            total_items_for_sale = total_items_for_sale + 1
+                        end
+                    end
+                    local avg_cost = math.floor((total_cost - 1) / total_items_for_sale)  -- make it always be in favour of the player
+                    for _, cardarea in pairs(cardareas) do
+                        for _, card in pairs(cardarea.cards) do
+                            card.cost = math.max(card.cost, card.base_cost)
+                            local mod = avg_cost - card.cost
+                            --         table, value,  mod, floor, timer, not_blockable, delay, ease_type
+                            ease_value(card,  "cost", mod, nil,   nil,   true,          hold,   "quad")
+                            -- card.cost = avg_cost
+                            -- card:set_cost()
+                        end
+                    end
+                    G.E_MANAGER:add_event(Event({
+                        func = (function()
+                            play_sound('gong', 1.2, 0.2)
+                            play_sound('gong', 1.2*1.5, 0.1)
+                            play_sound('tarot1', 1.6, 0.8)
+                            attention_text({
+                                scale = 1.3,
+                                colour = G.C.GOLD,
+                                text = localize('k_balanced'),
+                                hold = 1.5,
+                                align = 'cm',
+                                offset = {x = 0, y = -3.5},
+                                major = G.play
+                            })
+                            return true
+                        end)
+                    }))
+                    G.E_MANAGER:add_event(Event({
+                        trigger = 'after',
+                        delay = hold,
+                        func = function()
+                            -- allow player to buy cards again, ONLY after having eased prices
+                            G.CONTROLLER.interrupt.focus = false
+                            G.CONTROLLER.locks.shop_reroll = false
+                            G.CONTROLLER:recall_cardarea_focus('shop_jokers')
+                            return true
+                        end
+                    }))
                     return true
                 end
             }))

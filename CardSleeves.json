@@ -9,7 +9,7 @@
     "version": "1.7.9",
     "priority": -10,
     "dependencies": [
-        "Steamodded (>=1.0.0~ALPHA-1206c)",
+        "Steamodded (>=1.0.0~ALPHA-1424a)",
         "Lovely (>=0.6.0)"
     ],
     "conflicts": [
