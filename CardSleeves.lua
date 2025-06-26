@@ -808,7 +808,7 @@ CardSleeves.Sleeve {
             end)
         })
 
-        if context.context == 'eval' then
+        if context.round_eval then
             if sleeve.get_current_deck_key() == "b_anaglyph" and G.GAME.last_blind and not G.GAME.last_blind.boss then
                 -- add double tag when stacking deck+sleeve on small/big blind
                 G.E_MANAGER:add_event(add_double_tag_event)
@@ -914,6 +914,7 @@ CardSleeves.Sleeve {
         end
 
         if self.get_current_deck_key() ~= "b_plasma" and context.context == 'final_scoring_step' then
+            -- cannot use `context.final_scoring_step` and `return {balance = true}` because it doesn't have the fancy animations
             -- copy-paste from plasma deck
             local tot = context.chips + context.mult
             context.chips = math.floor(tot/2)
@@ -1860,15 +1861,27 @@ function Back:trigger_effect(args)
 
     local o = { old_Back_trigger_effect(self, args) }
 
-    if type(sleeve_center.trigger_effect) == "function" then
-        -- support old deprecated trigger_effect
-        if args.context == "final_scoring_step" then
-            local new_chips, new_mult = unpack(o)
-            args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
+    if args.context == "final_scoring_step" then
+        -- for context.context == "final_scoring_step" (people should be using context.final_scoring_step)
+        local new_chips, new_mult = unpack(o)
+        args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
+        if type(sleeve_center.calculate) == "function" then
+            new_chips, new_mult = sleeve_center:calculate(sleeve_center, args)
+        elseif type(sleeve_center.trigger_effect) == "function" then
+            -- support old deprecated trigger_effect
             new_chips, new_mult = sleeve_center:trigger_effect(args)
-            args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
-            return args.chips, args.mult
         end
+        args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
+        return args.chips, args.mult
+    elseif type(sleeve_center.calculate) == "function" and type(args.context) == "string" then
+        -- basically only for context.context == "eval" (people should be using context.round_eval)
+        local context = type(args.context) == "table" and args.context or args  -- bit hacky, though this shouldn't even have to be used?
+        local effect = sleeve_center:calculate(sleeve_center, context)
+        if effect then
+            SMODS.calculate_effect(effect, G.deck.cards[1] or G.deck)
+        end
+    elseif type(sleeve_center.trigger_effect) == "function" then
+        -- support old deprecated trigger_effect
         sleeve_center:trigger_effect(args)
     end
 
@@ -1934,7 +1947,7 @@ function CardArea:draw(...)
         end
         local width = x2 - x
         x = x > 1000000 and self.T.x + 0.1 or x - 0.03
-        y = (y < 0 and self.T.y or y) + (compress_deck and 0.1 or -0.05)
+        y = (y < 0 and self.T.y - 0.1 or y) + (compress_deck and 0.1 or -0.05)
         width = width <= 0 and self.T.w - 0.2 or width + 0.06
         height = height <= 0 and self.T.h or height
         if self.sleeve_sprite == nil then
