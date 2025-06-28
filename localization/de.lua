@@ -1,3 +1,4 @@
+-- German translation by onichama and Phrog
 return {
     descriptions = {
         Mod = {
