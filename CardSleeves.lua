@@ -6,7 +6,7 @@ KNOWN ISSUES/TODO IDEAS:
 
 * TODO:
 ** split into seperate files once a mod manager exists
-** Switch to using the `starting_shop` context in plasma sleeve
+** Up min SMODS to 0423a to get SMODS.DrawStep or 0525b for deck preview pages & hand limit API
 
 * ISSUES:
 ** What if locked sleeves in challenge?
@@ -19,7 +19,6 @@ KNOWN ISSUES/TODO IDEAS:
 ** See if people want to select their own sleeves in challenges instead of adhering to the challenge?
 ** How about optional 2nd sleeve that only shows up for the respective deck (e.g. 2 unique sleeves for a deck???)
 ** See if people want some unique/custom sleeves by CardSleeves?
-*** Sleeve that combines joker and consumable slots
 ** See if people want a nerfed/balanced version of sleeves?
 
 --]]
@@ -809,7 +808,7 @@ CardSleeves.Sleeve {
             end)
         })
 
-        if context.context == 'eval' then
+        if context.round_eval then
             if sleeve.get_current_deck_key() == "b_anaglyph" and G.GAME.last_blind and not G.GAME.last_blind.boss then
                 -- add double tag when stacking deck+sleeve on small/big blind
                 G.E_MANAGER:add_event(add_double_tag_event)
@@ -840,74 +839,82 @@ CardSleeves.Sleeve {
         return { key = key, vars = vars }
     end,
     calculate = function(self, sleeve, context)
-        if self.get_current_deck_key() == "b_plasma" and (context.shop_final_pass or context.reroll_shop) then
-            -- stop controller/mouse from doing anything
+        if self.get_current_deck_key() == "b_plasma" and (context.starting_shop or context.reroll_shop) then
             local hold = 0.6  -- how long to take to ease the costs, and how long to hold the player
-            G.CONTROLLER.locks.shop_reroll = true
+            G.CONTROLLER.locks.shop_reroll = true  -- stop controller/mouse from doing anything
             if G.CONTROLLER:save_cardarea_focus('shop_jokers') then G.CONTROLLER.interrupt.focus = true end
 
-            local cardareas = {}
-            for _, obj in pairs(G) do
-                if type(obj) == "table" and obj["is"] and obj:is(CardArea) and obj.config.type == "shop" then
-                    cardareas[#cardareas+1] = obj
-                end
-            end
-            local total_cost, total_items_for_sale = 0, 0
-            for _, cardarea in pairs(cardareas) do
-                for _, card in pairs(cardarea.cards) do
-                    card:set_cost()
-                    local has_coupon_tag = card.area and card.ability.couponed and (card.area == G.shop_jokers or card.area == G.shop_booster)
-                    if has_coupon_tag then
-                        -- tags that set price to 0 (coupon, uncommon, rare, etc)
-                        card.cost = 0
-                        card.ability.couponed = false
-                    end
-                    total_cost = total_cost + card.cost
-                    total_items_for_sale = total_items_for_sale + 1
-                end
-            end
-            local avg_cost = math.floor((total_cost - 1) / total_items_for_sale)  -- make it always be in favour of the player
-            for _, cardarea in pairs(cardareas) do
-                for _, card in pairs(cardarea.cards) do
-                    card.cost = math.max(card.cost, card.base_cost)
-                    local mod = avg_cost - card.cost
-                    --         table, value,  mod, floor, timer, not_blockable, delay, ease_type
-                    ease_value(card,  "cost", mod, nil,   nil,   true,          hold,   "quad")
-                    -- card.cost = avg_cost
-                    -- card:set_cost()
-                end
-            end
             G.E_MANAGER:add_event(Event({
-                func = (function()
-                    play_sound('gong', 1.2, 0.2)
-                    play_sound('gong', 1.2*1.5, 0.1)
-                    play_sound('tarot1', 1.6, 0.8)
-                    attention_text({
-                        scale = 1.3,
-                        colour = G.C.GOLD,
-                        text = localize('k_balanced'),
-                        hold = 1.5,
-                        align = 'cm',
-                        offset = {x = 0, y = -3.5},
-                        major = G.play
-                    })
-                    return true
-                end)
-            }))
-            G.E_MANAGER:add_event(Event({
+                delay = 0.01,  --  because tags don't immediately apply, sigh
+                blockable = true,
                 trigger = 'after',
-                delay = hold,
                 func = function()
-                    -- allow player to buy cards again, ONLY after having eased prices
-                    G.CONTROLLER.interrupt.focus = false
-                    G.CONTROLLER.locks.shop_reroll = false
-                    G.CONTROLLER:recall_cardarea_focus('shop_jokers')
+                    local cardareas = {}
+                    for _, obj in pairs(G) do
+                        if type(obj) == "table" and obj["is"] and obj:is(CardArea) and obj.config.type == "shop" then
+                            cardareas[#cardareas+1] = obj
+                        end
+                    end
+                    local total_cost, total_items_for_sale = 0, 0
+                    for _, cardarea in pairs(cardareas) do
+                        for _, card in pairs(cardarea.cards) do
+                            card:set_cost()
+                            local has_coupon_tag = card.area and card.ability.couponed and (card.area == G.shop_jokers or card.area == G.shop_booster)
+                            if has_coupon_tag then
+                                -- tags that set price to 0 (coupon, uncommon, rare, etc)
+                                card.cost = 0
+                                card.ability.couponed = false
+                            end
+                            total_cost = total_cost + card.cost
+                            total_items_for_sale = total_items_for_sale + 1
+                        end
+                    end
+                    local avg_cost = math.floor((total_cost - 1) / total_items_for_sale)  -- make it always be in favour of the player
+                    for _, cardarea in pairs(cardareas) do
+                        for _, card in pairs(cardarea.cards) do
+                            card.cost = math.max(card.cost, card.base_cost)
+                            local mod = avg_cost - card.cost
+                            --         table, value,  mod, floor, timer, not_blockable, delay, ease_type
+                            ease_value(card,  "cost", mod, nil,   nil,   true,          hold,   "quad")
+                            -- card.cost = avg_cost
+                            -- card:set_cost()
+                        end
+                    end
+                    G.E_MANAGER:add_event(Event({
+                        func = (function()
+                            play_sound('gong', 1.2, 0.2)
+                            play_sound('gong', 1.2*1.5, 0.1)
+                            play_sound('tarot1', 1.6, 0.8)
+                            attention_text({
+                                scale = 1.3,
+                                colour = G.C.GOLD,
+                                text = localize('k_balanced'),
+                                hold = 1.5,
+                                align = 'cm',
+                                offset = {x = 0, y = -3.5},
+                                major = G.play
+                            })
+                            return true
+                        end)
+                    }))
+                    G.E_MANAGER:add_event(Event({
+                        trigger = 'after',
+                        delay = hold,
+                        func = function()
+                            -- allow player to buy cards again, ONLY after having eased prices
+                            G.CONTROLLER.interrupt.focus = false
+                            G.CONTROLLER.locks.shop_reroll = false
+                            G.CONTROLLER:recall_cardarea_focus('shop_jokers')
+                            return true
+                        end
+                    }))
                     return true
                 end
             }))
         end
 
         if self.get_current_deck_key() ~= "b_plasma" and context.context == 'final_scoring_step' then
+            -- cannot use `context.final_scoring_step` and `return {balance = true}` because it doesn't have the fancy animations
             -- copy-paste from plasma deck
             local tot = context.chips + context.mult
             context.chips = math.floor(tot/2)
@@ -1855,6 +1862,7 @@ function Back:trigger_effect(args)
     local o = { old_Back_trigger_effect(self, args) }
 
     if args.context == "final_scoring_step" then
+        -- for context.context == "final_scoring_step" (people should be using context.final_scoring_step)
         local new_chips, new_mult = unpack(o)
         args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
         if type(sleeve_center.calculate) == "function" then
@@ -1865,79 +1873,44 @@ function Back:trigger_effect(args)
         end
         args.chips, args.mult = new_chips or args.chips, new_mult or args.mult
         return args.chips, args.mult
-    end
-    if type(sleeve_center.calculate) == "function" then
+    elseif type(sleeve_center.calculate) == "function" and type(args.context) == "string" then
+        -- basically only for context.context == "eval" (people should be using context.round_eval)
         local context = type(args.context) == "table" and args.context or args  -- bit hacky, though this shouldn't even have to be used?
-        if context.repetition or context.retrigger_joker_check then
-            -- handle this by hooking SMODS.calculate_repetitions or SMODS.calculate_retriggers
-        elseif context.destroy_card or context.modify_scoring_hand then
-            -- handle very specific contexts that cannot be triggered through SMODS.calculate_effect
-            -- TODO lovely patch this instead when lovely patching other mods works on mac (see https://github.com/larswijn/CardSleeves/commit/e2b376d6d914e0bd929e68d865f15935bb1f6040)
-            local effect = sleeve_center:calculate(sleeve_center, context)
-            if effect then
-                -- janky hack mate
-                if not o[1] then
-                    o[1] = effect
-                else
-                    local index = o[1]
-                    while index.extra do
-                        index = index.extra
-                    end
-                    index.extra = effect
-                end
-            end
-        else
-            local effect = sleeve_center:calculate(sleeve_center, context)
-            if effect then
-                SMODS.calculate_effect(effect, G.deck.cards[1] or G.deck)
-            end
+        local effect = sleeve_center:calculate(sleeve_center, context)
+        if effect then
+            SMODS.calculate_effect(effect, G.deck.cards[1] or G.deck)
         end
     elseif type(sleeve_center.trigger_effect) == "function" then
         -- support old deprecated trigger_effect
         sleeve_center:trigger_effect(args)
     end
 
-    -- we modify `o` in some cases
     return unpack(o)
 end
 
-local old_smods_calculate_repetitions = SMODS.calculate_repetitions
-function SMODS.calculate_repetitions(card, context, reps)
-    -- hook for only calculating repetitions; all other contexts are handled by Back:trigger_effect
-    reps = old_smods_calculate_repetitions(card, context, reps)
+local old_smods_get_card_areas = SMODS.get_card_areas
+function SMODS.get_card_areas(_type, _context)
+    local output = old_smods_get_card_areas(_type, _context)
 
-    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
-    if type(sleeve_center.calculate) == "function" then
-        local effect = sleeve_center:calculate(sleeve_center, context)
-        if effect and effect.repetitions then
-            for _=1, effect.repetitions do
-                effect.card = effect.card or G.deck.cards[1] or G.deck
-                reps[#reps+1] = {key = effect}
+    if _type == 'individual' then
+        local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
+        if sleeve_center.calculate then
+            local fake_sleeve = setmetatable({}, {
+                -- almost "wrap" the sleeve
+                __index = sleeve_center,
+            })
+            function fake_sleeve:calculate(context)
+                -- Redirect to the actual sleeve:calculate method
+                return sleeve_center:calculate(sleeve_center, context)
             end
+            output[#output+1] = {
+                object = fake_sleeve,
+                scored_card = G.deck.cards[1] or G.deck,
+            }
         end
     end
 
-    return reps
-end
-
-local old_smods_calculate_retriggers = SMODS.calculate_retriggers
-function SMODS.calculate_retriggers(card, context, _ret)
-    -- hook for only calculating retriggers; other contexts are handled by Back:trigger_effect
-    -- why tf is this coded this way sigh
-    local retriggers = old_smods_calculate_retriggers(card, context, _ret)
-
-    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
-    if type(sleeve_center.calculate) == "function" then
-        local effect = sleeve_center:calculate(sleeve_center, {retrigger_joker_check = true, other_card = card, other_context = context, other_ret = _ret})
-        if effect and effect.repetitions then
-            effect.retrigger_card = G.GAME.selected_back
-            effect.message_card = effect.message_card or G.deck.cards[1] or G.deck
-            effect.message = effect.message or (not effect.remove_default_message and localize('k_again_ex'))
-            retriggers[#retriggers+1] = effect
-        end
-    end
-
-    return retriggers
+    return output
 end
 
 local old_CardArea_draw = CardArea.draw
@@ -1974,7 +1947,7 @@ function CardArea:draw(...)
         end
         local width = x2 - x
         x = x > 1000000 and self.T.x + 0.1 or x - 0.03
-        y = (y < 0 and self.T.y or y) + (compress_deck and 0.1 or -0.05)
+        y = (y < 0 and self.T.y - 0.1 or y) + (compress_deck and 0.1 or -0.05)
         width = width <= 0 and self.T.w - 0.2 or width + 0.06
         height = height <= 0 and self.T.h or height
         if self.sleeve_sprite == nil then

@@ -94,7 +94,7 @@ payload = """if v.set and v.set == 'Sleeve' then
     end
 end"""
 
-# adds context for shop_final_pass to sleeves
+# adds context for shop_final_pass to sleeves (DEPRECATED)
 # Game:update_shop()
 [[patches]]
 [patches.pattern]
@@ -112,7 +112,7 @@ if CardSleeves then
         func = function()
             local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
             sleeve_center:trigger_effect{context = "shop_final_pass"}
-            if type(sleeve_center.calculate) == "function" then sleeve_center:calculate(sleeve_center, {shop_final_pass = true}) end
+            if type(sleeve_center.calculate) == "function" then sleeve_center:calculate(sleeve_center, {shop_final_pass = true, deprecated = true}) end
             return true
         end
     }))
