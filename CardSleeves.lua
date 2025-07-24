@@ -1367,7 +1367,6 @@ local function create_sleeve_page_cycle(mod_id)
             no_pips = true
         })
     end
-    current_page = 1
     return {n = G.UIT.R, config = {align = "cm"}, nodes = {cycle}}
 end
 
@@ -2555,11 +2554,6 @@ local function create_stacked_effect_cycle(mod_id)
         colour = G.C.RED,
     })
 
-    showing_stacked_effects = false
-    for k, _ in pairs(stacked_effects_shown) do
-        stacked_effects_shown[k] = 1
-    end
-
     return {n = G.UIT.R, config = {align = "cm"}, nodes = {cycle}}
 end
 
@@ -2578,6 +2572,10 @@ local function create_UIBox_sleeves(mod_id)
 end
 
 G.FUNCS.your_collection_sleeves = function()
+    showing_stacked_effects = false
+    stacked_effects_shown = {}
+    current_page = 1
+
 	G.SETTINGS.paused = true
 	G.FUNCS.overlay_menu{
         definition = create_UIBox_sleeves(G.ACTIVE_MOD_UI and G.ACTIVE_MOD_UI.id or nil),
