@@ -28,8 +28,13 @@ CardSleeves = SMODS.current_mod
 
 -- not perfect, but works well enough afaik
 local in_collection = false
+local showing_stacked_effects = false
 local starting_run = false
 local is_in_run_info_tab = false
+local current_page = 1
+local hovered_sleeve = nil
+local stacked_effects_shown = {}
+local shown_ui_alt_desc = {}
 local game_args = {}
 
 local sleeve_count_horizontal = 6
@@ -335,6 +340,13 @@ end
 
 function CardSleeves.Sleeve.get_current_deck_key()
     if in_collection then
+        if showing_stacked_effects and hovered_sleeve then
+            local sleeve = G.P_CENTERS[hovered_sleeve]
+            local effect = stacked_effects_shown[sleeve.key] or 1
+            if sleeve and sleeve.stacked_effects and sleeve.stacked_effects[effect] then
+                return sleeve.stacked_effects[effect]
+            end
+        end
         -- bit hacky
         return "collection"
     elseif Galdur and Galdur.config.use and Galdur.run_setup.choices and Galdur.run_setup.choices.deck then
@@ -363,6 +375,7 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 0 },
     config = { discards = 1 },
+    stacked_effects = { 'b_red'},
     unlocked = false,
     unlock_condition = { deck = "b_red", stake = "stake_red" },
     loc_vars = function(self)
@@ -385,6 +398,7 @@ CardSleeves.Sleeve {
     name = "Blue Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 0 },
+    stacked_effects = { 'b_blue' },
     unlocked = false,
     unlock_condition = { deck = "b_blue", stake = "stake_green" },
     loc_vars = function(self)
@@ -407,6 +421,7 @@ CardSleeves.Sleeve {
     name = "Yellow Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 0 },
+    stacked_effects = { 'b_yellow' },
     unlocked = false,
     unlock_condition = { deck = "b_yellow", stake = "stake_green" },
     loc_vars = function(self)
@@ -429,6 +444,7 @@ CardSleeves.Sleeve {
     name = "Green Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 0 },
+    stacked_effects = { 'b_green'},
     unlocked = false,
     unlock_condition = { deck = "b_green", stake = "stake_green" },
     loc_vars = function(self)
@@ -481,6 +497,7 @@ CardSleeves.Sleeve {
     name = "Black Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 0 },
+    stacked_effects = { 'b_black'},
     unlocked = false,
     unlock_condition = { deck = "b_black", stake = "stake_green" },
     loc_vars = function(self)
@@ -503,6 +520,7 @@ CardSleeves.Sleeve {
     name = "Magic Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 1 },
+    stacked_effects = { 'b_magic' },
     unlocked = false,
     unlock_condition = { deck = "b_magic", stake = "stake_black" },
     loc_vars = function(self)
@@ -527,6 +545,7 @@ CardSleeves.Sleeve {
     name = "Nebula Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 1 },
+    stacked_effects = { 'b_nebula'},
     unlocked = false,
     unlock_condition = { deck = "b_nebula", stake = "stake_black" },
     loc_vars = function(self)
@@ -551,6 +570,7 @@ CardSleeves.Sleeve {
     name = "Ghost Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 1 },
+    stacked_effects = { 'b_ghost'},
     unlocked = false,
     unlock_condition = { deck = "b_ghost", stake = "stake_black" },
     loc_vars = function(self)
@@ -583,6 +603,7 @@ CardSleeves.Sleeve {
     name = "Abandoned Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 1 },
+    stacked_effects = { 'b_abandoned' },
     unlocked = false,
     unlock_condition = { deck = "b_abandoned", stake = "stake_black" },
     loc_vars = function(self)
@@ -669,6 +690,7 @@ CardSleeves.Sleeve {
     name = "Checkered Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 1 },
+    stacked_effects = { 'b_checkered' },
     unlocked = false,
     unlock_condition = { deck = "b_checkered", stake = "stake_black" },
     loc_vars = function(self)
@@ -706,6 +728,7 @@ CardSleeves.Sleeve {
     name = "Zodiac Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 2 },
+    stacked_effects = { 'b_zodiac' },
     unlocked = false,
     unlock_condition = { deck = "b_zodiac", stake = "stake_blue" },
     loc_vars = function(self)
@@ -745,6 +768,7 @@ CardSleeves.Sleeve {
     name = "Painted Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 2 },
+    stacked_effects = { 'b_painted' },
     unlocked = false,
     unlock_condition = { deck = "b_painted", stake = "stake_blue" },
     loc_vars = function(self)
@@ -785,6 +809,7 @@ CardSleeves.Sleeve {
     name = "Anaglyph Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 2 },
+    stacked_effects = { 'b_anaglyph' },
     unlocked = false,
     unlock_condition = { deck = "b_anaglyph", stake = "stake_blue" },
     config = {},
@@ -825,6 +850,7 @@ CardSleeves.Sleeve {
     name = "Plasma Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 2 },
+    stacked_effects = { 'b_plasma' },
     unlocked = false,
     unlock_condition = { deck = "b_plasma", stake = "stake_purple" },
     config = {ante_scaling = 2},
@@ -969,6 +995,7 @@ CardSleeves.Sleeve {
     name = "Erratic Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 2 },
+    stacked_effects = { 'b_erratic' },
     unlocked = false,
     unlock_condition = { deck = "b_erratic", stake = "stake_orange" },
     config = {randomize_rank_suit = true},
@@ -1256,7 +1283,15 @@ local function populate_sleeve_card_areas(page, mod_id)
         if Galdur and Galdur.config.reduce then
             card_number = 1
         end
+
+        local sleeve_center = sleeve_pool[count]
         local selected_deck_center = in_collection and G.P_CENTERS.b_red or Galdur.run_setup.choices.deck.effect.center
+        local effect = stacked_effects_shown[sleeve_center.key] or 1
+
+        if showing_stacked_effects and in_collection and sleeve_center.stacked_effects and sleeve_center.stacked_effects[effect] then
+            selected_deck_center = G.P_CENTERS[sleeve_center.stacked_effects[effect]]
+        end
+
         for index = 1, card_number do
             local card = Card(area.T.x, area.T.y, area.T.w, area.T.h, selected_deck_center, selected_deck_center,
                 {galdur_back = Back(selected_deck_center)})
@@ -1274,10 +1309,10 @@ local function populate_sleeve_card_areas(page, mod_id)
                 card.sticker = get_deck_win_sticker(selected_deck_center)
             end
         end
-        local card = create_sleeve_card(area, sleeve_pool[count])
+        local card = create_sleeve_card(area, sleeve_center)
         card.params["sleeve_select"] = i
         card.sleeve_select_position = {page = page, count = i}
-        replace_sleeve_sprite(card, sleeve_pool[count])
+        replace_sleeve_sprite(card, sleeve_center)
         area:emplace(card)
         count = count + 1
     end
@@ -1332,6 +1367,7 @@ local function create_sleeve_page_cycle(mod_id)
             no_pips = true
         })
     end
+    current_page = 1
     return {n = G.UIT.R, config = {align = "cm"}, nodes = {cycle}}
 end
 
@@ -1410,6 +1446,7 @@ end
 G.FUNCS.change_sleeve_page = function(args)
     clean_sleeve_areas()
     populate_sleeve_card_areas(args.cycle_config.current_option, args.cycle_config.ref_table.mod_id)
+    current_page = args.cycle_config.current_option
 end
 
 G.FUNCS.casl_cycle_options = function(args)
@@ -2047,6 +2084,7 @@ function Card:hover()
         local col = self.params.deck_preview and G.UIT.C or G.UIT.R
         local info_col = self.params.deck_preview and G.UIT.R or G.UIT.C
         local sleeve_center = self.config.center
+        hovered_sleeve = sleeve_center.key
         local fake_sleeve_center = create_fake_sleeve(sleeve_center)
         local sleeve_localvars = sleeve_center["loc_vars"] and sleeve_center.loc_vars(fake_sleeve_center)
         local sleeve_localkey = sleeve_localvars and sleeve_localvars.key or sleeve_center.key
@@ -2111,6 +2149,23 @@ function Card:hover()
     else
         old_Card_hover(self)
     end
+end
+
+local old_Card_click = Card.click or function() end
+function Card:click()
+    if self.params.sleeve_card and in_collection and showing_stacked_effects then
+        local sleeve_center = self.config.center
+
+        if sleeve_center and sleeve_center.stacked_effects and #sleeve_center.stacked_effects > 1 then
+            stacked_effects_shown[sleeve_center.key] = (stacked_effects_shown[sleeve_center.key] or 1) + 1
+            if stacked_effects_shown[sleeve_center.key] > #sleeve_center.stacked_effects then
+                stacked_effects_shown[sleeve_center.key] = 1
+            end
+            clean_sleeve_areas()
+            populate_sleeve_card_areas(current_page, G.ACTIVE_MOD_UI and G.ACTIVE_MOD_UI.id or nil)
+        end
+    end
+    return old_Card_click(self)
 end
 
 local old_Card_align_h_popup = Card.align_h_popup
@@ -2470,16 +2525,50 @@ SMODS.current_mod.custom_collection_tabs = function()
 end
 
 local function create_UI_alt_description()
-    return {n = G.UIT.R, config = {align = "cm"}, nodes = {
-        {n=G.UIT.O, config={object = DynaText({string = localize("sleeve_unique_effect_desc"), shadow = true, bump = true, scale = 0.5, pop_in = 0, silent = true})}},
+    if not shown_ui_alt_desc.string then
+        shown_ui_alt_desc.string = localize("sleeve_normal_effect_desc")
+    end
+
+    return {n = G.UIT.R, config = {align = "cm", minw = 15}, nodes = {
+        {n=G.UIT.O, config={object = DynaText({string = {{ref_table = shown_ui_alt_desc, ref_value = 'string'}}, shadow = true, bump = true, scale = 0.5, pop_in = 0, silent = true})}},
     }}
+end
+
+G.FUNCS.change_sleeve_shown_effect = function(args)
+    showing_stacked_effects = args.cycle_config.current_option == 2
+    shown_ui_alt_desc.string = localize(showing_stacked_effects and "sleeve_stacked_effect_desc" or "sleeve_normal_effect_desc")
+    clean_sleeve_areas()
+    populate_sleeve_card_areas(current_page, args.cycle_config.ref_table.mod_id)
+end
+
+local function create_stacked_effect_cycle(mod_id)
+    local cycle = create_option_cycle({
+        options = {
+            localize('sleeve_normal_effects'),
+            localize('sleeve_stacked_effects')
+        },
+        ref_table = { mod_id = mod_id },
+        w = 4.5,
+        opt_callback = 'change_sleeve_shown_effect',
+        focus_args = { snap_to = true, nav = 'wide' },
+        current_option = 1,
+        colour = G.C.RED,
+    })
+
+    showing_stacked_effects = false
+    for k, _ in pairs(stacked_effects_shown) do
+        stacked_effects_shown[k] = 1
+    end
+
+    return {n = G.UIT.R, config = {align = "cm"}, nodes = {cycle}}
 end
 
 local function create_UIBox_sleeves(mod_id)
     generate_sleeve_card_areas()
-    local sleeve_pages = {n=G.UIT.C, config = {padding = 0.15}, nodes ={
+    local sleeve_pages = {n=G.UIT.C, config = {padding = 0.15, align = 'cm'}, nodes ={
         generate_sleeve_card_areas_ui(mod_id),
         create_sleeve_page_cycle(mod_id),
+        create_stacked_effect_cycle(mod_id),
         create_UI_alt_description(),
     }}
     return create_UIBox_generic_options{
