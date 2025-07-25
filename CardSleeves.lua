@@ -6,7 +6,7 @@ KNOWN ISSUES/TODO IDEAS:
 
 * TODO:
 ** split into seperate files once a mod manager exists
-** Up min SMODS to 0423a to get SMODS.DrawStep or 0525b for deck preview pages & hand limit API
+** Up min SMODS to 0423a to get SMODS.DrawStep & painted sleeve's context.before or 0525b for deck preview pages & hand limit API
 
 * ISSUES:
 ** What if locked sleeves in challenge?
@@ -776,6 +776,16 @@ CardSleeves.Sleeve {
                     return true
                 end)
             }))
+        end
+    end,
+    calculate = function(self, sleeve, context)
+        if context.press_play or context.before then
+            -- use both contexts for very old smods versions (context.before can be removed after min 0423a)
+            if G.play.T.w < 6.2*G.CARD_W then
+                -- readjust played cards to not overlap
+                G.play.T.w = 6.2 * G.CARD_W
+                G.play.T.x = G.play.T.x - 0.25 * G.CARD_W
+            end
         end
     end
 }
