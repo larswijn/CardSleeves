@@ -5,29 +5,29 @@ return {
             CardSleeves = {
                 name = "牌套",
                 text = {
-                    "{s:1.3}Adds {s:1.3,C:attention}15{} {s:1.3,E:1,C:dark_edition}Sleeves{} {s:1.3}as modifier to decks.",
+                    "{s:1.3}为牌组带来{s:1.3,C:attention}15种作为牌组修饰效果的{s:1.3,E:1,C:dark_edition}牌套{s:1.3}。",
                     " ",
-                    "Includes an API for other mods",
-                    "to add their own Sleeves.",
+                    "包含可供其他模组使用",
+                    "用以添加自创牌套的API。",
                     " ",
-                    "Programming and implementation by {C:blue}Larswijn{}.",
-                    "Original idea and art by {C:red}Sable{}.",
+                    "代码编写&功能实现：{C:blue}Larswijn{}",
+                    "原始创意&艺作：{C:red}Sable{}.",
                     " ",
-                    "{s:1.1}See https://github.com/larswijn/CardSleeves for more information."
+                    "{s:1.1}可在 https://github.com/larswijn/CardSleeves 查阅更多信息。"
                 }
             }
         },
         Sleeve = {
             sleeve_casl_none = {
                 name = "无牌套",
-                text = { "无牌套模式" }
+                text = { "没有牌套的修饰效果" }
             },
 
             sleeve_locked = {
                 name = "锁定",
                 text = {
                     "在{V:1}#2#{}或以上",
-                    "难度以{C:attention}#1#{}牌組",
+                    "难度以{C:attention}#1#{}牌套",
                     "贏得一局"
                 }
             },
@@ -59,11 +59,11 @@ return {
             },
 
             sleeve_casl_yellow = {
-                name = "黃色牌套",
+                name = "黄色牌套",
                 text = G.localization.descriptions.Back["b_yellow"].text
             },
             sleeve_casl_yellow_alt = {
-                name = "黃色牌套",
+                name = "黄色牌套",
                 text = {
                     "开局时拥有",
                     "{C:money,T:v_seed_money}#1#{}优惠券",
