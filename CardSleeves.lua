@@ -6,7 +6,7 @@ KNOWN ISSUES/TODO IDEAS:
 
 * TODO:
 ** split into seperate files once a mod manager exists
-** Up min SMODS to 0423a to get SMODS.DrawStep or 0525b for deck preview pages & hand limit API
+** Up min SMODS to 0423a to get SMODS.DrawStep & painted sleeve's context.before or 0525b for deck preview pages & hand limit API
 
 * ISSUES:
 ** What if locked sleeves in challenge?
@@ -777,6 +777,16 @@ CardSleeves.Sleeve {
                 end)
             }))
         end
+    end,
+    calculate = function(self, sleeve, context)
+        if context.press_play or context.before then
+            -- use both contexts for very old smods versions (context.before can be removed after min 0423a)
+            if G.play.T.w < 6.2*G.CARD_W then
+                -- readjust played cards to not overlap
+                G.play.T.w = 6.2 * G.CARD_W
+                G.play.T.x = G.play.T.x - 0.25 * G.CARD_W
+            end
+        end
     end
 }
 
@@ -1314,23 +1324,42 @@ end
 
 local function create_sleeve_page_cycle(mod_id)
     local sleeve_pool = get_sleeve_pool(mod_id)
-    local options = {}
+    local options, current_option = {}, 1
     local cycle
     if #sleeve_pool > sleeve_count_page then
         local total_pages = math.ceil(#sleeve_pool / sleeve_count_page)
         for i=1, total_pages do
-            options[i] = localize('k_page')..' '..i..' / '..total_pages
+            options[i] = localize('k_page')..' '..i..'/'..total_pages
         end
-        cycle = create_option_cycle({
-            options = options,
-            w = 4.5,
-            opt_callback = 'change_sleeve_page',
-            ref_table = { mod_id = mod_id },
-            focus_args = { snap_to = true, nav = 'wide' },
-            current_option = 1,
-            colour = G.C.RED,
-            no_pips = true
-        })
+        if EremelUtility and EremelUtility.page_cycler then
+            cycle = EremelUtility.page_cycler{
+                options = options,
+                opt_callback = 'change_sleeve_page',
+                ref_table = { mod_id = mod_id },
+                focus_args = { snap_to = true, nav = 'wide' },
+                current_option = current_option,
+                no_pips = true,
+
+                object_table = sleeve_pool,
+                key = "sleeve_select_cycle",
+                page_size = sleeve_count_page,
+                h = 1,
+                button = "casl_option_cycle",
+                current_option_val = options[current_option],
+            }
+        else
+            cycle = create_option_cycle{
+                options = options,
+                opt_callback = 'change_sleeve_page',
+                ref_table = { mod_id = mod_id },
+                focus_args = { snap_to = true, nav = 'wide' },
+                current_option = current_option,
+                no_pips = true,
+
+                w = 4.5,
+                colour = G.C.RED
+            }
+        end
     end
     return {n = G.UIT.R, config = {align = "cm"}, nodes = {cycle}}
 end
@@ -1410,6 +1439,24 @@ end
 G.FUNCS.change_sleeve_page = function(args)
     clean_sleeve_areas()
     populate_sleeve_card_areas(args.cycle_config.current_option, args.cycle_config.ref_table.mod_id)
+end
+
+G.FUNCS.casl_option_cycle = function(e)
+    -- wrapper around G.FUNCS.option_cycle, converting Galdur's button to Balatro's default button
+    local convert = false
+    if e and e.config and e.config.pass_through then
+        convert = true
+        e.config.ref_table = e.config.pass_through
+        e.config.ref_value = e.config.direction == 1 and 'r' or 'l'
+    end
+    local result = G.FUNCS.option_cycle(e)
+    if convert then
+        e.config.pass_through = e.config.ref_table
+        if e.config.pass_through.page_label and e.config.pass_through.page_label.text and e.config.ref_table.current_option_val then
+            e.config.pass_through.page_label.text = e.config.ref_table.current_option_val
+        end
+    end
+    return result
 end
 
 G.FUNCS.casl_cycle_options = function(args)
