@@ -380,7 +380,6 @@ CardSleeves.Sleeve {
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 0 },
     config = { discards = 1 },
-    stacked_effects = { 'b_red'},
     unlocked = false,
     unlock_condition = { deck = "b_red", stake = "stake_red" },
     loc_vars = function(self)
@@ -403,7 +402,6 @@ CardSleeves.Sleeve {
     name = "Blue Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 0 },
-    stacked_effects = { 'b_blue' },
     unlocked = false,
     unlock_condition = { deck = "b_blue", stake = "stake_green" },
     loc_vars = function(self)
@@ -426,7 +424,6 @@ CardSleeves.Sleeve {
     name = "Yellow Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 0 },
-    stacked_effects = { 'b_yellow' },
     unlocked = false,
     unlock_condition = { deck = "b_yellow", stake = "stake_green" },
     loc_vars = function(self)
@@ -449,7 +446,6 @@ CardSleeves.Sleeve {
     name = "Green Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 0 },
-    stacked_effects = { 'b_green'},
     unlocked = false,
     unlock_condition = { deck = "b_green", stake = "stake_green" },
     loc_vars = function(self)
@@ -502,7 +498,6 @@ CardSleeves.Sleeve {
     name = "Black Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 0 },
-    stacked_effects = { 'b_black'},
     unlocked = false,
     unlock_condition = { deck = "b_black", stake = "stake_green" },
     loc_vars = function(self)
@@ -525,7 +520,6 @@ CardSleeves.Sleeve {
     name = "Magic Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 1 },
-    stacked_effects = { 'b_magic' },
     unlocked = false,
     unlock_condition = { deck = "b_magic", stake = "stake_black" },
     loc_vars = function(self)
@@ -550,7 +544,6 @@ CardSleeves.Sleeve {
     name = "Nebula Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 1 },
-    stacked_effects = { 'b_nebula'},
     unlocked = false,
     unlock_condition = { deck = "b_nebula", stake = "stake_black" },
     loc_vars = function(self)
@@ -575,7 +568,6 @@ CardSleeves.Sleeve {
     name = "Ghost Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 1 },
-    stacked_effects = { 'b_ghost'},
     unlocked = false,
     unlock_condition = { deck = "b_ghost", stake = "stake_black" },
     loc_vars = function(self)
@@ -608,7 +600,6 @@ CardSleeves.Sleeve {
     name = "Abandoned Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 1 },
-    stacked_effects = { 'b_abandoned' },
     unlocked = false,
     unlock_condition = { deck = "b_abandoned", stake = "stake_black" },
     loc_vars = function(self)
@@ -695,7 +686,6 @@ CardSleeves.Sleeve {
     name = "Checkered Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 1 },
-    stacked_effects = { 'b_checkered' },
     unlocked = false,
     unlock_condition = { deck = "b_checkered", stake = "stake_black" },
     loc_vars = function(self)
@@ -733,7 +723,6 @@ CardSleeves.Sleeve {
     name = "Zodiac Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 0, y = 2 },
-    stacked_effects = { 'b_zodiac' },
     unlocked = false,
     unlock_condition = { deck = "b_zodiac", stake = "stake_blue" },
     loc_vars = function(self)
@@ -773,7 +762,6 @@ CardSleeves.Sleeve {
     name = "Painted Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 1, y = 2 },
-    stacked_effects = { 'b_painted' },
     unlocked = false,
     unlock_condition = { deck = "b_painted", stake = "stake_blue" },
     loc_vars = function(self)
@@ -824,7 +812,6 @@ CardSleeves.Sleeve {
     name = "Anaglyph Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 2, y = 2 },
-    stacked_effects = { 'b_anaglyph' },
     unlocked = false,
     unlock_condition = { deck = "b_anaglyph", stake = "stake_blue" },
     config = {},
@@ -865,7 +852,6 @@ CardSleeves.Sleeve {
     name = "Plasma Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 3, y = 2 },
-    stacked_effects = { 'b_plasma' },
     unlocked = false,
     unlock_condition = { deck = "b_plasma", stake = "stake_purple" },
     config = {ante_scaling = 2},
@@ -1010,7 +996,6 @@ CardSleeves.Sleeve {
     name = "Erratic Sleeve",
     atlas = "sleeve_atlas",
     pos = { x = 4, y = 2 },
-    stacked_effects = { 'b_erratic' },
     unlocked = false,
     unlock_condition = { deck = "b_erratic", stake = "stake_orange" },
     config = {randomize_rank_suit = true},
@@ -1435,6 +1420,21 @@ local function create_fake_sleeve(sleeve)
     end
     setmetatable(fake_sleeve, getmetatable(sleeve))
     return fake_sleeve
+end
+
+local function generate_auto_stacked_effects(sleeve_center)
+    local auto_stacked_effects = {}
+    for _, back in ipairs(G.P_CENTER_POOLS.Back) do
+        collection_fake_deck = back.key
+        local fake_sleeve_center = create_fake_sleeve(sleeve_center)
+        local sleeve_localvars = sleeve_center["loc_vars"] and sleeve_center.loc_vars(fake_sleeve_center)
+        local sleeve_localkey = sleeve_localvars and sleeve_localvars.key or sleeve_center.key
+        if sleeve_localkey ~= sleeve_center.key then
+            auto_stacked_effects[#auto_stacked_effects+1] = collection_fake_deck
+        end
+    end
+    collection_fake_deck = nil
+    return auto_stacked_effects
 end
 
 local function handle_collection_click(card, direction)
@@ -2647,6 +2647,11 @@ end
 G.FUNCS.change_sleeve_shown_effect = function(args)
     showing_stacked_effects = args.cycle_config.current_option == 2
     shown_ui_alt_desc.string = localize(showing_stacked_effects and "sleeve_stacked_effect_desc" or "sleeve_normal_effect_desc")
+    for _, sleeve_center in pairs(get_sleeve_pool()) do
+        if not sleeve_center.auto_stacked_effects and not sleeve_center.stacked_effects then
+            sleeve_center.auto_stacked_effects = generate_auto_stacked_effects(sleeve_center)
+        end
+    end
     clean_sleeve_areas()
     populate_sleeve_card_areas(current_page, args.cycle_config.ref_table.mod_id)
 end
