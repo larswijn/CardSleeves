@@ -1871,6 +1871,11 @@ function Game:start_run(args)
     in_collection = false
 
     old_Game_start_run(self, args)
+
+    local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
+    if sleeve_center and sleeve_center.loc_vars and type(sleeve_center.loc_vars) == "function" then
+        sleeve_center:loc_vars()
+    end
 end
 
 local old_Game_init_game_object = Game.init_game_object
