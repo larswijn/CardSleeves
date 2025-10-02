@@ -33,6 +33,7 @@ local starting_run = false
 local is_in_run_info_tab = false
 local current_page = 1
 local hovered_sleeve = nil
+local collection_fake_deck = nil
 local stacked_effects_shown = {}
 local shown_ui_alt_desc = {}
 local game_args = {}
@@ -340,11 +341,15 @@ end
 
 function CardSleeves.Sleeve.get_current_deck_key()
     if in_collection then
-        if showing_stacked_effects and hovered_sleeve then
+        if collection_fake_deck then
+            return collection_fake_deck
+        elseif showing_stacked_effects and hovered_sleeve then
             local sleeve = G.P_CENTERS[hovered_sleeve]
             local effect = stacked_effects_shown[sleeve.key] or 1
             if sleeve and sleeve.stacked_effects and sleeve.stacked_effects[effect] then
                 return sleeve.stacked_effects[effect]
+            elseif sleeve and sleeve.auto_stacked_effects and sleeve.auto_stacked_effects[effect] then
+                return sleeve.auto_stacked_effects[effect]
             end
         end
         -- bit hacky
@@ -1298,8 +1303,12 @@ local function populate_sleeve_card_areas(page, mod_id)
         local selected_deck_center = in_collection and G.P_CENTERS.b_red or Galdur.run_setup.choices.deck.effect.center
         local effect = stacked_effects_shown[sleeve_center.key] or 1
 
-        if showing_stacked_effects and in_collection and sleeve_center.stacked_effects and sleeve_center.stacked_effects[effect] then
-            selected_deck_center = G.P_CENTERS[sleeve_center.stacked_effects[effect]]
+        if showing_stacked_effects and in_collection then
+            if sleeve_center.stacked_effects and sleeve_center.stacked_effects[effect] then
+                selected_deck_center = G.P_CENTERS[sleeve_center.stacked_effects[effect]]
+            elseif sleeve_center.auto_stacked_effects and sleeve_center.auto_stacked_effects[effect] then
+                selected_deck_center = G.P_CENTERS[sleeve_center.auto_stacked_effects[effect]]
+            end
         end
 
         for index = 1, card_number do
@@ -1426,6 +1435,46 @@ local function create_fake_sleeve(sleeve)
     end
     setmetatable(fake_sleeve, getmetatable(sleeve))
     return fake_sleeve
+end
+
+local function handle_collection_click(card, direction)
+    if card.params.sleeve_card and in_collection and showing_stacked_effects then
+        local sleeve_center = card.config.center
+        if not sleeve_center then
+            return
+        end
+
+        local deck_stack = nil
+        if sleeve_center.stacked_effects and #sleeve_center.stacked_effects > 1 then
+            deck_stack = sleeve_center.stacked_effects
+        elseif not sleeve_center.stacked_effects then
+            if sleeve_center.auto_stacked_effects == nil then
+                sleeve_center.auto_stacked_effects = {}
+                for _, back in ipairs(G.P_CENTER_POOLS.Back) do
+                    collection_fake_deck = back.key
+                    local fake_sleeve_center = create_fake_sleeve(sleeve_center)
+                    local sleeve_localvars = sleeve_center["loc_vars"] and sleeve_center.loc_vars(fake_sleeve_center)
+                    local sleeve_localkey = sleeve_localvars and sleeve_localvars.key or sleeve_center.key
+                    if sleeve_localkey ~= sleeve_center.key then
+                        sleeve_center.auto_stacked_effects[#sleeve_center.auto_stacked_effects+1] = collection_fake_deck
+                    end
+                end
+                collection_fake_deck = nil
+            end
+            deck_stack = sleeve_center.auto_stacked_effects
+        end
+
+        if deck_stack and #deck_stack > 1 then
+            stacked_effects_shown[sleeve_center.key] = (stacked_effects_shown[sleeve_center.key] or 1) + direction
+            if stacked_effects_shown[sleeve_center.key] > #deck_stack then
+                stacked_effects_shown[sleeve_center.key] = 1
+            elseif stacked_effects_shown[sleeve_center.key] == 0 then
+                stacked_effects_shown[sleeve_center.key] = #deck_stack
+            end
+            clean_sleeve_areas()
+            populate_sleeve_card_areas(current_page, G.ACTIVE_MOD_UI and G.ACTIVE_MOD_UI.id or nil)
+        end
+    end
 end
 --#endregion
 
@@ -2202,21 +2251,31 @@ function Card:hover()
     end
 end
 
-local old_Card_click = Card.click or function() end
+local old_Card_click = Card.click
 function Card:click()
-    if self.params.sleeve_card and in_collection and showing_stacked_effects then
-        local sleeve_center = self.config.center
-
-        if sleeve_center and sleeve_center.stacked_effects and #sleeve_center.stacked_effects > 1 then
-            stacked_effects_shown[sleeve_center.key] = (stacked_effects_shown[sleeve_center.key] or 1) + 1
-            if stacked_effects_shown[sleeve_center.key] > #sleeve_center.stacked_effects then
-                stacked_effects_shown[sleeve_center.key] = 1
-            end
-            clean_sleeve_areas()
-            populate_sleeve_card_areas(current_page, G.ACTIVE_MOD_UI and G.ACTIVE_MOD_UI.id or nil)
-        end
-    end
+    -- left click
+    handle_collection_click(self, 1)
     return old_Card_click(self)
+end
+
+local old_Card_right_click = Card.right_click or function() end
+function Card:right_click()
+    -- right click (doesn't exist normally)
+    handle_collection_click(self, -1)
+    return old_Card_right_click(self)
+end
+
+local old_Controller_queue_R_cursor_press = Controller.queue_R_cursor_press
+function Controller:queue_R_cursor_press(x, y)
+    -- handle right clicks on cards (janky)
+    if ((self.locked) and (not G.SETTINGS.paused or G.screenwipe)) or (self.locks.frame) then return end
+    local press_node = (self.HID.touch and self.cursor_hover.target) or self.hovering.target or self.focused.target
+    press_node = press_node and press_node.states.click.can and press_node or press_node:can_drag() or nil
+    if press_node and press_node.is and type(press_node.is) == "function" and press_node:is(Card) then
+        press_node:right_click()
+    end
+
+    return old_Controller_queue_R_cursor_press(self, x, y)
 end
 
 local old_Card_align_h_popup = Card.align_h_popup

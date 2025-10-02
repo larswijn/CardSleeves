@@ -231,7 +231,7 @@ return {
             gald_sleeves = "Select Sleeve",
             gald_random_sleeve = "Random Sleeve",
             sleeve_normal_effect_desc = "Some sleeves have unique effects when combined with specific decks",
-            sleeve_stacked_effect_desc = "Click on a sleeve to cycle between multiple stacked deck effects",
+            sleeve_stacked_effect_desc = "Left or right click on a sleeve to cycle between stacked deck effects",
             adjust_deck_alignment = "Stack deck pile",
             adjust_deck_alignment_desc = {
                 "Stacks the cards in the deck pile",
