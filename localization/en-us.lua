@@ -230,7 +230,8 @@ return {
             k_sleeves = "Sleeves",
             gald_sleeves = "Select Sleeve",
             gald_random_sleeve = "Random Sleeve",
-            sleeve_unique_effect_desc = "Some sleeves have unique effects when combined with specific decks",
+            sleeve_normal_effect_desc = "Some sleeves have unique effects when combined with specific decks",
+            sleeve_stacked_effect_desc = "Click on a sleeve to cycle between multiple stacked deck effects",
             adjust_deck_alignment = "Stack deck pile",
             adjust_deck_alignment_desc = {
                 "Stacks the cards in the deck pile",
@@ -259,7 +260,9 @@ return {
                 "Show in both",
                 "Hide sleeve info"
             },
-            sleeve_not_found_error = "Sleeve could not be found! Did you remove its mod?"
+            sleeve_not_found_error = "Sleeve could not be found! Did you remove its mod?",
+            sleeve_normal_effects = "Default effects",
+            sleeve_stacked_effects = "Stacked effects",
         },
         v_text = {
             -- for challenges
