@@ -587,7 +587,7 @@ CardSleeves.Sleeve {
     calculate = function(self, sleeve, context)
         if context.create_card and context.card then
             local card = context.card
-            local is_spectral_pack = card.ability.set == "Booster" and card.ability.name:find("Spectral")
+            local is_spectral_pack = card.ability and card.ability.set == "Booster" and card.ability.name:find("Spectral")
             if is_spectral_pack and sleeve.config.spectral_more_options then
                card.ability.extra = card.ability.extra + sleeve.config.spectral_more_options
             end
@@ -643,7 +643,7 @@ CardSleeves.Sleeve {
 
         -- handle Strength and Ouija
         local card = context.card
-        local is_playing_card = card and (card.ability.set == "Default" or card.ability.set == "Enhanced") and card.config.card_key
+        local is_playing_card = card and card.ability and (card.ability.set == "Default" or card.ability.set == "Enhanced") and card.config and card.config.card_key
         if context.before_use_consumable and card then
             if card.ability.name == 'Strength' then
                 sleeve.in_strength = true
@@ -705,7 +705,7 @@ CardSleeves.Sleeve {
         end
 
         local card = context.card
-        local is_playing_card = card and (card.ability.set == "Default" or card.ability.set == "Enhanced") and card.config.card_key
+        local is_playing_card = card and card.ability and (card.ability.set == "Default" or card.ability.set == "Enhanced") and card.config and card.config.card_key
         if (context.create_card or context.modify_playing_card) and card and is_playing_card then
             for from_suit, to_suit in pairs(sleeve.config.force_suits) do
                 if card.base.suit == from_suit then
@@ -745,7 +745,7 @@ CardSleeves.Sleeve {
     calculate = function(self, sleeve, context)
         if context.create_card and context.card then
             local card = context.card
-            local is_booster_pack = card.ability.set == "Booster"
+            local is_booster_pack = card.ability and card.ability.set == "Booster"
             local is_arcana_pack = is_booster_pack and card.ability.name:find("Arcana")
             local is_celestial_pack = is_booster_pack and card.ability.name:find("Celestial")
             if is_arcana_pack and sleeve.config.arcana_more_options then
@@ -886,7 +886,7 @@ CardSleeves.Sleeve {
                     for _, cardarea in pairs(cardareas) do
                         for _, card in pairs(cardarea.cards) do
                             card:set_cost()
-                            local has_coupon_tag = card.area and card.ability.couponed and (card.area == G.shop_jokers or card.area == G.shop_booster)
+                            local has_coupon_tag = card.ability and card.ability.couponed and card.area and (card.area == G.shop_jokers or card.area == G.shop_booster)
                             if has_coupon_tag then
                                 -- tags that set price to 0 (coupon, uncommon, rare, etc)
                                 card.cost = 0
@@ -2137,7 +2137,7 @@ function Card:set_base(card, initial)
 
     if not is_in_run_info_tab and self.ability then
         local sleeve_center = CardSleeves.Sleeve:get_obj(G.GAME.selected_sleeve or "sleeve_casl_none")
-        local is_playing_card = (self.ability.set == "Default" or self.ability.set == "Enhanced") and self.config.card_key
+        local is_playing_card = (self.ability.set == "Default" or self.ability.set == "Enhanced") and self.config and self.config.card_key
         if initial then
             sleeve_center:trigger_effect{context = {create_card = true, card = self}}
             if type(sleeve_center.calculate) == "function" then sleeve_center:calculate(sleeve_center, {create_card = true, card = self}) end
