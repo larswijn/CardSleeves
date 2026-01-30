@@ -1438,7 +1438,7 @@ local function generate_auto_stacked_effects(sleeve_center)
 end
 
 local function handle_collection_click(card, direction)
-    if card.params.sleeve_card and in_collection and showing_stacked_effects then
+    if card.params and card.params.sleeve_card and in_collection and showing_stacked_effects then
         local sleeve_center = card.config.center
         if not sleeve_center then
             return
@@ -1449,17 +1449,7 @@ local function handle_collection_click(card, direction)
             deck_stack = sleeve_center.stacked_effects
         elseif not sleeve_center.stacked_effects then
             if sleeve_center.auto_stacked_effects == nil then
-                sleeve_center.auto_stacked_effects = {}
-                for _, back in ipairs(G.P_CENTER_POOLS.Back) do
-                    collection_fake_deck = back.key
-                    local fake_sleeve_center = create_fake_sleeve(sleeve_center)
-                    local sleeve_localvars = sleeve_center["loc_vars"] and sleeve_center.loc_vars(fake_sleeve_center)
-                    local sleeve_localkey = sleeve_localvars and sleeve_localvars.key or sleeve_center.key
-                    if sleeve_localkey ~= sleeve_center.key then
-                        sleeve_center.auto_stacked_effects[#sleeve_center.auto_stacked_effects+1] = collection_fake_deck
-                    end
-                end
-                collection_fake_deck = nil
+                sleeve_center.auto_stacked_effects = generate_auto_stacked_effects(sleeve_center)
             end
             deck_stack = sleeve_center.auto_stacked_effects
         end
