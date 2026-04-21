@@ -2032,7 +2032,7 @@ function SMODS.get_card_areas(_type, _context)
             end
             output[#output+1] = {
                 object = fake_sleeve,
-                scored_card = G.deck.cards[1] or G.deck,
+                scored_card = G.deck and G.deck.cards[1] or G.deck,
             }
         end
     end
