@@ -1556,7 +1556,7 @@ function G.UIDEF.sleeve_description(sleeve_key, minw, padding)
     minw = minw or 5.5
     padding = padding or 0
     local sleeve_center = CardSleeves.Sleeve:get_obj(sleeve_key)
-    local ret_nodes, full_UI_table = {}, {no_styled_name = true}
+    local ret_nodes, full_UI_table = {}, { no_styled_name = true }
     local sleeve_name = ""
     if sleeve_center then
         sleeve_center.generate_ui(create_fake_sleeve(sleeve_center), {}, nil, ret_nodes, nil, full_UI_table)
@@ -2208,7 +2208,7 @@ function Card:hover()
             end
         end
 
-        local ret_nodes, full_UI_table = {}, {}
+        local ret_nodes, full_UI_table = {}, { no_styled_name = true }
         sleeve_center.generate_ui(fake_sleeve_center, {}, nil, ret_nodes, nil, full_UI_table)
         local sleeve_name = full_UI_table.name or ret_nodes.name or "NAME ERROR"
         local desc_t = {}
