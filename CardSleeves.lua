@@ -1467,12 +1467,13 @@ local function handle_collection_click(card, direction)
     end
 end
 
-local function get_sleeve_name_text(sleeve_center)
+local function get_sleeve_name_text(sleeve_center, args)
+    args = args or {}
     local loc_vars = {}
     if sleeve_center.loc_vars and type(sleeve_center.loc_vars) == 'function' then
         loc_vars = sleeve_center:loc_vars() or {}
     end
-    return localize { type = 'name_text', key = loc_vars.name_key or sleeve_center.key, set = loc_vars.name_set or sleeve_center.set }
+    return localize { type = 'name_text', key = args.key or loc_vars.name_key or sleeve_center.key, set = args.set or loc_vars.name_set or sleeve_center.set }
 end
 
 --#endregion
@@ -1555,7 +1556,7 @@ function G.UIDEF.sleeve_description(sleeve_key, minw, padding)
     minw = minw or 5.5
     padding = padding or 0
     local sleeve_center = CardSleeves.Sleeve:get_obj(sleeve_key)
-    local ret_nodes, full_UI_table = {}, {}
+    local ret_nodes, full_UI_table = {}, {no_styled_name = true}
     local sleeve_name = ""
     if sleeve_center then
         sleeve_center.generate_ui(create_fake_sleeve(sleeve_center), {}, nil, ret_nodes, nil, full_UI_table)
