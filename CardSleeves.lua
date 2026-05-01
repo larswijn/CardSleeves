@@ -2198,7 +2198,7 @@ function Card:hover()
             end
             local info_queue = result
             for _, center in pairs(info_queue) do
-                local desc = generate_card_ui(center, {main = {},info = {},type = {},name = 'done'}, nil, center.set, nil)
+                local desc = generate_card_ui(center, {main = {},info = {},type = {},name = 'done', from_detailed_tooltip = true}, nil, center.set, nil)
                 tooltips[#tooltips + 1] =
                 {n=info_col, config={align = self.params.sleeve_select > sleeve_count_horizontal and "bm" or "tm"}, nodes={
                     {n=G.UIT.R, config={align = "cm", colour = lighten(G.C.JOKER_GREY, 0.5), r = 0.1, padding = 0.05, emboss = 0.05}, nodes={
