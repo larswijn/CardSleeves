@@ -1466,6 +1466,16 @@ local function handle_collection_click(card, direction)
         end
     end
 end
+
+local function get_sleeve_name_text(sleeve_center, args)
+    args = args or {}
+    local loc_vars = {}
+    if sleeve_center.loc_vars and type(sleeve_center.loc_vars) == 'function' then
+        loc_vars = sleeve_center:loc_vars() or {}
+    end
+    return localize { type = 'name_text', key = args.key or loc_vars.name_key or sleeve_center.key, set = args.set or loc_vars.name_set or sleeve_center.set }
+end
+
 --#endregion
 
 --#region GLOBAL (used in UI) FUNCS
@@ -1546,7 +1556,7 @@ function G.UIDEF.sleeve_description(sleeve_key, minw, padding)
     minw = minw or 5.5
     padding = padding or 0
     local sleeve_center = CardSleeves.Sleeve:get_obj(sleeve_key)
-    local ret_nodes, full_UI_table = {}, {}
+    local ret_nodes, full_UI_table = {}, { no_styled_name = true }
     local sleeve_name = ""
     if sleeve_center then
         sleeve_center.generate_ui(create_fake_sleeve(sleeve_center), {}, nil, ret_nodes, nil, full_UI_table)
@@ -1849,16 +1859,13 @@ function G.UIDEF.challenge_description_tab(args)
         local challenge = G.CHALLENGES[args._id]
         if challenge.sleeve then
             local sleeve_center = CardSleeves.Sleeve:get_obj(challenge.sleeve)
-            local ret_nodes, full_UI_table = {}, {}
-            sleeve_center.generate_ui(create_fake_sleeve(sleeve_center), {}, nil, ret_nodes, nil, full_UI_table)
-            local sleeve_name = full_UI_table.name or ret_nodes.name
             local UI_node = {
                 n = G.UIT.R,
                 config = {align = "cl", maxw = 3.5},
                 nodes = localize {
                     type = "text",
                     key = "ch_m_sleeve",
-                    vars = {sleeve_name},
+                    vars = {get_sleeve_name_text(sleeve_center)},
                     default_col = G.C.L_BLACK
                 }
             }
@@ -2191,7 +2198,7 @@ function Card:hover()
             end
             local info_queue = result
             for _, center in pairs(info_queue) do
-                local desc = generate_card_ui(center, {main = {},info = {},type = {},name = 'done'}, nil, center.set, nil)
+                local desc = generate_card_ui(center, {main = {},info = {},type = {},name = 'done', from_detailed_tooltip = true}, nil, center.set, nil)
                 tooltips[#tooltips + 1] =
                 {n=info_col, config={align = self.params.sleeve_select > sleeve_count_horizontal and "bm" or "tm"}, nodes={
                     {n=G.UIT.R, config={align = "cm", colour = lighten(G.C.JOKER_GREY, 0.5), r = 0.1, padding = 0.05, emboss = 0.05}, nodes={
@@ -2201,7 +2208,7 @@ function Card:hover()
             end
         end
 
-        local ret_nodes, full_UI_table = {}, {}
+        local ret_nodes, full_UI_table = {}, { no_styled_name = true }
         sleeve_center.generate_ui(fake_sleeve_center, {}, nil, ret_nodes, nil, full_UI_table)
         local sleeve_name = full_UI_table.name or ret_nodes.name or "NAME ERROR"
         local desc_t = {}
@@ -2391,10 +2398,7 @@ if Galdur then
 
     local function set_sleeve_text(sleeve_center)
         -- sets deck name to sleeve name in Galdur's deck preview
-        local ret_nodes, full_UI_table = {}, {}
-        sleeve_center.generate_ui(create_fake_sleeve(sleeve_center), {}, nil, ret_nodes, nil, full_UI_table)
-        local sleeve_name = full_UI_table.name or ret_nodes.name
-        local texts = split_string_2(sleeve_name)
+        local texts = split_string_2(get_sleeve_name_text(sleeve_center))
         if Galdur.deck_preview_texts then
             Galdur.deck_preview_texts.deck_preview_1 = texts[1]
             Galdur.deck_preview_texts.deck_preview_2 = texts[2]
@@ -2414,10 +2418,7 @@ if Galdur then
         end
         local sleeve_center = CardSleeves.Sleeve:get_obj(quick_start_sleeve)
         if sleeve_center then
-            local ret_nodes, full_UI_table = {}, {}
-            sleeve_center.generate_ui(create_fake_sleeve(sleeve_center), {}, nil, ret_nodes, nil, full_UI_table)
-            local sleeve_name = full_UI_table.name or ret_nodes.name
-            return sleeve_name
+            return get_sleeve_name_text(sleeve_center)
         else
             return "ERROR"
         end
