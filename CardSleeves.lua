@@ -2702,6 +2702,8 @@ if SMODS.RunSelectPage then
         random_select = true,
         stack_size = 11,
         preview_size = 11,
+        silent = true,
+        page = 2,
         quick_start_text = function()
             return localize({
                 type = 'name_text',
@@ -2716,17 +2718,7 @@ if SMODS.RunSelectPage then
         generate_pool = function(self)
             return G.P_CENTER_POOLS.Sleeve
         end,
-        handle_choice = function(self, choice, remove)
-            SMODS.RunSelect.Setup.choices[self.key] = SMODS.RunSelect.Setup.choices[self.key] or {}
-            if not remove then
-                SMODS.RunSelect.Setup.choices[self.key] = choice.config.center.key
-                if SMODS.RunSelect.Internals.preview_area then
-                    SMODS.RunSelect.Functions.populate_preview_ui(self.key,
-                        choice.config.center.key, true)
-                end
-                SMODS.RunSelect.Functions.update_preview_texts(self)
-            end
-        end,
+        preview_click = function () end,
         create_selection_card = function(self, card_key, card_number, area)
             if area == SMODS.RunSelect.Internals.preview_area then
                 SMODS.RunSelect.Internals.preview_area.config.thin_draw = 1
