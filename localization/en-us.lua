@@ -230,6 +230,8 @@ return {
             k_sleeves = "Sleeves",
             gald_sleeves = "Select Sleeve",
             gald_random_sleeve = "Random Sleeve",
+            run_select_casl_sleeve_choice = "Select Sleeve",
+            run_select_casl_sleeve_choice_random = "Random Sleeve",
             sleeve_normal_effect_desc = "Some sleeves have unique effects when combined with specific decks",
             sleeve_stacked_effect_desc = "Left or right click on a sleeve to cycle between stacked deck effects",
             adjust_deck_alignment = "Stack deck pile",

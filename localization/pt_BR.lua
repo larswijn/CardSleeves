@@ -232,6 +232,8 @@ return {
 			k_sleeves = "Capas",
             gald_sleeves = "Capa",
             gald_random_sleeve = "Aleatória",
+            run_select_casl_sleeve_choice = "Capa",
+            run_select_casl_sleeve_choice_random = "Aleatória",
             sleeve_unique_effect_desc = "Algumas capas têm efeitos únicos quando combinadas com baralhos específicos",
             adjust_deck_alignment = "Empilhar baralho",
             adjust_deck_alignment_desc = {

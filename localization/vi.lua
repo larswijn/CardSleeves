@@ -231,6 +231,8 @@ return {
             k_sleeves = "Bọc Bài",
             gald_sleeves = "Chọn Bọc",
             gald_random_sleeve = "Bọc Ngẫu Nhiên",
+            run_select_casl_sleeve_choice = "Chọn Bọc",
+            run_select_casl_sleeve_choice_random = "Bọc Ngẫu Nhiên",
             sleeve_unique_effect_desc = "Một số bọc bài có khả năng riêng biệt khi kết hợp với một số bộ bài nhất định",
             adjust_deck_alignment = "Xếp chồng bài",
             adjust_deck_alignment_desc = {
