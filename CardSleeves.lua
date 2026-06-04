@@ -1082,7 +1082,7 @@ local function replace_sleeve_sprite(card, sleeve_center, offset)
         card.children.back:remove()
     end
     card.children.back = create_sleeve_sprite(card.T.x + offset.x, card.T.y + offset.y, card.T.w, card.T.h, sleeve_center)
-    card.children.back:set_role{bond = "Strong", major = card, role_type = 'Minor', draw_major = card, offset = offset}
+    card.children.back:set_role{major = card, role_type = 'Minor', draw_major = card, offset = offset}
     if sleeve_center.key ~= "sleeve_casl_none" then
         card.sticker = get_sleeve_win_sticker(sleeve_center.key)
         card.sticker_rotation = math.pi
@@ -2713,7 +2713,7 @@ if SMODS.RunSelectPage then
             })
         end,
         set_default = function(self, choice)
-            return choice or 'sleeve_casl_none'
+            return SMODS.RunSelect.Setup.choices.casl_sleeve_choice or choice or 'sleeve_casl_none'
         end,
         generate_pool = function(self)
             return G.P_CENTER_POOLS.Sleeve
