@@ -229,6 +229,8 @@ return {
             k_sleeves = "Рукава",
             gald_sleeves = "Выберите Рукав",
             gald_random_sleeve = "Случайный Рукав",
+            run_select_casl_sleeve_choice = "Выберите Рукав",
+            run_select_casl_sleeve_choice_random = "Случайный Рукав",
             sleeve_unique_effect_desc = "Некоторые рукава имеют уникальные эффекты, если использованы с соответствующей им колодой",
             adjust_deck_alignment = "Укладывать карты колоды",
             adjust_deck_alignment_desc = {

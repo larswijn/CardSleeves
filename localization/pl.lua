@@ -196,6 +196,8 @@ return {
             k_sleeve = "Rękaw",
             gald_sleeves = "Wybierz rękaw",
             gald_random_sleeve = "Losowy rękaw",
+            run_select_casl_sleeve_choice = "Wybierz rękaw",
+            run_select_casl_sleeve_choice_random = "Losowy rękaw",
             sleeve_unique_effect_desc = "Niektóre rękawy mają unikalne efekty w połączeniu z określonymi taliami",
             adjust_deck_alignment = "Stos talii",
             adjust_deck_alignment_desc = {

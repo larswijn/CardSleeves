@@ -8,6 +8,7 @@
 	"main_file": "CardSleeves.lua",
     "version": "1.9.3",
     "priority": -10,
+    "icon_path": "icon.png",
     "dependencies": [
         "Steamodded (>=1.0.0~ALPHA-1424a)",
         "Lovely (>=0.6.0)"

@@ -232,6 +232,8 @@ return {
             k_sleeves = "Hüllen",
             gald_sleeves = "Wähle Hülle",
             gald_random_sleeve = "Zufällige Hülle",
+            run_select_casl_sleeve_choice = "Wähle Hülle",
+            run_select_casl_sleeve_choice_random = "Zufällige Hülle",
             sleeve_unique_effect_desc = "Manche Hüllen haben einen Spezialeffekt in Kombination mit bestimmten Decks",
             adjust_deck_alignment = "Deck stapeln",
             adjust_deck_alignment_desc = {

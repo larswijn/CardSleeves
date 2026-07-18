@@ -1057,10 +1057,11 @@ local function find_sleeve_card(area)
     end
 end
 
-local function create_sleeve_card(area, sleeve_center)
+local function create_sleeve_card(area, sleeve_center, scale)
     local fake_deck = {effect = {config = {}, center = {key = "fake", config = {}}, text_UI = {}, fake_deck = true}}
-    local viewed_back = G.GAME.viewed_back ~= nil and fake_deck or false  -- cryptid compat
-    local new_card = Card(area.T.x, area.T.y, area.T.w + 0.2, area.T.h, nil, sleeve_center or G.P_CENTERS.c_base, {playing_card = 11, viewed_back = viewed_back, galdur_selector = true, sleeve_card = true})
+    local viewed_back = G.GAME.viewed_back ~= nil and fake_deck or false -- cryptid compat
+    local scale = scale or {w = area.T.w + 0.2, h = area.T.h}
+    local new_card = Card(area.T.x, area.T.y, scale.w, scale.h, nil, sleeve_center or G.P_CENTERS.c_base, {playing_card = 11, viewed_back = viewed_back, galdur_selector = true, sleeve_card = true})
     new_card.sprite_facing = 'back'
     new_card.facing = 'back'
     return new_card
@@ -1965,7 +1966,7 @@ function Game:init_game_object(...)
     local output = old_Game_init_game_object(self, ...)
     local is_challenge = game_args.challenge and game_args.challenge.id  -- HouseRules compat
     if not is_challenge then
-        output.selected_sleeve = G.viewed_sleeve or "sleeve_casl_none"
+        output.selected_sleeve = game_args.casl_sleeve_choice or G.viewed_sleeve or "sleeve_casl_none"
     elseif is_challenge and game_args.challenge.sleeve then
         output.selected_sleeve = game_args.challenge.sleeve
     else
@@ -2691,5 +2692,63 @@ G.FUNCS.your_collection_sleeves = function()
 	}
 end
 --#endregion
+
+if SMODS.RunSelectPage then
+    SMODS.RunSelectPage({
+        key = 'sleeve_choice',
+        type = 'Sleeve',
+        area_type = 'deck',
+        automatic_preview = true,
+        random_select = true,
+        stack_size = 11,
+        preview_size = 11,
+        silent = true,
+        page = 2,
+        quick_start_text = function()
+            return localize({
+                type = 'name_text',
+                set = 'Sleeve',
+                key = G.PROFILES[G.SETTINGS.profile].last_choices
+                    .casl_sleeve_choice or 'sleeve_casl_none'
+            })
+        end,
+        set_default = function(self, choice)
+            return SMODS.RunSelect.Setup.choices.casl_sleeve_choice or choice or 'sleeve_casl_none'
+        end,
+        generate_pool = function(self)
+            return G.P_CENTER_POOLS.Sleeve
+        end,
+        preview_click = function () end,
+        create_selection_card = function(self, card_key, card_number, area)
+            if area == SMODS.RunSelect.Internals.preview_area then
+                SMODS.RunSelect.Internals.preview_area.config.thin_draw = 1
+            end
+            if card_number == self.stack_size then
+                local sleeve_center = G.P_CENTERS[card_key] or G.P_CENTERS.sleeve_casl_none
+                local card = create_sleeve_card(area, sleeve_center, { w = G.CARD_W * 1.05, h = area.T.h })
+                replace_sleeve_sprite(card, sleeve_center)
+                return card
+            end
+            local card = Card(area.T.x, area.T.y, G.CARD_W, G.CARD_H, nil,
+                G.P_CENTERS[SMODS.RunSelect.Setup.choices.deck_choice] or
+                G.P_CENTERS["b_red"])
+            card.sprite_facing = 'back'
+            card.facing = 'back'
+            card.children.back:remove()
+            card.children.back = SMODS.create_sprite(card.T.x, card.T.y, card.T.w, card.T.h,
+                G.ASSET_ATLAS[card.config.center.unlocked and card.config.center.atlas or 'centers'],
+                card.config.center.unlocked and card.config.center.pos or { x = 4, y = 0 })
+            card.children.back.states.hover = card.states.hover
+            card.children.back.states.click = card.states.click
+            card.children.back.states.drag = card.states.drag
+            card.children.back.states.collide.can = false
+            card.children.back:set_role({ major = card, role_type = 'Glued', draw_major = card })
+            if card_number == self.stack_size - 1 then
+                card.sticker = get_deck_win_sticker(card.config.center)
+            end
+            return card
+        end,
+    })
+end
 
 print_info("CardSleeves v" .. SMODS.Mods.CardSleeves.version .. " loaded~!")
