@@ -2691,10 +2691,40 @@ G.FUNCS.your_collection_sleeves = function()
         definition = create_UIBox_sleeves(G.ACTIVE_MOD_UI and G.ACTIVE_MOD_UI.id or nil),
 	}
 end
---#endregion
 
 if SMODS.RunSelectPage then
-    SMODS.RunSelectPage({
+    local sleeve_page_create_selection_card = function(self, card_key, card_number, area)
+        -- print_debug("card_key = " .. tprint(card_key))
+        if area == SMODS.RunSelect.Internals.preview_area then
+            SMODS.RunSelect.Internals.preview_area.config.thin_draw = 1
+        end
+        if card_number == self.stack_size then
+            local sleeve_center = G.P_CENTERS[card_key] or G.P_CENTERS.sleeve_casl_none
+            -- custom card scale cuz SMODS.RunSelectPage has diff spacing between cells compared to Galdur smh
+            local card = create_sleeve_card(area, sleeve_center, { w = area.T.w + 0.15, h = area.T.h })
+            replace_sleeve_sprite(card, sleeve_center)
+            return card
+        end
+        local card = Card(area.T.x, area.T.y, G.CARD_W, G.CARD_H, nil,
+            G.P_CENTERS[SMODS.RunSelect.Setup.choices.deck_choice] or G.P_CENTERS["b_red"])
+        card.sprite_facing = 'back'
+        card.facing = 'back'
+        card.children.back:remove()
+        card.children.back = SMODS.create_sprite(card.T.x, card.T.y, card.T.w, card.T.h,
+            G.ASSET_ATLAS[card.config.center.unlocked and card.config.center.atlas or 'centers'],
+            card.config.center.unlocked and card.config.center.pos or { x = 4, y = 0 })
+        card.children.back.states.hover = card.states.hover
+        card.children.back.states.click = card.states.click
+        card.children.back.states.drag = card.states.drag
+        card.children.back.states.collide.can = false
+        card.children.back:set_role({ major = card, role_type = 'Glued', draw_major = card })
+        if card_number == self.stack_size - 1 then
+            card.sticker = get_deck_win_sticker(card.config.center)
+        end
+        return card
+    end
+
+    local sleeve_page = SMODS.RunSelectPage({
         key = 'sleeve_choice',
         type = 'Sleeve',
         area_type = 'deck',
@@ -2719,36 +2749,32 @@ if SMODS.RunSelectPage then
             return G.P_CENTER_POOLS.Sleeve
         end,
         preview_click = function () end,
-        create_selection_card = function(self, card_key, card_number, area)
-            if area == SMODS.RunSelect.Internals.preview_area then
-                SMODS.RunSelect.Internals.preview_area.config.thin_draw = 1
-            end
-            if card_number == self.stack_size then
-                local sleeve_center = G.P_CENTERS[card_key] or G.P_CENTERS.sleeve_casl_none
-                local card = create_sleeve_card(area, sleeve_center, { w = G.CARD_W * 1.05, h = area.T.h })
-                replace_sleeve_sprite(card, sleeve_center)
-                return card
-            end
-            local card = Card(area.T.x, area.T.y, G.CARD_W, G.CARD_H, nil,
-                G.P_CENTERS[SMODS.RunSelect.Setup.choices.deck_choice] or
-                G.P_CENTERS["b_red"])
-            card.sprite_facing = 'back'
-            card.facing = 'back'
-            card.children.back:remove()
-            card.children.back = SMODS.create_sprite(card.T.x, card.T.y, card.T.w, card.T.h,
-                G.ASSET_ATLAS[card.config.center.unlocked and card.config.center.atlas or 'centers'],
-                card.config.center.unlocked and card.config.center.pos or { x = 4, y = 0 })
-            card.children.back.states.hover = card.states.hover
-            card.children.back.states.click = card.states.click
-            card.children.back.states.drag = card.states.drag
-            card.children.back.states.collide.can = false
-            card.children.back:set_role({ major = card, role_type = 'Glued', draw_major = card })
-            if card_number == self.stack_size - 1 then
-                card.sticker = get_deck_win_sticker(card.config.center)
-            end
-            return card
-        end,
+        create_selection_card = sleeve_page_create_selection_card,
     })
+
+    local old_runselect_build_preview_ui = SMODS.RunSelect.Functions.build_preview_ui
+    function SMODS.RunSelect.Functions.build_preview_ui(key, deck_preview, ...)
+        if key == "deck_choice" and SMODS.RunSelect.Internals.current_page > sleeve_page.page then
+            -- page after sleeve page
+            print_debug("disabling build_preview_ui deck")
+            return old_runselect_build_preview_ui(sleeve_page.key, nil, ...)
+        else
+            print_trace("keeping build_preview_ui unchanged")
+            return old_runselect_build_preview_ui(key, deck_preview, ...)
+        end
+    end
+
+    local old_runselect_populate_preview_ui = SMODS.RunSelect.Functions.populate_preview_ui
+    function SMODS.RunSelect.Functions.populate_preview_ui(key, to_add, ...)
+        if key == "deck_choice" and SMODS.RunSelect.Internals.current_page > sleeve_page.page then
+            -- page after sleeve page
+            local card_key = SMODS.RunSelect.Setup.choices.casl_sleeve_choice or G.PROFILES[G.SETTINGS.profile].MEMORY.sleeve or 'sleeve_casl_none'
+            return old_runselect_populate_preview_ui(sleeve_page.key, card_key, ...)
+        else
+            return old_runselect_populate_preview_ui(key, to_add, ...)
+        end
+    end
 end
+--#endregion
 
 print_info("CardSleeves v" .. SMODS.Mods.CardSleeves.version .. " loaded~!")
