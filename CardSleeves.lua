@@ -2034,13 +2034,19 @@ function SMODS.get_card_areas(_type, _context)
                 -- almost "wrap" the sleeve
                 __index = sleeve_center,
             })
+            -- could change these next 2 wrapping funcs to a super function that wraps based on only name
             function fake_sleeve:calculate(context)
                 -- Redirect to the actual sleeve:calculate method
                 return sleeve_center:calculate(sleeve_center, context)
             end
+            function fake_sleeve:calc_dollar_bonus()
+                return sleeve_center:calc_dollar_bonus(sleeve_center)
+            end
             output[#output+1] = {
                 object = fake_sleeve,
                 scored_card = G.deck and G.deck.cards[1] or G.deck,
+                set = fake_sleeve.set,
+                key = fake_sleeve.key,
             }
         end
     end
@@ -2694,7 +2700,6 @@ end
 
 if SMODS.RunSelectPage then
     local sleeve_page_create_selection_card = function(self, card_key, card_number, area)
-        -- print_debug("card_key = " .. tprint(card_key))
         if area == SMODS.RunSelect.Internals.preview_area then
             SMODS.RunSelect.Internals.preview_area.config.thin_draw = 1
         end
@@ -2756,10 +2761,8 @@ if SMODS.RunSelectPage then
     function SMODS.RunSelect.Functions.build_preview_ui(key, deck_preview, ...)
         if key == "deck_choice" and SMODS.RunSelect.Internals.current_page > sleeve_page.page then
             -- page after sleeve page
-            print_debug("disabling build_preview_ui deck")
             return old_runselect_build_preview_ui(sleeve_page.key, nil, ...)
         else
-            print_trace("keeping build_preview_ui unchanged")
             return old_runselect_build_preview_ui(key, deck_preview, ...)
         end
     end
