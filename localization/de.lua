@@ -187,7 +187,6 @@ return {
             },
 
             sleeve_casl_anaglyph = {
-                -- TODO check with original localization
                 name = "Anaglyphen-Hülle",
                 text = G.localization.descriptions.Back["b_anaglyph"].text
             },

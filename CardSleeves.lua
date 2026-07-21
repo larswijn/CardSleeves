@@ -8,7 +8,7 @@ KNOWN ISSUES/TODO IDEAS:
 ** split into seperate files once a mod manager exists
 ** Up min SMODS to
 *** BETA-1531zeebee for icon in mod metadata (can remove modicon atlas from lua code)
-*** BETA-1820c for replacing populate_info_queue with SMODS.RunSelect.Functions.grab_tooltips
+*** latest smods (as of July 21st) for deprecating Galdur support (incl replacing populate_info_queue with SMODS.RunSelect.Functions.grab_tooltips)
 
 * ISSUES:
 ** What if locked sleeves in challenge?
@@ -358,6 +358,8 @@ function CardSleeves.Sleeve.get_current_deck_key()
         end
         -- bit hacky
         return "collection"
+    elseif SMODS.RunSelect and SMODS.RunSelect.Setup and SMODS.RunSelect.Setup.choices and SMODS.RunSelect.Setup.choices.deck_choice then
+        return SMODS.RunSelect.Setup.choices.deck_choice
     elseif Galdur and Galdur.config.use and Galdur.run_setup.choices and Galdur.run_setup.choices.deck then
         return Galdur.run_setup.choices.deck.effect.center.key
     elseif G.GAME.viewed_back and G.GAME.viewed_back.effect then
@@ -1207,7 +1209,7 @@ end
 
 local function get_sleeve_pool(mod_id)
     local sleeves = {}
-    for _, sleeve in pairs(G.P_CENTER_POOLS.Sleeve) do
+    for _, sleeve in ipairs(G.P_CENTER_POOLS.Sleeve) do
         if sleeve.mod.id == mod_id or mod_id == nil then
             sleeves[#sleeves+1] = sleeve
         end
@@ -1227,12 +1229,14 @@ local function get_sleeve_tally_of(mod_id)
 end
 
 local function populate_info_queue(set, key)
-    -- direct copy from galdur, but I need it outside of galdur
+    -- can be probably replaced by SMODS.RunSelect.Functions.grab_tooltips after setting minimum smods version to 1.0.0~BETA-1820c
     local info_queue = {}
     local loc_target = G.localization.descriptions[set][key]
     for _, lines in ipairs(loc_target.text_parsed) do
         for _, part in ipairs(lines) do
-            if part.control.T then info_queue[#info_queue+1] = G.P_CENTERS[part.control.T] or G.P_TAGS[part.control.T] end
+            if part.control.T then
+                info_queue[#info_queue+1] = G.P_CENTERS[part.control.T] or G.P_TAGS[part.control.T]
+            end
         end
     end
     return info_queue
@@ -1462,6 +1466,94 @@ local function get_sleeve_name_text(sleeve_center, args)
         loc_vars = sleeve_center:loc_vars() or {}
     end
     return localize { type = 'name_text', key = args.key or loc_vars.name_key or sleeve_center.key, set = args.set or loc_vars.name_set or sleeve_center.set }
+end
+
+local function sleeve_hover(card)
+    card:juice_up(0.05, 0.03)
+    play_sound('paper1', math.random()*0.2 + 0.9, 0.35)
+    if card.children.alert and not card.config.center.alerted then
+        card.config.center.alerted = true
+        G:save_progress()
+    end
+
+    local col = card.params.deck_preview and G.UIT.C or G.UIT.R
+    local info_col = card.params.deck_preview and G.UIT.R or G.UIT.C
+    local sleeve_center = card.config.center
+    hovered_sleeve = sleeve_center.key
+    local fake_sleeve_center = create_fake_sleeve(sleeve_center)
+    local sleeve_localvars = sleeve_center["loc_vars"] and sleeve_center.loc_vars(fake_sleeve_center)
+    local sleeve_localkey = sleeve_localvars and sleeve_localvars.key or sleeve_center.key
+
+    local tooltips = {}
+    if sleeve_center:is_unlocked() then
+        local status, result = pcall(populate_info_queue, 'Sleeve', sleeve_localkey)
+        if not status then
+            -- exception
+            if result:find("'loc_target'") then
+                error("Incorrect or missing localization for '" .. sleeve_localkey .. "'")
+            end
+            populate_info_queue('Sleeve', sleeve_localkey)
+        end
+        local info_queue = result
+        local column_count = (#info_queue == 0 and 0) or (#info_queue <= 3 and 1) or (#info_queue <= 8 and 2) or (#info_queue <= 18 and 3) or (4)
+        if column_count >= 3 and card.T.x < G.ROOM.T.w*0.6 then
+            column_count = 2
+        end
+        local nodes_per_column = math.ceil(#info_queue / column_count)
+
+        for i=0, column_count-1 do
+            local tooltip_group = {}
+            for j=1, nodes_per_column do
+                local tooltip_data = info_queue[i*nodes_per_column+j]
+                if tooltip_data then
+                    local desc = generate_card_ui(tooltip_data, {main = {},info = {},type = {},name = 'done',badges={},from_detailed_tooltip = true}, nil, tooltip_data.set)
+                    tooltip_group[#tooltip_group+1] = {n=G.UIT.R, config={align='cm'}, nodes={
+                        {n=G.UIT.R, config={align="cm", colour=lighten(G.C.JOKER_GREY, 0.5), r=0.1, padding=0.05, emboss=0.05}, nodes={
+                            info_tip_from_rows(desc.info[1], desc.info[1].name),
+                        }}
+                    }}
+                else
+                    break
+                end
+            end
+            tooltips[#tooltips+1] = {n=G.UIT.C, (card.T.x > G.ROOM.T.w*0.4) and column_count-i or i+1, config={align="cm", padding=0.05}, nodes=
+                tooltip_group
+            }
+        end
+    end
+
+    local ret_nodes, full_UI_table = {}, { no_styled_name = true }
+    sleeve_center.generate_ui(fake_sleeve_center, {}, nil, ret_nodes, nil, full_UI_table)
+    local sleeve_name = full_UI_table.name or ret_nodes.name or "NAME ERROR"
+    local desc_t = {}
+    for _, v in ipairs(ret_nodes) do
+        desc_t[#desc_t + 1] = { n = G.UIT.R, config = { align = "cm"}, nodes = v }
+    end
+    local sleeve_name_colour = G.C.WHITE
+    if sleeve_localkey ~= sleeve_center.key then
+        sleeve_name_colour = G.C.DARK_EDITION
+    end
+
+    card.config.h_popup = {n=G.UIT.C, config={align='cm', padding=0.05}, nodes={
+        next(tooltips) and {n=G.UIT.C, config={align='cm', padding=0.1}, nodes=tooltips} or nil
+    }}
+    table.insert(card.config.h_popup.nodes, (card.T.x > G.ROOM.T.w*0.4) and 2 or 1,
+        {n=G.UIT.C, config={align='cm', padding=0.1}, nodes={
+            {n=G.UIT.C, config={align='cm', minh=1.5, r=0.1, colour=G.C.L_BLACK, padding=0.1, outline=1}, nodes={
+                {n=G.UIT.R, config={align='cm', r=0.1, minw=3, maxw=4, minh=0.4}, nodes={
+                    {n=G.UIT.O, config={object = DynaText({
+                        string = sleeve_name, maxw = 4, colours = {sleeve_name_colour}, shadow = true, bump = true, scale = 0.5, pop_in = 0, silent = true
+                    })}},
+                }},
+                {n=G.UIT.R, config = {align='cm', colour=G.C.WHITE, minh=1.3, maxh=3, minw=3, maxw=4, r=0.1}, nodes={
+                    {n=G.UIT.R, config = { align = "cm", padding = 0.03, colour = G.C.WHITE, r = 0.1}, nodes = desc_t }
+                }},
+                create_sleeve_badges(sleeve_center)
+            }}
+        }}
+    )
+    card.config.h_popup_config = card:align_h_popup()
+    Node.hover(card)
 end
 
 --#endregion
@@ -1786,7 +1878,9 @@ function G.UIDEF.run_setup_option(_type)
         G.viewed_sleeve = "sleeve_casl_none"
         if G.SAVED_GAME ~= nil then
             G.viewed_sleeve = saved_game.GAME.selected_sleeve or G.viewed_sleeve
-            if Galdur and Galdur.config.use and Galdur.run_setup.choices then
+            if SMODS.RunSelect and SMODS.RunSelect.Setup and SMODS.RunSelect.Setup.choices and SMODS.RunSelect.Setup.choices.deck_choice then
+                SMODS.RunSelect.Setup.choices.deck_choice = G.GAME.viewed_back
+            elseif Galdur and Galdur.config.use and Galdur.run_setup.choices then
                 Galdur.run_setup.choices.deck = G.GAME.viewed_back
             end
         end
@@ -1895,8 +1989,10 @@ function G.FUNCS.exit_overlay_menu(...)
 
     if G.STAGE == G.STAGES.RUN then
         if not starting_run then
-            -- reset viewed back (galdur+vanilla) to selected back when closing the new run menu as to not confuse `get_current_deck_key`
-            if Galdur and Galdur.config.use and Galdur.run_setup and Galdur.run_setup.choices then
+            -- reset viewed back (smods+galdur+vanilla) to selected back when closing the new run menu as to not confuse `get_current_deck_key`
+            if SMODS.RunSelect and SMODS.RunSelect.Setup and SMODS.RunSelect.Setup.choices and SMODS.RunSelect.Setup.choices.deck_choice then
+                SMODS.RunSelect.Setup.choices.deck_choice = nil
+            elseif Galdur and Galdur.config.use and Galdur.run_setup and Galdur.run_setup.choices then
                 Galdur.run_setup.choices.deck = nil
             end
             G.GAME.viewed_back = nil
@@ -2146,78 +2242,7 @@ end
 local old_Card_hover = Card.hover
 function Card:hover()
     if self.params.sleeve_select and (not self.states.drag.is or G.CONTROLLER.HID.touch) and not self.no_ui and not G.debug_tooltip_toggle then
-        self:juice_up(0.05, 0.03)
-        play_sound('paper1', math.random()*0.2 + 0.9, 0.35)
-        if self.children.alert and not self.config.center.alerted then
-            self.config.center.alerted = true
-            G:save_progress()
-        end
-
-        local col = self.params.deck_preview and G.UIT.C or G.UIT.R
-        local info_col = self.params.deck_preview and G.UIT.R or G.UIT.C
-        local sleeve_center = self.config.center
-        hovered_sleeve = sleeve_center.key
-        local fake_sleeve_center = create_fake_sleeve(sleeve_center)
-        local sleeve_localvars = sleeve_center["loc_vars"] and sleeve_center.loc_vars(fake_sleeve_center)
-        local sleeve_localkey = sleeve_localvars and sleeve_localvars.key or sleeve_center.key
-
-        local tooltips = {}
-        if sleeve_center:is_unlocked() then
-            local status, result = pcall(populate_info_queue, 'Sleeve', sleeve_localkey)
-            if not status then
-                -- exception
-                if result:find("'loc_target'") then
-                    error("Incorrect or missing localization for '" .. sleeve_localkey .. "'")
-                end
-                populate_info_queue('Sleeve', sleeve_localkey)
-            end
-            local info_queue = result
-            for _, center in pairs(info_queue) do
-                local desc = generate_card_ui(center, {main = {},info = {},type = {},name = 'done', from_detailed_tooltip = true}, nil, center.set, nil)
-                tooltips[#tooltips + 1] =
-                {n=info_col, config={align = self.params.sleeve_select > sleeve_count_horizontal and "bm" or "tm"}, nodes={
-                    {n=G.UIT.R, config={align = "cm", colour = lighten(G.C.JOKER_GREY, 0.5), r = 0.1, padding = 0.05, emboss = 0.05}, nodes={
-                    info_tip_from_rows(desc.info[1], desc.info[1].name),
-                    }}
-                }}
-            end
-        end
-
-        local ret_nodes, full_UI_table = {}, { no_styled_name = true }
-        sleeve_center.generate_ui(fake_sleeve_center, {}, nil, ret_nodes, nil, full_UI_table)
-        local sleeve_name = full_UI_table.name or ret_nodes.name or "NAME ERROR"
-        local desc_t = {}
-        for _, v in ipairs(ret_nodes) do
-            desc_t[#desc_t + 1] = { n = G.UIT.R, config = { align = "cm"}, nodes = v }
-        end
-        local sleeve_name_colour = G.C.WHITE
-        if sleeve_localkey ~= sleeve_center.key then
-            sleeve_name_colour = G.C.DARK_EDITION
-        end
-        self.config.h_popup = {n=G.UIT.C, config={align = "cm", padding=0.1}, nodes={
-            (self.params.sleeve_select > sleeve_count_horizontal and {n=col, config={align='cm', padding=0.1}, nodes = tooltips} or {n=G.UIT.R}),
-            {n=col, config={align=(self.params.deck_preview and 'bm' or 'cm')}, nodes = {
-                {n=G.UIT.C, config={align = "cm", minh = 1.5, r = 0.1, colour = G.C.L_BLACK, padding = 0.1, outline=1}, nodes={
-                    {n=G.UIT.R, config={align = "cm", r = 0.1, minw = 3, maxw = 4, minh = 0.4}, nodes={
-                        {n=G.UIT.O, config={object = UIBox{definition =
-                            {n=G.UIT.ROOT, config={align = "cm", colour = G.C.CLEAR}, nodes={
-                                {n=G.UIT.O, config={object = DynaText({string = sleeve_name, maxw = 4, colours = {sleeve_name_colour}, shadow = true, bump = true, scale = 0.5, pop_in = 0, silent = true})}},
-                            }},
-                        config = {offset = {x=0,y=0}, align = 'cm'}}}
-                        },
-                    }},
-                    {n=G.UIT.R, config={align = "cm", colour = G.C.WHITE, minh = 1.3, maxh = 3, minw = 3, maxw = 4, r = 0.1}, nodes={
-                        {n=G.UIT.R, config = { align = "cm", padding = 0.03, colour = G.C.WHITE, r = 0.1}, nodes = desc_t }
-                    }},
-                    create_sleeve_badges(sleeve_center)
-                }}
-            }},
-            (self.params.sleeve_select <= sleeve_count_horizontal and {n=col, config={align=(self.params.deck_preview and 'bm' or 'cm'), padding=0.1}, nodes = tooltips} or {n=G.UIT.R})
-
-        }}
-        self.config.h_popup_config = self:align_h_popup()
-
-        Node.hover(self)
+        sleeve_hover(self)
     else
         old_Card_hover(self)
     end
@@ -2257,10 +2282,9 @@ function Card:align_h_popup()
     -- cannot use lovely patch since smods overwrites this
     local ret = old_Card_align_h_popup(self)
 
-    if self.params.sleeve_card and not self.params.deck_preview and self.T.y < G.CARD_H*1.4 then
-        -- default is G.CARD_H*0.8; we change the "flipping point" so the sleeves have their pop-up below them
-        -- needs to be at least G.CARD_H*1.3 for bm when only one row of sleeves in collection
-        ret.type = "bm"
+    if self.params.sleeve_card and not self.params.deck_preview then
+        -- make sleeves display their effect on the left/right when hovered over to be consistent with the decks
+        ret.type = (self.T.x > G.ROOM.T.w*0.4) and "cl" or "cr"
     end
 
     return ret
@@ -2668,36 +2692,6 @@ G.FUNCS.your_collection_sleeves = function()
 end
 
 if SMODS.RunSelectPage then
-    local sleeve_page_create_selection_card = function(self, card_key, card_number, area)
-        if area == SMODS.RunSelect.Internals.preview_area then
-            SMODS.RunSelect.Internals.preview_area.config.thin_draw = 1
-        end
-        if card_number == self.stack_size then
-            local sleeve_center = G.P_CENTERS[card_key] or G.P_CENTERS.sleeve_casl_none
-            -- custom card scale cuz SMODS.RunSelectPage has diff spacing between cells compared to Galdur smh
-            local card = create_sleeve_card(area, sleeve_center, { w = area.T.w + 0.15, h = area.T.h })
-            replace_sleeve_sprite(card, sleeve_center)
-            return card
-        end
-        local card = Card(area.T.x, area.T.y, G.CARD_W, G.CARD_H, nil,
-            G.P_CENTERS[SMODS.RunSelect.Setup.choices.deck_choice] or G.P_CENTERS["b_red"])
-        card.sprite_facing = 'back'
-        card.facing = 'back'
-        card.children.back:remove()
-        card.children.back = SMODS.create_sprite(card.T.x, card.T.y, card.T.w, card.T.h,
-            G.ASSET_ATLAS[card.config.center.unlocked and card.config.center.atlas or 'centers'],
-            card.config.center.unlocked and card.config.center.pos or { x = 4, y = 0 })
-        card.children.back.states.hover = card.states.hover
-        card.children.back.states.click = card.states.click
-        card.children.back.states.drag = card.states.drag
-        card.children.back.states.collide.can = false
-        card.children.back:set_role({ major = card, role_type = 'Glued', draw_major = card })
-        if card_number == self.stack_size - 1 then
-            card.sticker = get_deck_win_sticker(card.config.center)
-        end
-        return card
-    end
-
     local sleeve_page = SMODS.RunSelectPage({
         key = 'sleeve_choice',
         type = 'Sleeve',
@@ -2719,10 +2713,66 @@ if SMODS.RunSelectPage then
             return SMODS.RunSelect.Setup.choices.casl_sleeve_choice or choice or 'sleeve_casl_none'
         end,
         generate_pool = function(self)
-            return G.P_CENTER_POOLS.Sleeve
+            return get_sleeve_pool()
         end,
-        preview_click = function () end,
-        create_selection_card = sleeve_page_create_selection_card,
+        choose_random = function(self)
+            local options = {}
+            for i=1, #self.pool do
+                if self.pool[i]:is_unlocked() then
+                    options[#options + 1] = self.pool[i].key
+                end
+            end
+            if self.selection_limit > 1 then  -- not like I'm planning to handle multiple selected sleeves
+                for k,_ in pairs(SMODS.RunSelect.Setup.choices[self.key]) do
+                    SMODS.RunSelect.Setup.choices[self.key][k] = nil
+                    SMODS.RunSelect.Functions.populate_preview_ui(self.key, SMODS.RunSelect.Internals.preview_area.cards[1], self.silent, true)
+                end
+            end
+            for _=1, self.selection_limit do
+                local selected = false
+                while not selected do
+                    selected = pseudorandom_element(options, pseudoseed(os.time()))
+                    if #options > 1 and (selected == SMODS.RunSelect.Setup.choices[self.key] or SMODS.RunSelect.Setup.choices[self.key][selected]) then
+                        selected = false
+                    end
+                end
+                play_sound('whoosh1', math.random()*0.2 + 0.99, 0.35)
+                self:handle_choice({config = {center = {key = selected}}})
+            end
+        end,
+        preview_click = function () end,  -- when clicking on the sleeve in the preview window, ignore it
+        card_hover = function(self, card)
+            return sleeve_hover(card)
+        end,
+        create_selection_card = function(self, card_key, card_number, area)
+            if area == SMODS.RunSelect.Internals.preview_area then
+                SMODS.RunSelect.Internals.preview_area.config.thin_draw = 1
+            end
+            if card_number == self.stack_size then
+                local sleeve_center = G.P_CENTERS[card_key] or G.P_CENTERS.sleeve_casl_none
+                -- custom card scale cuz SMODS.RunSelectPage has diff spacing between cells compared to Galdur smh
+                local card = create_sleeve_card(area, sleeve_center, { w = area.T.w + 0.15, h = area.T.h })
+                replace_sleeve_sprite(card, sleeve_center)
+                return card
+            end
+            local card = Card(area.T.x, area.T.y, G.CARD_W, G.CARD_H, nil,
+                G.P_CENTERS[SMODS.RunSelect.Setup.choices.deck_choice] or G.P_CENTERS["b_red"])
+            card.sprite_facing = 'back'
+            card.facing = 'back'
+            card.children.back:remove()
+            card.children.back = SMODS.create_sprite(card.T.x, card.T.y, card.T.w, card.T.h,
+                G.ASSET_ATLAS[card.config.center.unlocked and card.config.center.atlas or 'centers'],
+                card.config.center.unlocked and card.config.center.pos or { x = 4, y = 0 })
+            card.children.back.states.hover = card.states.hover
+            card.children.back.states.click = card.states.click
+            card.children.back.states.drag = card.states.drag
+            card.children.back.states.collide.can = false
+            card.children.back:set_role({ major = card, role_type = 'Glued', draw_major = card })
+            if card_number == self.stack_size - 1 then
+                card.sticker = get_deck_win_sticker(card.config.center)
+            end
+            return card
+        end,
     })
 
     local old_runselect_build_preview_ui = SMODS.RunSelect.Functions.build_preview_ui
@@ -2743,6 +2793,21 @@ if SMODS.RunSelectPage then
             return old_runselect_populate_preview_ui(sleeve_page.key, card_key, ...)
         else
             return old_runselect_populate_preview_ui(key, to_add, ...)
+        end
+    end
+
+    local old_Card_click_3 = Card.click
+    function Card:click()
+        -- SMODS.RunSelectPage should handle this for cards with a normal `.unlocked` but we have a custom `:is_unlocked`, so we need to do it ourselves
+        if self.params.run_select_selection_choice and self.params.sleeve_card and self.config.center.is_unlocked and self.config.center:is_unlocked() then
+            local page = SMODS.RunSelect.Pages[self.params.run_select_selection_choice[2]]
+            if page.card_click and type(page.card_click) == 'function' then
+                return page:card_click(self)
+            else
+                page:handle_choice(self)
+            end
+        else
+            old_Card_click_3(self)
         end
     end
 end
