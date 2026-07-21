@@ -6,7 +6,9 @@ KNOWN ISSUES/TODO IDEAS:
 
 * TODO:
 ** split into seperate files once a mod manager exists
-** Up min SMODS to 0423a to get SMODS.DrawStep & painted sleeve's context.before or 0525b for deck preview pages & hand limit API
+** Up min SMODS to
+*** BETA-1531zeebee for icon in mod metadata (can remove modicon atlas from lua code)
+*** BETA-1820c for replacing populate_info_queue with SMODS.RunSelect.Functions.grab_tooltips
 
 * ISSUES:
 ** What if locked sleeves in challenge?
@@ -116,12 +118,14 @@ SMODS.Atlas {
     py = 95
 }
 
-SMODS.Atlas {
-    key = "modicon",
-    path = "icon.png",
-    px = 34,
-    py = 34
-}
+if SMODS.version < "1.0.0~BETA-1531zeebee" then
+    SMODS.Atlas {
+        key = "modicon",
+        path = "icon.png",
+        px = 34,
+        py = 34
+    }
+end
 --#endregion
 
 --#region SLEEVE BASE CLASS & METHODS
@@ -784,20 +788,15 @@ CardSleeves.Sleeve {
             G.E_MANAGER:add_event(Event({
                 trigger = "after",
                 func = (function()
-                    G.hand.config.highlighted_limit = G.hand.config.highlighted_limit + sleeve.config.selection_size
-                    if SMODS.change_play_limit and SMODS.change_discard_limit then
-                        -- future proofing?
-                        SMODS.change_play_limit(1)
-                        SMODS.change_discard_limit(1)
-                    end
+                    SMODS.change_play_limit(1)
+                    SMODS.change_discard_limit(1)
                     return true
                 end)
             }))
         end
     end,
     calculate = function(self, sleeve, context)
-        if context.press_play or context.before then
-            -- use both contexts for very old smods versions (context.before can be removed after min 0423a)
+        if context.press_play then
             if G.play.T.w < 6.2*G.CARD_W then
                 -- readjust played cards to not overlap
                 G.play.T.w = 6.2 * G.CARD_W
@@ -1060,7 +1059,7 @@ end
 local function create_sleeve_card(area, sleeve_center, scale)
     local fake_deck = {effect = {config = {}, center = {key = "fake", config = {}}, text_UI = {}, fake_deck = true}}
     local viewed_back = G.GAME.viewed_back ~= nil and fake_deck or false -- cryptid compat
-    local scale = scale or {w = area.T.w + 0.2, h = area.T.h}
+    scale = scale or {w = area.T.w + 0.2, h = area.T.h}
     local new_card = Card(area.T.x, area.T.y, scale.w, scale.h, nil, sleeve_center or G.P_CENTERS.c_base, {playing_card = 11, viewed_back = viewed_back, galdur_selector = true, sleeve_card = true})
     new_card.sprite_facing = 'back'
     new_card.facing = 'back'
@@ -1168,21 +1167,11 @@ local function deck_view_wrapper(func)
                     }
                 }
             }
-            local base_cards_area, uibox
+            assert(output and output.nodes and output.nodes[1] and output.nodes[1].config and output.nodes[1].config.id == "suit_list", "Unexpected deck view UI nodes. Is your SMODS version between BETA-0525b and BETA-1919b (last confirmed version), and do you have no other mod interfering with the deck view?")
+            local uibox = output.nodes[1].config.object
+            local base_cards_area = uibox.definition.nodes[2].nodes[1].nodes[1].nodes[2]
 
-            local SMODS_view_deck_menu = output and output.nodes and output.nodes[1] and output.nodes[1].config and output.nodes[1].config.id == "suit_list"
-            -- SMODS' view_deck UI menu since https://github.com/Steamodded/smods/pull/582  or  vanilla base implementation that is used in SMODS versions before PR 582
-
-            if SMODS_view_deck_menu then
-                uibox = output.nodes[1].config.object
-                base_cards_area = uibox.definition.nodes[2].nodes[1].nodes[1].nodes[2]
-
-                table.insert(uibox.definition.nodes[2].nodes[1].nodes[1].nodes, 2, UI_node)
-            else
-                base_cards_area = output.nodes[2].nodes[1].nodes[1].nodes[2]
-
-                table.insert(output.nodes[2].nodes[1].nodes[1].nodes, 2, UI_node)
-            end
+            table.insert(uibox.definition.nodes[2].nodes[1].nodes[1].nodes, 2, UI_node)
 
             local suit_tallies = base_cards_area.nodes[3] and base_cards_area.nodes[3].nodes or {}
             -- combine suit_tallies into 1x4 if only 2x2, to save on vertical space
@@ -1193,10 +1182,8 @@ local function deck_view_wrapper(func)
                 table.remove(base_cards_area.nodes, 4)
             end
 
-            if SMODS_view_deck_menu and uibox then
-                uibox:set_parent_child(uibox.definition, nil)
-                uibox:recalculate()
-            end
+            uibox:set_parent_child(uibox.definition, nil)
+            uibox:recalculate()
         end
 
         return output
@@ -1769,25 +1756,6 @@ end
 **create_UIBox_celestial_pack
 --]]
 
-if SMODS.DrawStep and SMODS.version < "1.0.0~BETA-0423a" then
-    local old_drawstep_back_sticker_func = SMODS.DrawSteps.back_sticker.func
-    SMODS.DrawStep:take_ownership('back_sticker',
-        {
-            func = function(self)
-                if self.params.sleeve_card and self.sticker and G.shared_stickers[self.sticker] then
-                    G.shared_stickers[self.sticker].role.draw_major = self
-                    local sticker_offset = self.sticker_offset or {}
-                    G.shared_stickers[self.sticker]:draw_shader('dissolve', nil, nil, true, self.children.center, nil, self.sticker_rotation, sticker_offset.x, sticker_offset.y)
-                    local stake = G.P_STAKES['stake_'..string.lower(self.sticker)] or {}
-                    if stake.shiny then G.shared_stickers[self.sticker]:draw_shader('voucher', nil, self.ARGS.send_to_shader, true, self.children.center, nil, self.sticker_rotation, sticker_offset.x, sticker_offset.y) end
-                else
-                    old_drawstep_back_sticker_func(self)
-                end
-            end,
-        }
-    )
-end
-
 local old_uidef_run_info = G.UIDEF.run_info
 function G.UIDEF.run_info(...)
     is_in_run_info_tab = true
@@ -1878,9 +1846,7 @@ function G.UIDEF.challenge_description_tab(args)
 end
 
 G.UIDEF.view_deck = deck_view_wrapper(G.UIDEF.view_deck)
-if G.FUNCS.your_suits_page then
-    G.FUNCS.your_suits_page = deck_view_wrapper(G.FUNCS.your_suits_page)
-end
+G.FUNCS.your_suits_page = deck_view_wrapper(G.FUNCS.your_suits_page)
 
 local old_FUNCS_change_viewed_back = G.FUNCS.change_viewed_back
 function G.FUNCS.change_viewed_back(args)
@@ -2300,6 +2266,7 @@ end
 
 local old_create_tabs = create_tabs
 function create_tabs(args)
+    -- insert sleeve tab into run info menu
     local sleeve_exists = G.GAME.selected_sleeve and G.GAME.selected_sleeve ~= "sleeve_casl_none"
     local config_in_run_info = CardSleeves.config.sleeve_info_location == 2 or CardSleeves.config.sleeve_info_location == 3
     if args["tabs"] and is_in_run_info_tab and sleeve_exists and config_in_run_info then
@@ -2545,14 +2512,14 @@ if Galdur then
         clean_sleeve_areas()
     end
 
-    local old_Card_click = Card.click
+    local old_Card_click_2 = Card.click
     function Card:click()
         if self.sleeve_select_position and self.config.center:is_unlocked() and not in_collection then
             local nr = (self.sleeve_select_position.page - 1) * sleeve_count_page + self.sleeve_select_position.count
             G.FUNCS.change_sleeve{to_key = nr}
             set_new_sleeve(self.config.center)
         else
-            old_Card_click(self)
+            old_Card_click_2(self)
         end
     end
 
@@ -2585,7 +2552,7 @@ if DV and DV.SIM then
 end
 --#endregion
 
---#region SMODS UI funcs (additions, config, collection)
+--#region SMODS UI funcs (additions, config, collection, RunSelectPage)
 SMODS.current_mod.description_loc_vars = function()
     return { background_colour = G.C.CLEAR, text_colour = G.C.WHITE, scale = 1.2 }
 end
@@ -2743,8 +2710,7 @@ if SMODS.RunSelectPage then
             return localize({
                 type = 'name_text',
                 set = 'Sleeve',
-                key = G.PROFILES[G.SETTINGS.profile].last_choices
-                    .casl_sleeve_choice or 'sleeve_casl_none'
+                key = G.PROFILES[G.SETTINGS.profile].last_choices.casl_sleeve_choice or 'sleeve_casl_none'
             })
         end,
         set_default = function(self, choice)
