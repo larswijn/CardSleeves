@@ -2005,8 +2005,10 @@ function SMODS.get_card_areas(_type, _context)
                 -- Redirect to the actual sleeve:calculate method
                 return sleeve_center:calculate(sleeve_center, context)
             end
-            function fake_sleeve:calc_dollar_bonus()
-                return sleeve_center:calc_dollar_bonus(sleeve_center)
+            if sleeve_center.calc_dollar_bonus then
+                function fake_sleeve:calc_dollar_bonus()
+                    return sleeve_center:calc_dollar_bonus(sleeve_center)
+                end
             end
             output[#output+1] = {
                 object = fake_sleeve,
