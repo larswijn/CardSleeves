@@ -251,7 +251,7 @@ function CardSleeves.Sleeve:apply()
         G.GAME.starting_params.hand_size = G.GAME.starting_params.hand_size + self.config.hand_size
     end
     if self.config.ante_scaling then
-        G.GAME.starting_params.ante_scaling = self.config.ante_scaling
+        G.GAME.starting_params.ante_scaling = (G.GAME.starting_params.ante_scaling or 1) * self.config.ante_scaling
     end
     if self.config.consumable_slot then
         G.GAME.starting_params.consumable_slots = G.GAME.starting_params.consumable_slots + self.config.consumable_slot
@@ -860,8 +860,10 @@ CardSleeves.Sleeve {
         local key
         if self.get_current_deck_key() == "b_plasma" then
             key = self.key .. "_alt"
+            self.config.ante_scaling = 1
         else
             key = self.key
+            self.config.ante_scaling = 2
         end
         local vars = { self.config.ante_scaling }
         return { key = key, vars = vars }
