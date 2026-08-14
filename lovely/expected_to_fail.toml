@@ -4,7 +4,7 @@ dump_lua = true
 priority = 11
 
 # Cryptid&Galdur compat (copied from Eremel <3 - needs higher/later priority than Galdur's patch)
-# expected to fail if Galdur isn't presented
+# expected to fail if Galdur isn't present
 # Card:draw()
 [[patches]]
 [patches.regex]

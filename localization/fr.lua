@@ -216,6 +216,8 @@ return {
             k_sleeves = "Pochettes",
             gald_sleeves = "Choisir Pochette",
             gald_random_sleeve = "Pochette Aléatoire",
+            run_select_casl_sleeve_choice = "Choisir Pochette",
+            run_select_casl_sleeve_choice_random = "Pochette Aléatoire",
             sleeve_unique_effect_desc = "Certaines pochettes ont des effets uniques lorsque combinés avec des Jeux spécifiques",
             adjust_deck_alignment = "Condensation des cartes",
             adjust_deck_alignment_desc = {

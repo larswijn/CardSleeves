@@ -156,7 +156,7 @@ return {
                 name = "Funda Cuadriculada",
                 text = {
                     "Todas las cartas de {C:clubs}trébol{} serán",
-                    "convertidas en {C:spades}pica{} y",
+                    "convertidas en {C:spades}espadas{} y",
                     "todas las cartas de {C:diamonds}diamante{} serán",
                     "convenridas en {C:hearts}corazón{}",
                 }

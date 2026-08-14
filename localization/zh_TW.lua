@@ -211,6 +211,8 @@ return {
             k_sleeves = "牌套",
             gald_sleeves = "選擇牌套",
             gald_random_sleeve = "隨機牌套",
+            run_select_casl_sleeve_choice = "選擇牌套",
+            run_select_casl_sleeve_choice_random = "隨機牌套",
             sleeve_unique_effect_desc = "一些牌套會與對應的牌組給予獨特的效果",
             adjust_deck_alignment = "叠起卡牌",
             adjust_deck_alignment_desc = {
