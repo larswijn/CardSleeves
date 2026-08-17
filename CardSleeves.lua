@@ -129,6 +129,8 @@ end
 --#endregion
 
 --#region SLEEVE BASE CLASS & METHODS
+
+---@type CardSleeves.Sleeve
 CardSleeves.Sleeve = SMODS.Center:extend {
     class_prefix = "sleeve",
     discovered = false,
@@ -155,7 +157,7 @@ CardSleeves.Sleeve = SMODS.Center:extend {
     end
 }
 
-function CardSleeves.Sleeve:apply()
+function CardSleeves.Sleeve:apply(sleeve)
     if self.config.voucher then
         G.GAME.used_vouchers[self.config.voucher] = true
         G.GAME.starting_voucher_count = (G.GAME.starting_voucher_count or 0) + 1
@@ -267,6 +269,7 @@ function CardSleeves.Sleeve:apply()
     end
 end
 
+---@deprecated Use a calculate method instead
 function CardSleeves.Sleeve:trigger_effect(args)
     if not args then return end
 
@@ -444,7 +447,7 @@ CardSleeves.Sleeve {
             vars = { self.config.dollars }
         end
         return { key = key, vars = vars }
-    end,
+    end
 }
 
 CardSleeves.Sleeve {
@@ -598,7 +601,7 @@ CardSleeves.Sleeve {
                card.ability.extra = card.ability.extra + sleeve.config.spectral_more_options
             end
         end
-    end,
+    end
 }
 
 CardSleeves.Sleeve {
