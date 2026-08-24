@@ -141,7 +141,7 @@ CardSleeves.Sleeve = SMODS.Center:extend {
     end,
     inject = function(self)
         if not self.unlocked and self.check_for_unlock then
-            if self:check_for_unlock() then
+            if self:check_for_unlock({}) then
                 self.unlocked = true
             end
         end
