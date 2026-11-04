@@ -2763,7 +2763,7 @@ if SMODS.RunSelectPage then
             card.facing = 'back'
             card.children.back:remove()
             card.children.back = SMODS.create_sprite(card.T.x, card.T.y, card.T.w, card.T.h,
-                G.ASSET_ATLAS[card.config.center.unlocked and card.config.center.atlas or 'centers'],
+                card.config.center.unlocked and card.config.center.atlas or 'centers',
                 card.config.center.unlocked and card.config.center.pos or { x = 4, y = 0 })
             card.children.back.states.hover = card.states.hover
             card.children.back.states.click = card.states.click
